@@ -14,7 +14,7 @@ import {
   columnOrder,
 } from './index.interface';
 import path from 'path';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx';
 import { Workbook, Cell, Worksheet } from 'exceljs';
 
 const STATIC_RESOURCE_PATH = path.join(__dirname, '../static-resource');
@@ -50,8 +50,8 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       );
 
       const newFilePath = generateNewFileName(filePath);
-
       const complatedWorkbook = await addJsonToExcelTemplate(completedData);
+ 
       complatedWorkbook.xlsx.writeFile(newFilePath);
       event.reply('excel-data', { path: newFilePath, data: completedData });
     }
@@ -69,33 +69,6 @@ function generateNewFileName(originalPath: string): string {
   return path.join(path.dirname(originalPath), newFileName);
 }
 
-async function modifyFirstColumn(
-  filePath: string,
-  event?: Electron.IpcMainEvent,
-) {
-  const workbook = XLSX.readFile(filePath);
-  const sheetNames = workbook.SheetNames;
-  const firstSheet = workbook.Sheets[sheetNames[0]];
-
-  // Assuming the first column is "A", modify all the values in column A to "SPECIFIED_STRING".
-  const specifiedString = 'SPECIFIED_STRING';
-  for (let i = 2; i <= 1000; i++) {
-    // you might want to determine the actual range dynamically
-    const cellRef = `A${i}`;
-    if (firstSheet[cellRef]) {
-      firstSheet[cellRef].v = specifiedString;
-    }
-  }
-
-  const newFilePath = generateNewFileName(filePath);
-  XLSX.writeFile(workbook, newFilePath); // This overwrites the original file. If you want to save as a new file, specify a different path.
-  console.log(`Saved to ${newFilePath}`);
-  // Optional: send the modified data back to the renderer process.
-  const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-  if (event) {
-    event.reply('excel-data', jsonData);
-  }
-}
 
 function mappingRealProductName(
   originalDataJson: OriginalExcelData[],
