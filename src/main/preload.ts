@@ -1,8 +1,9 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 
-export type Channels = 'ipc-example' | 'excel-data'
+export type Channels = "ipc-example" | "excel-data";
+const debugMessages: string[] = [];
 
 const electronHandler = {
   ipcRenderer: {
@@ -22,11 +23,20 @@ const electronHandler = {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
     selectExcelFile() {
-      ipcRenderer.send('select-excel-file');
-    }
+      ipcRenderer.send("select-excel-file");
+    },
+    listenForDebugMessages(func: (message: string) => void) {
+      ipcRenderer.on("debug-message", (_event, message) => {
+        debugMessages.push(message);
+        func(message);
+      });
+    },
+    getDebugMessages() {
+      return debugMessages;
+    },
   },
 };
 
-contextBridge.exposeInMainWorld('electron', electronHandler);
+contextBridge.exposeInMainWorld("electron", electronHandler);
 
 export type ElectronHandler = typeof electronHandler;

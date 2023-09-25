@@ -37,6 +37,9 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
+ipcMain.on("send-debug-message", (event, message) => {
+  mainWindow!.webContents.send("debug-message", message);
+});
 setupExcelHandlers(mainWindow!);
 
 if (process.env.NODE_ENV === 'production') {
