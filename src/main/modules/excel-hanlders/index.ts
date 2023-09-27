@@ -3,9 +3,9 @@ import {
   dialog as electronDialog,
   BrowserWindow as electronBrowserWindow,
   app,
-} from "electron";
+} from 'electron';
 // import { json } from 'node:stream/consumers';
-import { excelToJSON } from "../../util";
+import { excelToJSON, jsonGroupBy, getCpuArch, Arch } from '../../util';
 import {
   ExcelColumnKeys,
   OriginalExcelData,
@@ -13,53 +13,87 @@ import {
   ProductNameMapping,
   ProductNameMappingColumnKeys,
   columnOrder,
-} from "./index.interface";
-import path from "path";
+} from './index.interface';
+import path from 'path';
+import os from 'os';
 // import * as XLSX from 'xlsx';
-import { Workbook, Cell, Worksheet } from "exceljs";
+import { Workbook, Cell, Worksheet } from 'exceljs';
+
+const CPU_ARCH = getCpuArch();
 
 const STATIC_RESOURCE_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, "assets", "static-resource")
-  : path.join(__dirname, "../../../../assets/static-resource");
+  ? path.join(process.resourcesPath, 'assets', 'static-resource')
+  : path.join(__dirname, '../../../../assets/static-resource');
+
+const excelSuffix = CPU_ARCH === Arch.arm ? 'arm' : 'x86';
 
 const PRODUCT_FILE_PATH = path.join(
   STATIC_RESOURCE_PATH,
-  "product-name-mapping.xlsx"
+  `product-name-mapping-${excelSuffix}.xlsx`,
 );
 const ORIGINAL_DATA_TEMPLATE_PATH = path.join(
   STATIC_RESOURCE_PATH,
-  "original-data-template.xlsx"
+  `original-data-template-${excelSuffix}.xlsx`,
 );
 
 export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
-  electronIpcMain.on("select-excel-file", async (event) => {
-    console.log("select-excel-file");
+  electronIpcMain.on('select-excel-file', async (event) => {
+    console.log('select-excel-file');
     try {
       const result = await electronDialog.showOpenDialog(mainWindow, {
-        properties: ["openFile"],
-        filters: [{ name: "Excel", extensions: ["xlsx", "xls"] }],
+        properties: ['openFile'],
+        filters: [{ name: 'Excel', extensions: ['xlsx', 'xls'] }],
       });
 
       if (!result.canceled && result.filePaths.length > 0) {
         const filePath = result.filePaths[0];
-        const productNameMap: ProductNameMapping[] = await excelToJSON(
-          PRODUCT_FILE_PATH
-        );
+        const productNameMap: ProductNameMapping[] =
+          await excelToJSON(PRODUCT_FILE_PATH);
 
         const originalData: OriginalExcelData[] = await excelToJSON(filePath, {
           range: 2,
         });
 
-        const completedData = mappingRealProductName(
+        const originalDataGroupByShippingOrderNumber = jsonGroupBy(
           originalData,
-          productNameMap
+          [ExcelColumnKeys.ShippingOrderNumber, ExcelColumnKeys.ProductName],
+          (datas) => {
+            let totalNetWeight = 0;
+            let totalGrossWeight = 0;
+            let totalQuantity = 0;
+
+            datas.forEach((data) => {
+              totalNetWeight += Number(data[ExcelColumnKeys.NetWeight]);
+              totalGrossWeight += Number(data[ExcelColumnKeys.GrossWeight]);
+              totalQuantity += Number(data[ExcelColumnKeys.Quantity]);
+            });
+
+            return {
+              ...datas[0],
+              [ExcelColumnKeys.NetWeight]: totalNetWeight,
+              [ExcelColumnKeys.GrossWeight]: totalGrossWeight,
+              [ExcelColumnKeys.Quantity]: totalQuantity,
+            };
+          },
+        );
+
+        console.log(
+          'originalData',
+          originalDataGroupByShippingOrderNumber.filter((_, index) => {
+            return index < 10;
+          }),
+        );
+
+        const completedData = mappingRealProductName(
+          originalDataGroupByShippingOrderNumber,
+          productNameMap,
         );
 
         const newFilePath = generateNewFileName(filePath);
         const complatedWorkbook = await addJsonToExcelTemplate(completedData);
 
         complatedWorkbook.xlsx.writeFile(newFilePath);
-        event.reply("excel-data", {
+        event.reply('excel-data', {
           path: newFilePath,
           data: completedData,
           isError: false,
@@ -67,8 +101,8 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       }
     } catch (error) {
       console.error(error);
-      event.reply("excel-data", {
-        path: "",
+      event.reply('excel-data', {
+        path: '',
         data: [],
         isError: true,
         message: JSON.stringify(error),
@@ -80,7 +114,7 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
 function generateNewFileName(originalPath: string): string {
   const originalFilename = path.basename(
     originalPath,
-    path.extname(originalPath)
+    path.extname(originalPath),
   ); // gets filename without extension
   const timestamp = Date.now(); // gets current timestamp
   const newFileName = `${originalFilename}-completed-${timestamp}.xlsx`;
@@ -90,7 +124,7 @@ function generateNewFileName(originalPath: string): string {
 
 function mappingRealProductName(
   originalDataJson: OriginalExcelData[],
-  productNameMap: ProductNameMapping[]
+  productNameMap: ProductNameMapping[],
 ): CompletedExcelData[] {
   const completedData: CompletedExcelData[] = [];
 
@@ -98,7 +132,7 @@ function mappingRealProductName(
     const realNameItem = productNameMap.find(
       (item) =>
         item[ProductNameMappingColumnKeys.OriginalProductName] ===
-        originalData[ExcelColumnKeys.ProductName]
+        originalData[ExcelColumnKeys.ProductName],
     );
 
     if (realNameItem) {
@@ -116,7 +150,7 @@ function mappingRealProductName(
 
 async function addJsonToExcelTemplate(
   jsonData: CompletedExcelData[],
-  startRow: number = 3
+  startRow: number = 3,
 ): Promise<Workbook> {
   // 1. 讀取現有的Excel模板
   const workbook = new Workbook();
@@ -136,7 +170,7 @@ async function addJsonToExcelTemplate(
 
       const cell: Cell = worksheet.getCell(
         currentRow + 1,
-        columnInfo?.columnIndex
+        columnInfo?.columnIndex,
       );
       cell.value = row[key as keyof CompletedExcelData];
     });
