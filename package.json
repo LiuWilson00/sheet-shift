@@ -100,6 +100,7 @@
     "electron-log": "^4.4.8",
     "electron-updater": "^6.1.4",
     "exceljs": "^4.3.0",
+    "googleapis": "^126.0.1",
     "npm": "^10.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

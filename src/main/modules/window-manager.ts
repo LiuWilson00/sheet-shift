@@ -1,8 +1,10 @@
 import { BrowserWindow, app, shell } from 'electron';
 import MenuBuilder from '../menu';
 import path from 'path';
-import { resolveHtmlPath } from '../util';
- 
+import { initGoogleSheetData, resolveHtmlPath } from '../utils';
+import { client, initGoogleConnection } from '../utils/google-sheets.tool';
+import { IPC_CHANNELS } from '../../constants/ipc-channels';
+
 export const createMainWindow = (): BrowserWindow => {
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')

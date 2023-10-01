@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
 const DebugConsole = () => {
   const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
-    const unsubscribe = window.electron.ipcRenderer.listenForDebugMessages(
+    const unsubscribe = window.electron.debugBridge.listenForDebugMessages(
       (message) => {
         setMessages((prevMessages: string[]) => [...prevMessages, message]);
-      }
+      },
     );
 
     return;
@@ -18,10 +18,10 @@ const DebugConsole = () => {
   return (
     <div
       style={{
-        maxHeight: "200px",
-        overflowY: "scroll",
-        border: "1px solid black",
-        padding: "5px",
+        maxHeight: '200px',
+        overflowY: 'scroll',
+        border: '1px solid black',
+        padding: '5px',
       }}
     >
       {messages.map((msg, index) => (

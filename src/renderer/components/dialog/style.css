@@ -64,3 +64,26 @@
 .dialog-buttons button.confirm:hover {
   background-color: #0056b3;
 }
+
+.dialog-container.mask {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.dialog-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: black;
+  background-color: transparent; /* 這裡不再有預設的遮罩色 */
+}
+
+.dialog-content-main {
+  overflow: scroll;
+  max-height: 80%;
+}

@@ -1,8 +1,13 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
-import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { IPC_CHANNELS } from '../constants/ipc-channels';
+import appStatusBridge from './context-bridge/app-status.bridge';
+import debugBridge from './context-bridge/debug.bridge';
+import excelBridge from './context-bridge/excel.bridge';
+import settingBridge from './context-bridge/setting.bridge';
 
-export type Channels = "ipc-example" | "excel-data";
+export type Channels = keyof typeof IPC_CHANNELS;
 const debugMessages: string[] = [];
 
 const electronHandler = {
@@ -22,21 +27,13 @@ const electronHandler = {
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
-    selectExcelFile() {
-      ipcRenderer.send("select-excel-file");
-    },
-    listenForDebugMessages(func: (message: string) => void) {
-      ipcRenderer.on("debug-message", (_event, message) => {
-        debugMessages.push(message);
-        func(message);
-      });
-    },
-    getDebugMessages() {
-      return debugMessages;
-    },
   },
+  excelBridge,
+  appStatusBridge,
+  debugBridge,
+  settingBridge,
 };
 
-contextBridge.exposeInMainWorld("electron", electronHandler);
+contextBridge.exposeInMainWorld('electron', electronHandler);
 
 export type ElectronHandler = typeof electronHandler;

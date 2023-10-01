@@ -8,15 +8,15 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
-import * as XLSX from 'xlsx';
 import { createMainWindow } from './modules/window-manager';
 import { setupExcelHandlers } from './modules/excel-hanlders';
+import { setupSaveSettingsHandlers } from './modules/save-settings-handlers';
+import { setupAppStatusHandlers } from './modules/app-status-handlers';
+import { IPC_CHANNELS } from '../constants/ipc-channels';
+
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
 
@@ -30,17 +30,20 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
+ipcMain.on(IPC_CHANNELS.IPC_EXAMPLE, async (event, arg) => {
   const msgTemplate = (pingPong: string) =>
     `IPC test: ${pingPong} ${__dirname}`;
   console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+  event.reply(IPC_CHANNELS.IPC_EXAMPLE, msgTemplate('pong'));
 });
 
-ipcMain.on("send-debug-message", (event, message) => {
-  mainWindow!.webContents.send("debug-message", message);
+ipcMain.on(IPC_CHANNELS.DEBUG_MESSAGE, (event, message) => {
+  mainWindow!.webContents.send(IPC_CHANNELS.DEBUG_MESSAGE, message);
 });
+
 setupExcelHandlers(mainWindow!);
+setupSaveSettingsHandlers();
+setupAppStatusHandlers();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

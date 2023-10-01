@@ -27,3 +27,10 @@ npm-debug.log.*
 *.css.d.ts
 *.sass.d.ts
 *.scss.d.ts
+
+src/.env/iam-keys.json
+src/.env/google-sheet-setting.json
+src/main/modules/save-settings-handlers/settings.sheet.json
+src/main/modules/save-settings-handlers/settings.json
+src/.env/settings.sheet.json
+src/.env/settings.json

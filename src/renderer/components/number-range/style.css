@@ -1,0 +1,26 @@
+/* src/renderer/components/NumberRange.css */
+.number-range-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.range-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.range-inputs input {
+  flex: 1;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.range-inputs input:focus {
+  border-color: #007bff;
+  outline: none;
+}

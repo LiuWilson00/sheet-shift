@@ -1,0 +1,30 @@
+.layout-header {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.layout-header button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin: 5px;
+  font-size: 12px;
+}
+
+.layout-header button:first-child {
+  margin-right: 10px;
+}
+
+.layout-header button:last-child {
+  margin-right: 10px;
+}
+.layout-header button:hover {
+  opacity: 0.8;
+}

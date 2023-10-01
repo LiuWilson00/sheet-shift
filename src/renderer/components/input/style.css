@@ -1,0 +1,29 @@
+/* src/renderer/components/Input.css */
+.input-wrapper {
+  margin-bottom: 16px;
+}
+
+.input-wrapper label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.input-wrapper input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.input-wrapper p {
+  margin-top: 4px;
+}

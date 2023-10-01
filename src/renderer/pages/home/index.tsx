@@ -1,67 +1,96 @@
-import { useEffect } from "react";
+import { useEffect, useState } from 'react';
 // import icon from '../../../../assets/icon.svg';
-import "./style.css";
-import { useLoading } from "../../contexts/loading.context";
-import { useDialog } from "../../contexts/dialog.context";
-import DebugConsole from "../../components/debug-console";
+import './style.css';
+import { useLoading } from '../../contexts/loading.context';
+import { useDialog } from '../../contexts/dialog.context';
+import DebugConsole from '../../components/debug-console';
 
 function Hello() {
   const { showDialog, hideDialog } = useDialog();
   const { showLoading, hideLoading } = useLoading();
-  const fetchData = () => {
-    window.electron.ipcRenderer.selectExcelFile();
+  const [selectFilePath, setSelectFilePath] = useState<string>();
 
-    window.electron.ipcRenderer.once("excel-data", (data) => {
-      const _data = data as {
-        path: string;
-        data: any[];
-        isError: boolean;
-        message: any;
-      };
-      if (_data.isError) {
-        hideLoading();
-        showDialog({
-          title: "錯誤",
-          content: `檔案匯入失敗，原因：${_data.message}`,
-          onConfirm: () => {
-            hideDialog();
-          },
-        });
-
-        return;
-      }
-      hideLoading();
+  const fetchData = async () => {
+    showLoading();
+    const result = await window.electron.excelBridge.sendSelectExcelFile();
+    hideLoading();
+    if (result.isError) {
       showDialog({
-        content: `檔案已匯出至 ${_data.path}`,
+        content: '上傳失敗，請確認檔案是否正確。',
         onConfirm: () => {
           hideDialog();
         },
       });
+    }
+
+    setSelectFilePath(result.path);
+  };
+  const exportDefualtFormat = async () => {
+    showLoading();
+    const result = await window.electron.excelBridge.sendExportDefaultSheet();
+    hideLoading();
+    console.log(result);
+    if (result.isError) {
+      showDialog({
+        content: '匯出失敗，請確認檔案是否正確。',
+        onConfirm: () => {
+          hideDialog();
+        },
+      });
+    }
+
+    showDialog({
+      content: `檔案已匯出，檔案路徑：${result.path}`,
+      onConfirm: () => {
+        hideDialog();
+      },
     });
   };
-  useEffect(() => {
-    console.log("Hello");
-  }, []);
+
   return (
-    <div>
+    <div className="home-context">
       <button
         onClick={() => {
           fetchData();
-          showLoading();
         }}
+        disabled={selectFilePath !== undefined}
       >
-        點擊上傳文件{" "}
+        點擊上傳文件{' '}
         <span
           style={{
-            color: "red",
-            fontSize: "16px",
-            fontWeight: "bold",
+            color: 'red',
+            fontSize: '16px',
+            fontWeight: 'bold',
           }}
         >
-          {" "}
+          {' '}
           (xlsx or xls)
         </span>
       </button>
+      {selectFilePath ? (
+        <div className="file-selected-group">
+          <span>檔案已上傳，檔案路徑：</span>
+          <a href="#">{selectFilePath}</a>
+          <div className="file-selected-group-button">
+            <button className="export-button" onClick={exportDefualtFormat}>
+              匯出成預設格式
+            </button>
+            <button className="export-button">匯出成蝦皮格式</button>
+          </div>
+          <a
+            href="#"
+            onClick={() => {
+              setSelectFilePath(undefined);
+            }}
+            className="re-upload-button"
+          >
+            重新上傳
+          </a>
+        </div>
+      ) : (
+        <></>
+      )}
+
       <DebugConsole></DebugConsole>
     </div>
   );

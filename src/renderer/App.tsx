@@ -4,18 +4,32 @@ import Loading from './components/loading';
 import { LoadingProvider, useLoading } from './contexts/loading.context';
 import Layout from './layout';
 import { DialogProvider } from './contexts/dialog.context';
+import { SettingsProvider } from './contexts/settings-dialog-context/indext';
+import { SheetSettingsProvider } from './contexts/sheet-settings-dialog-context';
+const wrapWithProviders = (
+  child: React.ReactNode,
+  providers: React.ComponentType<any>[],
+) => {
+  return providers.reduceRight((acc, Provider) => {
+    return <Provider>{acc}</Provider>;
+  }, child);
+};
 export default function App() {
-  return (
-    <LoadingProvider>
-      <DialogProvider>
-        <Layout>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Hello />} />
-            </Routes>
-          </Router>
-        </Layout>
-      </DialogProvider>
-    </LoadingProvider>
+  const providers = [
+    LoadingProvider,
+    DialogProvider,
+    SheetSettingsProvider,
+    SettingsProvider,
+  ];
+
+  return wrapWithProviders(
+    <Layout>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Hello />} />
+        </Routes>
+      </Router>
+    </Layout>,
+    providers,
   );
 }
