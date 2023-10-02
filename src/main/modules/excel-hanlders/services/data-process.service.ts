@@ -287,7 +287,9 @@ function formatRecipientTaxNumber(taxNumber: string): string {
 }
 
 function determineRecipientIDCode(taxNumber: string): string {
-  if (taxNumber && /[a-zA-Z]/.test(taxNumber[0])) {
+  if (taxNumber === "") return "";
+
+  if (taxNumber && /[a-zA-Z]/.test(String(taxNumber)[0])) {
     return "174";
   }
   return "58";
