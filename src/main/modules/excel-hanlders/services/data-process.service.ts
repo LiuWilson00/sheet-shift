@@ -7,20 +7,19 @@ import {
   tariffCodeSheet,
   adressSheet,
   AddressSheet,
-} from '../../../utils';
-import { AddressSheetColumnKeys } from '../../../utils/google-sheets.tool/index.interface';
-import { getSystemSetting } from '../../../utils';
+} from "../../../utils";
+import { AddressSheetColumnKeys } from "../../../utils/google-sheets.tool/index.interface";
+import { getSystemSetting } from "../../../utils";
 import {
   SheetData,
   ExcelColumnKeys,
   ProductNameMapping,
   ProductNameMappingColumnKeys,
-} from '../index.interface';
-import { DefaultPriceSetting } from '../../../utils/setting.tool';
+} from "../index.interface";
+import { DefaultPriceSetting } from "../../../utils/setting.tool";
 
 export async function processExcelData(filePath: string) {
   const productNameMap = tariffCodeSheet.get();
-    
 
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
@@ -30,7 +29,7 @@ export async function processExcelData(filePath: string) {
 
   const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
   const dataWithRecipientAndRealName = processRecipientDetails(
-    dataBeforeSummaryUpdate,
+    dataBeforeSummaryUpdate
   );
 
   return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);
@@ -38,7 +37,7 @@ export async function processExcelData(filePath: string) {
 
 export function mappingRealProductName(
   originalDataJson: SheetData[],
-  productNameMap: ProductNameMapping[],
+  productNameMap: ProductNameMapping[]
 ): SheetData[] {
   const completedData: SheetData[] = [];
 
@@ -46,7 +45,7 @@ export function mappingRealProductName(
     const realNameItem = productNameMap.find(
       (item) =>
         item[ProductNameMappingColumnKeys.OriginalProductName] ===
-        originalData[ExcelColumnKeys.ProductName],
+        originalData[ExcelColumnKeys.ProductName]
     );
 
     if (realNameItem) {
@@ -60,8 +59,8 @@ export function mappingRealProductName(
     } else {
       completedData.push({
         ...originalData,
-        [ExcelColumnKeys.RealProductName]: '',
-        [ExcelColumnKeys.ProductClassNumber]: '',
+        [ExcelColumnKeys.RealProductName]: "",
+        [ExcelColumnKeys.ProductClassNumber]: "",
       });
     }
   });
@@ -70,14 +69,21 @@ export function mappingRealProductName(
 
 export function groupExcelData(originalData: SheetData[]) {
   const systemSetting = getSystemSetting();
-  const { NET_WEIGHT_INTERVAL, KPC_NUMBER, UNIT_TRANSLATE_LIMIT } =
-    systemSetting.SYSTEM_SETTING;
+  const {
+    NET_WEIGHT_INTERVAL,
+    KPC_NUMBER,
+    UNIT_TRANSLATE_LIMIT,
+  } = systemSetting.SYSTEM_SETTING;
   return jsonGroupBy(
     originalData,
     [ExcelColumnKeys.ShippingOrderNumber, ExcelColumnKeys.ProductName],
     (datas) => {
-      const { totalNetWeight, totalGrossWeight, totalQuantity, totalBoxes } =
-        getDataSummary(datas);
+      const {
+        totalNetWeight,
+        totalGrossWeight,
+        totalQuantity,
+        totalBoxes,
+      } = getDataSummary(datas);
 
       const { newQuantity, newUnit } = unitTranslate(totalQuantity);
 
@@ -91,7 +97,7 @@ export function groupExcelData(originalData: SheetData[]) {
         [ExcelColumnKeys.Quantity]: newQuantity,
         [ExcelColumnKeys.TotalBoxes]: totalBoxes,
       };
-    },
+    }
   );
 
   function getDataSummary(datas: SheetData[]) {
@@ -115,18 +121,20 @@ export function groupExcelData(originalData: SheetData[]) {
     };
   }
 
-  function unitTranslate(totalQuantity: number): {
-    newUnit: 'KPC' | 'PCE';
+  function unitTranslate(
+    totalQuantity: number
+  ): {
+    newUnit: "KPC" | "PCE";
     newQuantity: number;
   } {
     if (totalQuantity > UNIT_TRANSLATE_LIMIT) {
       return {
-        newUnit: 'KPC',
+        newUnit: "KPC",
         newQuantity: totalQuantity / KPC_NUMBER,
       };
     }
     return {
-      newUnit: 'PCE',
+      newUnit: "PCE",
       newQuantity: totalQuantity,
     };
   }
@@ -134,7 +142,7 @@ export function groupExcelData(originalData: SheetData[]) {
 
 function calculateTotalAmountByBoxes(
   boxes: number,
-  setting: DefaultPriceSetting,
+  setting: DefaultPriceSetting
 ): number {
   let range: [number, number];
 
@@ -154,7 +162,7 @@ function calculateTotalAmountByBoxes(
 function calculateOriginalAmountAndUnitPrice(
   originalTotalAmount: number,
   quantity: number,
-  setting: DefaultPriceSetting,
+  setting: DefaultPriceSetting
 ): number {
   const [minRate, maxRate] = setting.ADJUSTMENT_RATE;
   const rate = minRate + Math.random() * (maxRate - minRate);
@@ -164,7 +172,7 @@ function calculateOriginalAmountAndUnitPrice(
 }
 function getSummaries(
   sameNameDataIndex: number[],
-  data: SheetData[],
+  data: SheetData[]
 ): {
   summaryGrossWeight: number;
   summaryBoxNumber: number;
@@ -180,7 +188,7 @@ function getSummaries(
     {
       summaryGrossWeight: 0,
       summaryBoxNumber: 0,
-    },
+    }
   );
 }
 
@@ -189,13 +197,13 @@ function setSteetPrices(
   data: SheetData[],
   totalAmount: number,
   itemCount: number,
-  setting: DefaultPriceSetting,
+  setting: DefaultPriceSetting
 ): void {
   const quantity = Number(data[index][ExcelColumnKeys.Quantity]);
   const newUnitPrice = calculateOriginalAmountAndUnitPrice(
     totalAmount / itemCount,
     quantity,
-    setting,
+    setting
   );
   data[index][ExcelColumnKeys.UnitPrice] = newUnitPrice;
   data[index][ExcelColumnKeys.TotalAmount] = newUnitPrice * quantity;
@@ -205,17 +213,17 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
   const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
   const distinctShippingOrderNumber = getDistinctValuesForKey<ExcelColumnKeys>(
     groupedData,
-    ExcelColumnKeys.ShippingOrderNumber,
+    ExcelColumnKeys.ShippingOrderNumber
   );
 
   distinctShippingOrderNumber.forEach((name) => {
     const sameNameDataIndex = findAllIndex(
       groupedData,
-      (item) => item[ExcelColumnKeys.ShippingOrderNumber] === name,
+      (item) => item[ExcelColumnKeys.ShippingOrderNumber] === name
     );
     const { summaryGrossWeight, summaryBoxNumber } = getSummaries(
       sameNameDataIndex,
-      groupedData,
+      groupedData
     );
 
     const systemSetting = getSystemSetting();
@@ -223,7 +231,7 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
     const totalItemCount = sameNameDataIndex.length;
     const totalAmount = calculateTotalAmountByBoxes(
       summaryBoxNumber,
-      systemSetting.DEFAULT_PRICE_SETTING,
+      systemSetting.DEFAULT_PRICE_SETTING
     );
 
     sameNameDataIndex.forEach((index, numberOfIndex) => {
@@ -232,16 +240,16 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
         newGroupedData,
         totalAmount,
         totalItemCount,
-        systemSetting.DEFAULT_PRICE_SETTING,
+        systemSetting.DEFAULT_PRICE_SETTING
       );
 
       if (numberOfIndex === 0) {
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = summaryGrossWeight;
         newGroupedData[index][ExcelColumnKeys.TotalBoxes] = summaryBoxNumber;
       } else {
-        newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
-        newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
-        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = '';
+        newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = "";
+        newGroupedData[index][ExcelColumnKeys.GrossWeight] = "";
+        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = "";
       }
     });
   });
@@ -250,42 +258,48 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
 }
 
 function processRecipientDetails(data: SheetData[]): SheetData[] {
-  return data.map((entry) => ({
-    ...entry,
-    [ExcelColumnKeys.RecipientTaxNumber]: formatRecipientTaxNumber(
-      entry[ExcelColumnKeys.RecipientTaxNumber] as string,
-    ),
-    [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
-      entry[ExcelColumnKeys.RecipientTaxNumber] as string,
-    ),
-    [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
-      entry[ExcelColumnKeys.RecipientPhone] as string,
-    ),
-    [ExcelColumnKeys.RecipientEnglishAddress]: getRandomAddress(
-      adressSheet.get(),
-    ),
-  }));
+  return data.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientTaxNumber]: formatRecipientTaxNumber(
+        entry[ExcelColumnKeys.RecipientTaxNumber] as string
+      ),
+      [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
+        entry[ExcelColumnKeys.RecipientTaxNumber] as string
+      ),
+      [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
+        entry[ExcelColumnKeys.RecipientPhone] as string
+      ),
+      [ExcelColumnKeys.RecipientEnglishAddress]: getRandomAddress(
+        adressSheet.get()
+      ),
+    };
+  });
 }
 
 function formatRecipientTaxNumber(taxNumber: string): string {
+  if (typeof taxNumber === "number") return String(taxNumber);
+
   if (taxNumber && /[a-zA-Z]/.test(taxNumber[0])) {
-    return taxNumber.charAt(0).toUpperCase() + taxNumber.slice(1);
+    return String(taxNumber).charAt(0).toUpperCase() + taxNumber.slice(1);
   }
   return taxNumber;
 }
 
 function determineRecipientIDCode(taxNumber: string): string {
   if (taxNumber && /[a-zA-Z]/.test(taxNumber[0])) {
-    return '174';
+    return "174";
   }
-  return '58';
+  return "58";
 }
 
 function formatRecipientPhone(phone: string): string {
-  const cleanedPhone = phone.replace(/[()\-]/g, '');
+  if (!phone) return "";
+
+  const cleanedPhone = String(phone).replace(/[()\-]/g, "");
   let formattedPhone = cleanedPhone;
   while (formattedPhone.length < 10) {
-    formattedPhone = '0' + formattedPhone;
+    formattedPhone = "0" + formattedPhone;
   }
   return formattedPhone;
 }
