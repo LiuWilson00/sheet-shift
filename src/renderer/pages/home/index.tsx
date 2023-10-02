@@ -37,6 +37,7 @@ function Hello() {
           hideDialog();
         },
       });
+      return;
     }
 
     showDialog({

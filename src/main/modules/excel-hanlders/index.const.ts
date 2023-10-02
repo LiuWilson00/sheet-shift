@@ -16,6 +16,7 @@ export const ORIGINAL_DATA_TEMPLATE_PATH = path.join(
   STATIC_RESOURCE_PATH,
   `original-data-template-${excelSuffix}.xlsx`,
 );
+
 export const columnOrder = [
   {
     headerKey: ExcelColumnKeys.ShippingOrderNumber,

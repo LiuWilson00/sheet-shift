@@ -17,6 +17,8 @@ export enum IPC_CHANNELS {
   SETTINGS_RESPONSE = 'settings-response',
   SETTINGS_SHEET_SAVED = 'settings-sheet-saved',
   SETTINGS_SAVED = 'settings-saved',
+  IMPORT_SETTINGS_SHEET = 'import-settings-sheet',
+  IMPORT_SETTINGS_SHEET_RESPONSE = 'import-settings-sheet-response',
 
   // Excel
   EXCEL_DATA = 'excel-data',

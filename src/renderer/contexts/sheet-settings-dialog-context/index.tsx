@@ -4,12 +4,12 @@ import React, {
   useContext,
   PropsWithChildren,
   useEffect,
-} from 'react';
-import Dialog from '../../components/dialog';
-import Input from '../../components/input';
-import Textarea from '../../components/textarea';
-import { useLoading } from '../loading.context';
-import { useDialog } from '../dialog.context';
+} from "react";
+import Dialog from "../../components/dialog";
+import Input from "../../components/input";
+import Textarea from "../../components/textarea";
+import { useLoading } from "../loading.context";
+import { useDialog } from "../dialog.context";
 
 interface SheetSettingsContextType {
   isSettingsVisible: boolean;
@@ -20,9 +20,9 @@ interface SheetSettingsContextType {
 }
 
 const defualtSheetSettings = {
-  client_email: '',
-  private_key: '',
-  spreadsheet_id: '',
+  client_email: "",
+  private_key: "",
+  spreadsheet_id: "",
 };
 
 const SheetSettingsContext = createContext<
@@ -47,13 +47,14 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
   const handleConfirm = async () => {
     // 儲存設定的邏輯
     showLoading();
-    const savedResult =
-      await window.electron.settingBridge.sendSettingSheet(settings);
+    const savedResult = await window.electron.settingBridge.sendSettingSheet(
+      settings
+    );
     if (savedResult) {
       hideSettings();
     } else {
       showDialog({
-        content: '儲存失敗，請確認連線資訊是否正確。',
+        content: "儲存失敗，請確認連線資訊是否正確。",
         onConfirm: () => {
           hideDialog();
         },
@@ -64,7 +65,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
 
     if (!initResult.isConnected) {
       showDialog({
-        content: '連線異常，請確定網路環境或確認設定是否正確。',
+        content: "連線異常，請確定網路環境或確認設定是否正確。",
         onConfirm: () => {
           hideDialog();
         },
@@ -92,7 +93,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
 
   const validateNumber = (value: string) => {
     if (isNaN(Number(value))) {
-      return 'Please enter a valid number';
+      return "Please enter a valid number";
     }
     return null; // 沒有錯誤
   };
@@ -128,7 +129,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
                       client_email: e.target.value,
                     });
                   }}
-                  defaultValue={settings.client_email || ''}
+                  defaultValue={settings.client_email || ""}
                 />
                 <Textarea
                   label="private_key"
@@ -139,7 +140,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
                       private_key: e.target.value,
                     });
                   }}
-                  defaultValue={settings.private_key || ''}
+                  defaultValue={settings.private_key || ""}
                 />
                 <h3>表單資訊</h3>
                 <Input
@@ -151,8 +152,46 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
                       spreadsheet_id: e.target.value,
                     });
                   }}
-                  defaultValue={settings.spreadsheet_id || ''}
+                  defaultValue={settings.spreadsheet_id || ""}
                 />
+                <button
+                  style={{
+                    marginTop: "20px",
+                    backgroundColor: "#f5f5f5",
+                    border: "1px solid #ccc",
+                    padding: "5px 10px",
+                    borderRadius: "5px",
+                  }}
+                  onClick={async () => {
+                    showLoading();
+                    const result = await window.electron.settingBridge.importSettingSheet(
+                      settings
+                    );
+                    if (!result) {
+                      showDialog({
+                        content: "匯入失敗，請確認連線資訊是否正確。",
+                        onConfirm: () => {
+                          hideDialog();
+                        },
+                      });
+                      hideLoading();
+                      return;
+                    }
+                    await window.electron.appStatusBridge.appStartInit();
+
+                    hideSettings();
+
+                    showDialog({
+                      content: "匯入連線資訊成功。",
+                      onConfirm: () => {
+                        hideDialog();
+                      },
+                    });
+                    hideLoading();
+                  }}
+                >
+                  匯入連線設定檔
+                </button>
               </div>
             );
           }}
@@ -167,7 +206,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
 export const useSheetSetting = () => {
   const context = useContext(SheetSettingsContext);
   if (!context) {
-    throw new Error('useDialog must be used within a DialogProvider');
+    throw new Error("useDialog must be used within a DialogProvider");
   }
   return context;
 };

@@ -20,7 +20,7 @@ import { DefaultPriceSetting } from '../../../utils/setting.tool';
 
 export async function processExcelData(filePath: string) {
   const productNameMap = tariffCodeSheet.get();
-  
+    
 
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },

@@ -84,6 +84,6 @@
 }
 
 .dialog-content-main {
-  overflow: scroll;
+  overflow-y: scroll;
   max-height: 80%;
 }

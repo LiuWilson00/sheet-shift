@@ -1,26 +1,25 @@
-import { IPC_CHANNELS } from '../../../constants/ipc-channels';
-import { app, ipcMain } from 'electron';
-import { getSystemSetting } from '../../utils/setting.tool';
+import { IPC_CHANNELS } from "../../../constants/ipc-channels";
+import { BrowserWindow, app, dialog, ipcMain } from "electron";
+import { getSystemSetting } from "../../utils/setting.tool";
 import {
   getGoogleSheetAPISetting,
   updateSheetData,
-} from '../../utils/google-sheets.tool';
-import { GoogleSheetConnectionStore } from '../../status-store';
-import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
-const fs = require('fs');
-const path = require('path');
+} from "../../utils/google-sheets.tool";
+import { GoogleSheetConnectionStore } from "../../status-store";
+import { SheetRangeName } from "../../utils/google-sheets.tool/index.const";
+const fs = require("fs");
+const path = require("path");
 
 export const ENV_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets', '.env')
-  : path.join(__dirname, '../../../.env');
-const SETTINGS_PATH = path.join(ENV_PATH, 'settings.json');
-const SETTINGS_SHEET_PATH = path.join(ENV_PATH, 'settings.sheet.json');
+  ? path.join(process.resourcesPath, "assets", ".env")
+  : path.join(__dirname, "../../../.env");
+const SETTINGS_SHEET_PATH = path.join(ENV_PATH, "settings.sheet.json");
 
-export const setupSaveSettingsHandlers = () => {
+export const setupSaveSettingsHandlers = (mainWindow: BrowserWindow) => {
   ipcMain.on(IPC_CHANNELS.SAVE_SETTINGS, (event, settings) => {
     updateSheetData(
       SheetRangeName.SystemSetting,
-      transformSettingsToObjectArray(settings),
+      transformSettingsToObjectArray(settings)
     ).then((res) => {
       if (res) {
         event.reply(IPC_CHANNELS.SETTINGS_SAVED, true);
@@ -38,7 +37,7 @@ export const setupSaveSettingsHandlers = () => {
   ipcMain.on(IPC_CHANNELS.SAVE_SETTINGS_SHEET, (event, settings) => {
     fs.writeFileSync(
       SETTINGS_SHEET_PATH,
-      JSON.stringify(settings, null, 2).replace(/\\\\/g, '\\'),
+      JSON.stringify(settings, null, 2).replace(/\\\\/g, "\\")
     );
     event.reply(IPC_CHANNELS.SETTINGS_SHEET_SAVED, true);
   });
@@ -47,22 +46,38 @@ export const setupSaveSettingsHandlers = () => {
     if (tryGetGoogleSheetAPISetting) {
       event.reply(
         IPC_CHANNELS.SETTINGS_SHEET_RESPONSE,
-        tryGetGoogleSheetAPISetting,
+        tryGetGoogleSheetAPISetting
       );
     } else {
       event.reply(IPC_CHANNELS.SETTINGS_SHEET_RESPONSE, false);
     }
   });
+  ipcMain.on(IPC_CHANNELS.IMPORT_SETTINGS_SHEET, async (event) => {
+    const filePath = await selectJsonFile(mainWindow);
+
+    if (filePath) {
+      const settingsData = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      fs.writeFileSync(
+        SETTINGS_SHEET_PATH,
+        JSON.stringify(settingsData, null, 2).replace(/\\\\/g, "\\")
+      );
+
+      event.reply(IPC_CHANNELS.IMPORT_SETTINGS_SHEET_RESPONSE, true);
+    } else {
+      event.reply(IPC_CHANNELS.IMPORT_SETTINGS_SHEET_RESPONSE, false);
+    }
+  });
 };
-function transformSettingsToObjectArray(settings: any, prefix = '') {
+
+function transformSettingsToObjectArray(settings: any, prefix = "") {
   let resultArray: any = [];
 
   for (const key in settings) {
     if (settings.hasOwnProperty(key)) {
-      if (typeof settings[key] === 'object' && !Array.isArray(settings[key])) {
+      if (typeof settings[key] === "object" && !Array.isArray(settings[key])) {
         // 若屬性值是物件，則進行遞迴
         resultArray = resultArray.concat(
-          transformSettingsToObjectArray(settings[key], `${prefix}${key}--`),
+          transformSettingsToObjectArray(settings[key], `${prefix}${key}--`)
         );
       } else {
         // 若屬性值不是物件，則直接加入結果陣列
@@ -75,4 +90,19 @@ function transformSettingsToObjectArray(settings: any, prefix = '') {
   }
 
   return resultArray;
+}
+
+function selectJsonFile(mainWindow: BrowserWindow) {
+  return new Promise<string | undefined>((resolve, reject) => {
+    const options = {
+      title: "Select a json file",
+      filters: [{ name: "json", extensions: ["json"] }],
+    };
+    const filePath = dialog.showOpenDialogSync(mainWindow, options);
+    if (filePath) {
+      resolve(filePath[0]);
+    } else {
+      resolve(undefined);
+    }
+  });
 }

@@ -65,11 +65,13 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
         });
       }
     } catch (error) {
+      const _error = error as Error;
+      console.error(error);
       event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
         path: '',
         data: [],
         isError: true,
-        message: JSON.stringify(error),
+        message: _error.message,
       });
     }
   });
