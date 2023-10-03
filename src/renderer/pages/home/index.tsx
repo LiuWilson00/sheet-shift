@@ -22,6 +22,8 @@ function Hello() {
         },
       });
     }
+    // const test = await window.electron.excelBridge.sendGetWrongData();
+    // console.log('test',test);
 
     setSelectFilePath(result.path);
   };
@@ -40,6 +42,7 @@ function Hello() {
       return;
     }
 
+  
     showDialog({
       content: `檔案已匯出，檔案路徑：${result.path}`,
       onConfirm: () => {

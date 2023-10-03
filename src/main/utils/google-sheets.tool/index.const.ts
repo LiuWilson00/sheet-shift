@@ -9,14 +9,14 @@ export const SHEET_SETTING_PATH = path.join(ENV_PATH, 'settings.sheet.json');
 
 export enum SheetRangeName {
   TariffCodeSheet = '稅則表',
-  Adress = '地址',
+  Address = '地址',
   SystemSetting = '系統設定',
   template = 'Template',
 }
 
 export const SHEET_RANGES = [
   SheetRangeName.TariffCodeSheet,
-  SheetRangeName.Adress,
+  SheetRangeName.Address,
   SheetRangeName.SystemSetting,
   SheetRangeName.template,
 ];

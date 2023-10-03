@@ -111,6 +111,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                   name="SYSTEM_SETTING--UNIT_TRANSLATE_LIMIT"
                   value={settings.SYSTEM_SETTING.UNIT_TRANSLATE_LIMIT.toString()}
                   validationFn={validateNumber}
+                  type='number'
                   onChange={(e) => {
                     updateSettings({
                       ...settings,
@@ -126,6 +127,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                   name="SYSTEM_SETTING--KPC_NUMBER"
                   value={settings.SYSTEM_SETTING.KPC_NUMBER.toString()}
                   validationFn={validateNumber}
+                  type='number'
                   onChange={(e) => {
                     updateSettings({
                       ...settings,

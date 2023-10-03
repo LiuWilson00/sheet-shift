@@ -15,7 +15,7 @@ export enum TariffCodeSheetColumnKeys {
 
 export enum AddressSheetColumnKeys {
   Number = '序號',
-  Adress = 'Adress',
+  Address = '地址',
 }
 
 export enum SystemSettingSheetsColumnKeys {
@@ -31,7 +31,7 @@ export interface TariffCodeSheet {
 
 export interface AddressSheet {
   [AddressSheetColumnKeys.Number]: number;
-  [AddressSheetColumnKeys.Adress]: string;
+  [AddressSheetColumnKeys.Address]: string;
 }
 
 export interface SystemSettingSheets {

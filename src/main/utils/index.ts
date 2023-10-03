@@ -10,7 +10,7 @@ export { excelToJSON, jsonToExcel } from './excel-process.tool';
 export {
   initGoogleSheetData,
   tariffCodeSheet,
-  adressSheet,
+  addressSheet,
 //   systemSettingSheets,
 } from './google-sheets.tool';
 export {

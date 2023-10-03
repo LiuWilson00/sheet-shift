@@ -42,7 +42,7 @@ ipcMain.on(IPC_CHANNELS.DEBUG_MESSAGE, (event, message) => {
 });
 
 setupExcelHandlers(mainWindow!);
-setupSaveSettingsHandlers();
+setupSaveSettingsHandlers(mainWindow!);
 setupAppStatusHandlers();
 
 if (process.env.NODE_ENV === 'production') {

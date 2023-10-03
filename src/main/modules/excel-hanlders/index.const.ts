@@ -114,8 +114,8 @@ export const columnOrder = [
     columnIndex: 20,
   },
   {
-    headerKey: ExcelColumnKeys.SenderEnglishAdress,
-    valueKey: ExcelColumnKeys.SenderEnglishAdress,
+    headerKey: ExcelColumnKeys.SenderEnglishAddress,
+    valueKey: ExcelColumnKeys.SenderEnglishAddress,
     columnIndex: 21,
   },
   {

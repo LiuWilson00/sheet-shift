@@ -28,6 +28,8 @@ export enum IPC_CHANNELS {
   EXPORT_DEFAULT_SHEET_COMPLATED = 'export-default-sheet-complated',
   EXPORT_SHOPEE_SHEET = 'export-shopee-sheet',
   EXPORT_SHOPEE_SHEET_COMPLATED = 'export-shopee-sheet-complated',
+  GET_WRONG_DATA = 'get-wrong-data',
+  GET_WRONG_DATA_RESPONSE = 'get-wrong-data-response',
 
   // Debug
   DEBUG_MESSAGE = 'debug-message',

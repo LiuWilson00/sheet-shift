@@ -10,6 +10,7 @@ import {
 import { processExcelData } from './services/data-process.service';
 import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { DataStore } from '../../utils/data-store.tool';
+import { findUnMappingData } from './services/excel-data-debugging';
 
 const currentSelectedFilePath = new DataStore<string>('');
 
@@ -108,5 +109,21 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
         message: JSON.stringify(error),
       });
     }
+  });
+  electronIpcMain.on(IPC_CHANNELS.GET_WRONG_DATA, async (event) => {
+    if (!currentSelectedFilePath.get()) {
+      event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
+        data: {},
+        isError: true,
+      });
+      return;
+    }
+
+    const unMappingData = findUnMappingData(currentSelectedFilePath.get());
+
+    event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
+      data: { unMappingData },
+      isError: false,
+    });
   });
 }

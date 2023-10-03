@@ -53,9 +53,27 @@ export function sendExportShopeeSheet() {
   });
 }
 
+type WrongData = {
+  unMappingData: Array<unknown>;
+};
+
+export function sendGetWrongData() {
+  ipcRenderer.send(IPC_CHANNELS.GET_WRONG_DATA);
+
+  return new Promise<WrongData>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.GET_WRONG_DATA_RESPONSE,
+      (_event, data: WrongData) => {
+        resolve(data);
+      },
+    );
+  });
+}
+
 export default {
   onceExcelData,
   sendSelectExcelFile,
   sendExportDefaultSheet,
   sendExportShopeeSheet,
+  sendGetWrongData,
 };

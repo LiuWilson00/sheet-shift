@@ -37,7 +37,7 @@ const googleSheetConnectionSetting =
     spreadsheet_id: '',
   });
 export const tariffCodeSheet = new DataStore<TariffCodeSheet[]>([]);
-export const adressSheet = new DataStore<AddressSheet[]>([]);
+export const addressSheet = new DataStore<AddressSheet[]>([]);
 export const systemSettingSheets = new DataStore<SystemSettingSheets[]>([]);
 
 export function getGoogleSheetAPISetting():
@@ -192,8 +192,8 @@ export async function initGoogleSheetData(cl: JWT) {
     tariffCodeSheet.set(
       getDataByRangeName<TariffCodeSheet>(data, SheetRangeName.TariffCodeSheet),
     );
-    adressSheet.set(
-      getDataByRangeName<AddressSheet>(data, SheetRangeName.Adress),
+    addressSheet.set(
+      getDataByRangeName<AddressSheet>(data, SheetRangeName.Address),
     );
     systemSettingSheets.set(
       getDataByRangeName<SystemSettingSheets>(
