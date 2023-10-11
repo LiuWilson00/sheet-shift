@@ -111,7 +111,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                   name="SYSTEM_SETTING--UNIT_TRANSLATE_LIMIT"
                   value={settings.SYSTEM_SETTING.UNIT_TRANSLATE_LIMIT.toString()}
                   validationFn={validateNumber}
-                  type='number'
+                  type="number"
                   onChange={(e) => {
                     updateSettings({
                       ...settings,
@@ -127,7 +127,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                   name="SYSTEM_SETTING--KPC_NUMBER"
                   value={settings.SYSTEM_SETTING.KPC_NUMBER.toString()}
                   validationFn={validateNumber}
-                  type='number'
+                  type="number"
                   onChange={(e) => {
                     updateSettings({
                       ...settings,
@@ -193,6 +193,24 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                     });
                   }}
                 />
+
+                <NumberRange
+                  label="調整倍率"
+                  value={settings.DEFAULT_PRICE_SETTING.ADJUSTMENT_RATE}
+                  onChange={(value) => {
+                    updateSettings({
+                      ...settings,
+                      DEFAULT_PRICE_SETTING: {
+                        ...settings.DEFAULT_PRICE_SETTING,
+                        ADJUSTMENT_RATE: value,
+                      },
+                    });
+                  }}
+                  needParseFloat={true}
+                />
+                <span style={{ color: 'gray', fontSize: 12 }}>
+                  調整倍率會確保每個物品總金額欄位有一點偏差，乘上一個隨機的倍率
+                </span>
               </div>
             );
           }}

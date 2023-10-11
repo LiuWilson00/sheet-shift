@@ -153,4 +153,9 @@ export const columnOrder = [
     valueKey: ExcelColumnKeys.Mark,
     columnIndex: 30,
   },
+  // {
+  //   headerKey: ExcelColumnKeys.index,
+  //   valueKey: ExcelColumnKeys.index,
+  //   columnIndex: 31,
+  // },
 ];

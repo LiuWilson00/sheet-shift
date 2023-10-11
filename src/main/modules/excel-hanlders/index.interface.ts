@@ -28,6 +28,7 @@ export enum ExcelColumnKeys {
 
   RealProductName = '正確品名',
   ProductClassNumber = '貨品分類編號',
+  index = 'index',
 }
 
 export type SheetData = {

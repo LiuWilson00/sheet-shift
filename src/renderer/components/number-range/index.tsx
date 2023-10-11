@@ -10,6 +10,7 @@ interface NumberRangeProps {
   minLabel?: string;
   maxLabel?: string;
   name?: string;
+  needParseFloat?: boolean;
 }
 
 const NumberRange: React.FC<NumberRangeProps> = ({
@@ -21,6 +22,7 @@ const NumberRange: React.FC<NumberRangeProps> = ({
   minLabel = 'Min',
   maxLabel = 'Max',
   name,
+  needParseFloat = false,
 }) => {
   const [min, setMin] = useState<string>(
     String(value ? value[0] : defaultValue[0]),
@@ -38,8 +40,10 @@ const NumberRange: React.FC<NumberRangeProps> = ({
   }, [value]);
 
   const handleBlur = () => {
-    const minNum = parseInt(min, 10);
-    const maxNum = parseInt(max, 10);
+    const parseFn = needParseFloat ? parseFloat : parseInt;
+
+    const minNum = parseFn(min, 10);
+    const maxNum = parseFn(max, 10);
 
     if (!isNaN(minNum) && !isNaN(maxNum)) {
       const newRange: [number, number] = [minNum, maxNum];

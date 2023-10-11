@@ -25,10 +25,26 @@ export async function processExcelData(filePath: string) {
   });
   const preDebugedData = dataPreDebuggingProcess(originalData);
 
+  const groupedData = groupExcelData(preDebugedData);
+  // console.log('groupedData', groupedData.map((item) => item['index']));
+  const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
+  const dataWithRecipientAndRealName = processRecipientDetails(
+    dataBeforeSummaryUpdate,
+  );
+
+  return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);
+}
+export async function processExcelDataShopee(filePath: string) {
+  const productNameMap = tariffCodeSheet.get();
+  const originalData: SheetData[] = excelToJSON(filePath, {
+    xlsxOpts: { range: 2 },
+  });
+  const preDebugedData = dataPreDebuggingProcess(originalData);
 
   const groupedData = groupExcelData(preDebugedData);
-
-  const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
+  // console.log('groupedData', groupedData.map((item) => item['index']));
+  const dataBeforeSummaryUpdate =
+    summarizeAndUpdateGroupedDataShopee(groupedData);
   const dataWithRecipientAndRealName = processRecipientDetails(
     dataBeforeSummaryUpdate,
   );
@@ -38,13 +54,14 @@ export async function processExcelData(filePath: string) {
 
 export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
   const datazeroPadded = zeroPaddingTotalBoxes(data);
-  const dataFilledDown = fillDownShippingOrderNumber(datazeroPadded);
-  return dataFilledDown;
+  const dataFilledDown = fillDownProcess(datazeroPadded);
+  const dataWithIndex = dataAddIndex(dataFilledDown);
+  return dataWithIndex;
 
   function zeroPaddingTotalBoxes(data: SheetData[]) {
     return data.map((entry) => {
       const totalBoxes = entry[ExcelColumnKeys.TotalBoxes];
-     
+
       if (totalBoxes === '' || totalBoxes === undefined) {
         const newTotalBoxes = 0;
         return {
@@ -56,20 +73,49 @@ export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
     });
   }
 
-  function fillDownShippingOrderNumber(data: SheetData[]) {
-    let previousShippingOrderNumber: string | number = '';
-    return data.map((entry) => {
-      const shippingOrderNumber = entry[ExcelColumnKeys.ShippingOrderNumber];
-      if (shippingOrderNumber === '') {
-        return {
-          ...entry,
-          [ExcelColumnKeys.ShippingOrderNumber]: previousShippingOrderNumber,
-        };
-      }
-      previousShippingOrderNumber = shippingOrderNumber;
-      return entry;
+  function fillDownProcess(data: SheetData[]) {
+    const fillDownColumnKeys: ExcelColumnKeys[] = [
+      ExcelColumnKeys.ShippingOrderNumber,
+      ExcelColumnKeys.Specification,
+      ExcelColumnKeys.Brand,
+      ExcelColumnKeys.QuantityUnit,
+      ExcelColumnKeys.TradeConditionCode,
+      ExcelColumnKeys.CurrencyCode,
+      ExcelColumnKeys.BoxUnit,
+      ExcelColumnKeys.CountryOfOriginCode,
+      ExcelColumnKeys.Mark,
+    ];
+
+    let newData = data;
+    fillDownColumnKeys.forEach((columnKey) => {
+      newData = fillDownColumn(newData, columnKey);
+    });
+    return newData;
+  }
+
+  function dataAddIndex(data: SheetData[]) {
+    return data.map((entry, index) => {
+      return {
+        ...entry,
+        index,
+      };
     });
   }
+}
+function fillDownColumn(data: SheetData[], columnKey: ExcelColumnKeys) {
+  let previousValue: string | number = '';
+  return data.map((entry) => {
+    const value = entry[columnKey];
+
+    if (value === '' || value === undefined) {
+      return {
+        ...entry,
+        [columnKey]: previousValue,
+      };
+    }
+    previousValue = value;
+    return entry;
+  });
 }
 
 export function mappingRealProductName(
@@ -117,7 +163,7 @@ export function groupExcelData(originalData: SheetData[]) {
 
       const { newQuantity, newUnit } = unitTranslate(totalQuantity);
 
-      const newNetWeight = totalNetWeight - NET_WEIGHT_INTERVAL;
+      const newNetWeight = Number(totalNetWeight) - NET_WEIGHT_INTERVAL;
 
       return {
         ...datas[0],
@@ -137,10 +183,10 @@ export function groupExcelData(originalData: SheetData[]) {
     let totalBoxes = 0;
 
     datas.forEach((data) => {
-      totalNetWeight += Number(data[ExcelColumnKeys.NetWeight]);
-      totalGrossWeight += Number(data[ExcelColumnKeys.GrossWeight]);
-      totalQuantity += Number(data[ExcelColumnKeys.Quantity]);
-      totalBoxes += Number(data[ExcelColumnKeys.TotalBoxes]);
+      totalNetWeight += Number(data[ExcelColumnKeys.NetWeight] ?? 0);
+      totalGrossWeight += Number(data[ExcelColumnKeys.GrossWeight] ?? 0);
+      totalQuantity += Number(data[ExcelColumnKeys.Quantity] ?? 0);
+      totalBoxes += Number(data[ExcelColumnKeys.TotalBoxes] ?? 0);
     });
 
     return {
@@ -204,6 +250,9 @@ function getSummaries(
 ): {
   summaryGrossWeight: number;
   summaryBoxNumber: number;
+  summaryTotalAmount: number;
+  summaryTotalQuantity: number;
+  summaryTotalNetWeight?: number;
 } {
   return sameNameDataIndex.reduce(
     (acc, index) => ({
@@ -212,10 +261,22 @@ function getSummaries(
         Number(data[index][ExcelColumnKeys.GrossWeight]),
       summaryBoxNumber:
         acc.summaryBoxNumber + Number(data[index][ExcelColumnKeys.TotalBoxes]),
+      summaryTotalAmount:
+        acc.summaryTotalAmount +
+        Number(data[index][ExcelColumnKeys.TotalAmount]),
+      summaryTotalQuantity:
+        acc.summaryTotalQuantity +
+        Number(data[index][ExcelColumnKeys.Quantity]),
+      summaryTotalNetWeight:
+        acc.summaryTotalNetWeight +
+        Number(data[index][ExcelColumnKeys.NetWeight]),
     }),
     {
       summaryGrossWeight: 0,
       summaryBoxNumber: 0,
+      summaryTotalAmount: 0,
+      summaryTotalQuantity: 0,
+      summaryTotalNetWeight: 0,
     },
   );
 }
@@ -285,6 +346,47 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
   return newGroupedData;
 }
 
+function summarizeAndUpdateGroupedDataShopee(
+  groupedData: SheetData[],
+): SheetData[] {
+  const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
+  const distinctShippingOrderNumber = getDistinctValuesForKey<ExcelColumnKeys>(
+    groupedData,
+    ExcelColumnKeys.ShippingOrderNumber,
+  );
+
+  distinctShippingOrderNumber.forEach((name) => {
+    const sameNameDataIndex = findAllIndex(
+      groupedData,
+      (item) => item[ExcelColumnKeys.ShippingOrderNumber] === name,
+    );
+    const {
+      summaryGrossWeight,
+      summaryBoxNumber,
+      summaryTotalAmount,
+      summaryTotalQuantity,
+      summaryTotalNetWeight,
+    } = getSummaries(sameNameDataIndex, groupedData);
+
+    sameNameDataIndex.forEach((index, numberOfIndex) => {
+      if (numberOfIndex === 0) {
+        newGroupedData[index][ExcelColumnKeys.GrossWeight] = summaryGrossWeight;
+        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = summaryBoxNumber;
+        newGroupedData[index][ExcelColumnKeys.TotalAmount] = summaryTotalAmount;
+        newGroupedData[index][ExcelColumnKeys.Quantity] = summaryTotalQuantity;
+        newGroupedData[index][ExcelColumnKeys.NetWeight] =
+          summaryTotalNetWeight as number;
+      } else {
+        newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
+        newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
+        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = '';
+      }
+    });
+  });
+
+  return newGroupedData;
+}
+
 function processRecipientDetails(data: SheetData[]): SheetData[] {
   return data.map((entry) => {
     return {
@@ -338,5 +440,3 @@ function getRandomAddress(addressData: AddressSheet[]): string {
   const randomIndex = getRandomIntBetween(0, addressData.length - 1);
   return addressData[randomIndex][AddressSheetColumnKeys.Address];
 }
-
-

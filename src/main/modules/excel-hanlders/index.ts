@@ -7,7 +7,7 @@ import {
   saveProcessedData,
   selectExcelFile,
 } from './services/excel-io.service';
-import { processExcelData } from './services/data-process.service';
+import { processExcelData, processExcelDataShopee } from './services/data-process.service';
 import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { DataStore } from '../../utils/data-store.tool';
 import { findUnMappingData } from './services/excel-data-debugging';
@@ -81,7 +81,7 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
   electronIpcMain.on(IPC_CHANNELS.EXPORT_SHOPEE_SHEET, async (event) => {
     try {
       if (currentSelectedFilePath.get()) {
-        const completedData = await processExcelData(
+        const completedData = await processExcelDataShopee(
           currentSelectedFilePath.get(),
         );
         const newFilePath = await saveProcessedData(
