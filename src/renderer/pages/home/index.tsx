@@ -42,7 +42,6 @@ function Hello() {
       return;
     }
 
-  
     showDialog({
       content: `檔案已匯出，檔案路徑：${result.path}`,
       onConfirm: () => {
@@ -50,6 +49,18 @@ function Hello() {
       },
     });
   };
+
+  function exportShopeeFormat(): void {
+    showLoading();
+    window.electron.excelBridge.sendExportShopeeSheet();
+    hideLoading();
+    showDialog({
+      content: `檔案已匯出，檔案路徑：${selectFilePath}`,
+      onConfirm: () => {
+        hideDialog();
+      },
+    });
+  }
 
   return (
     <div className="home-context">
@@ -79,7 +90,9 @@ function Hello() {
             <button className="export-button" onClick={exportDefualtFormat}>
               匯出成預設格式
             </button>
-            <button className="export-button">匯出成蝦皮格式</button>
+            <button className="export-button" onClick={exportShopeeFormat}>
+              匯出成蝦皮格式
+            </button>
           </div>
           <a
             href="#"

@@ -25,7 +25,8 @@ export enum ExcelColumnKeys {
   SenderPhoneNumber = '寄件人電話',
   SenderEnglishAddress = '寄件人英文地址',
   // 輸出新增的欄位
-
+  OriginalAmount = '原始金額',
+  ProcessedAmount = '加總金額',
   RealProductName = '正確品名',
   ProductClassNumber = '貨品分類編號',
   index = 'index',

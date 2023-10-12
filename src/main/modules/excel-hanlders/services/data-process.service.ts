@@ -26,7 +26,6 @@ export async function processExcelData(filePath: string) {
   const preDebugedData = dataPreDebuggingProcess(originalData);
 
   const groupedData = groupExcelData(preDebugedData);
-  // console.log('groupedData', groupedData.map((item) => item['index']));
   const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
   const dataWithRecipientAndRealName = processRecipientDetails(
     dataBeforeSummaryUpdate,
@@ -41,15 +40,14 @@ export async function processExcelDataShopee(filePath: string) {
   });
   const preDebugedData = dataPreDebuggingProcess(originalData);
 
-  const groupedData = groupExcelData(preDebugedData);
-  // console.log('groupedData', groupedData.map((item) => item['index']));
+  const groupedData = groupExcelDataShopee(preDebugedData);
   const dataBeforeSummaryUpdate =
     summarizeAndUpdateGroupedDataShopee(groupedData);
-  const dataWithRecipientAndRealName = processRecipientDetails(
-    dataBeforeSummaryUpdate,
-  );
+  // const dataWithRecipientAndRealName = processRecipientDetails(
+  //   dataBeforeSummaryUpdate,
+  // );
 
-  return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);
+  return mappingRealProductName(dataBeforeSummaryUpdate, productNameMap);
 }
 
 export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
@@ -105,8 +103,7 @@ export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
 function fillDownColumn(data: SheetData[], columnKey: ExcelColumnKeys) {
   let previousValue: string | number = '';
   return data.map((entry) => {
-    const value = entry[columnKey];
-
+    const value = String(entry[columnKey]).trim();
     if (value === '' || value === undefined) {
       return {
         ...entry,
@@ -175,6 +172,83 @@ export function groupExcelData(originalData: SheetData[]) {
       };
     },
   );
+
+  function getDataSummary(datas: SheetData[]) {
+    let totalNetWeight = 0;
+    let totalGrossWeight = 0;
+    let totalQuantity = 0;
+    let totalBoxes = 0;
+
+    datas.forEach((data) => {
+      totalNetWeight += Number(data[ExcelColumnKeys.NetWeight] ?? 0);
+      totalGrossWeight += Number(data[ExcelColumnKeys.GrossWeight] ?? 0);
+      totalQuantity += Number(data[ExcelColumnKeys.Quantity] ?? 0);
+      totalBoxes += Number(data[ExcelColumnKeys.TotalBoxes] ?? 0);
+    });
+
+    return {
+      totalNetWeight,
+      totalGrossWeight,
+      totalQuantity,
+      totalBoxes,
+    };
+  }
+
+  function unitTranslate(totalQuantity: number): {
+    newUnit: 'KPC' | 'PCE';
+    newQuantity: number;
+  } {
+    if (totalQuantity > UNIT_TRANSLATE_LIMIT) {
+      return {
+        newUnit: 'KPC',
+        newQuantity: totalQuantity / KPC_NUMBER,
+      };
+    }
+    return {
+      newUnit: 'PCE',
+      newQuantity: totalQuantity,
+    };
+  }
+}
+
+export function groupExcelDataShopee(originalData: SheetData[]) {
+  const systemSetting = getSystemSetting();
+  const { KPC_NUMBER, UNIT_TRANSLATE_LIMIT } = systemSetting.SYSTEM_SETTING;
+  return jsonGroupBy(
+    originalData,
+    [ExcelColumnKeys.ShippingOrderNumber, ExcelColumnKeys.ProductName],
+    (datas) => {
+      const { totalNetWeight, totalGrossWeight, totalQuantity, totalBoxes } =
+        getDataSummary(datas);
+      const minUnitPrice = findMinUnitPrice(datas);
+      const newPrice =
+        minUnitPrice < 10 ? getRandomIntBetween(10, 20) : minUnitPrice;
+
+      const { newQuantity, newUnit } = unitTranslate(totalQuantity);
+
+      return {
+        ...datas[0],
+        [ExcelColumnKeys.UnitPrice]: newPrice,
+        [ExcelColumnKeys.QuantityUnit]: newUnit,
+        [ExcelColumnKeys.NetWeight]: totalNetWeight,
+        [ExcelColumnKeys.GrossWeight]: totalGrossWeight,
+        [ExcelColumnKeys.Quantity]: newQuantity,
+        [ExcelColumnKeys.TotalBoxes]: totalBoxes,
+        [ExcelColumnKeys.TotalAmount]: newPrice * newQuantity,
+      };
+    },
+  );
+
+  function findMinUnitPrice(datas: SheetData[]) {
+    let minUnitPrice = Infinity;
+    datas.forEach((data) => {
+      const unitPrice = Number(data[ExcelColumnKeys.UnitPrice]);
+      if (unitPrice < minUnitPrice) {
+        minUnitPrice = unitPrice;
+      }
+    });
+    return minUnitPrice;
+  }
 
   function getDataSummary(datas: SheetData[]) {
     let totalNetWeight = 0;
@@ -363,19 +437,15 @@ function summarizeAndUpdateGroupedDataShopee(
     const {
       summaryGrossWeight,
       summaryBoxNumber,
-      summaryTotalAmount,
-      summaryTotalQuantity,
-      summaryTotalNetWeight,
+      // summaryTotalAmount,
+      // summaryTotalQuantity,
+      // summaryTotalNetWeight,
     } = getSummaries(sameNameDataIndex, groupedData);
 
     sameNameDataIndex.forEach((index, numberOfIndex) => {
       if (numberOfIndex === 0) {
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = summaryGrossWeight;
         newGroupedData[index][ExcelColumnKeys.TotalBoxes] = summaryBoxNumber;
-        newGroupedData[index][ExcelColumnKeys.TotalAmount] = summaryTotalAmount;
-        newGroupedData[index][ExcelColumnKeys.Quantity] = summaryTotalQuantity;
-        newGroupedData[index][ExcelColumnKeys.NetWeight] =
-          summaryTotalNetWeight as number;
       } else {
         newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
