@@ -50,12 +50,23 @@ function Hello() {
     });
   };
 
-  function exportShopeeFormat(): void {
+  async function exportShopeeFormat() {
     showLoading();
-    window.electron.excelBridge.sendExportShopeeSheet();
+    const result = await window.electron.excelBridge.sendExportShopeeSheet();
     hideLoading();
+    console.log(result);
+    if (result.isError) {
+      showDialog({
+        content: '匯出失敗，請確認檔案是否正確。',
+        onConfirm: () => {
+          hideDialog();
+        },
+      });
+      return;
+    }
+
     showDialog({
-      content: `檔案已匯出，檔案路徑：${selectFilePath}`,
+      content: `檔案已匯出，檔案路徑：${result.path}`,
       onConfirm: () => {
         hideDialog();
       },

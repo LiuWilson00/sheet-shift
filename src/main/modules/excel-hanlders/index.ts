@@ -77,7 +77,6 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
     }
   });
 
-  // TODO: 這裡要改成處理 shopee 的資料
   electronIpcMain.on(IPC_CHANNELS.EXPORT_SHOPEE_SHEET, async (event) => {
     try {
       if (currentSelectedFilePath.get()) {
@@ -87,6 +86,7 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
         const newFilePath = await saveProcessedData(
           completedData,
           currentSelectedFilePath.get(),
+          true,
         );
         event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
           path: newFilePath,

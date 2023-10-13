@@ -53,6 +53,7 @@ export async function processExcelDataShopee(filePath: string) {
 export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
   const datazeroPadded = zeroPaddingTotalBoxes(data);
   const dataFilledDown = fillDownProcess(datazeroPadded);
+
   const dataWithIndex = dataAddIndex(dataFilledDown);
   return dataWithIndex;
 
@@ -103,7 +104,10 @@ export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
 function fillDownColumn(data: SheetData[], columnKey: ExcelColumnKeys) {
   let previousValue: string | number = '';
   return data.map((entry) => {
-    const value = String(entry[columnKey]).trim();
+    const value =
+      entry[columnKey] === undefined || entry[columnKey] === undefined
+        ? ''
+        : String(entry[columnKey]).trim();
     if (value === '' || value === undefined) {
       return {
         ...entry,
@@ -218,8 +222,13 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
     originalData,
     [ExcelColumnKeys.ShippingOrderNumber, ExcelColumnKeys.ProductName],
     (datas) => {
-      const { totalNetWeight, totalGrossWeight, totalQuantity, totalBoxes } =
-        getDataSummary(datas);
+      const {
+        totalNetWeight,
+        totalGrossWeight,
+        totalQuantity,
+        totalBoxes,
+        summaryTotalAmount,
+      } = getDataSummary(datas);
       const minUnitPrice = findMinUnitPrice(datas);
       const newPrice =
         minUnitPrice < 10 ? getRandomIntBetween(10, 20) : minUnitPrice;
@@ -235,6 +244,7 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
         [ExcelColumnKeys.Quantity]: newQuantity,
         [ExcelColumnKeys.TotalBoxes]: totalBoxes,
         [ExcelColumnKeys.TotalAmount]: newPrice * newQuantity,
+        [ExcelColumnKeys.OriginalAmount]: summaryTotalAmount,
       };
     },
   );
@@ -255,12 +265,14 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
     let totalGrossWeight = 0;
     let totalQuantity = 0;
     let totalBoxes = 0;
+    let summaryTotalAmount = 0;
 
     datas.forEach((data) => {
       totalNetWeight += Number(data[ExcelColumnKeys.NetWeight] ?? 0);
       totalGrossWeight += Number(data[ExcelColumnKeys.GrossWeight] ?? 0);
       totalQuantity += Number(data[ExcelColumnKeys.Quantity] ?? 0);
       totalBoxes += Number(data[ExcelColumnKeys.TotalBoxes] ?? 0);
+      summaryTotalAmount += Number(data[ExcelColumnKeys.TotalAmount] ?? 0);
     });
 
     return {
@@ -268,6 +280,7 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
       totalGrossWeight,
       totalQuantity,
       totalBoxes,
+      summaryTotalAmount,
     };
   }
 
@@ -321,38 +334,26 @@ function calculateOriginalAmountAndUnitPrice(
 function getSummaries(
   sameNameDataIndex: number[],
   data: SheetData[],
+  keys: ExcelColumnKeys[],
 ): {
-  summaryGrossWeight: number;
-  summaryBoxNumber: number;
-  summaryTotalAmount: number;
-  summaryTotalQuantity: number;
-  summaryTotalNetWeight?: number;
+  [key in ExcelColumnKeys]: number;
 } {
-  return sameNameDataIndex.reduce(
-    (acc, index) => ({
-      summaryGrossWeight:
-        acc.summaryGrossWeight +
-        Number(data[index][ExcelColumnKeys.GrossWeight]),
-      summaryBoxNumber:
-        acc.summaryBoxNumber + Number(data[index][ExcelColumnKeys.TotalBoxes]),
-      summaryTotalAmount:
-        acc.summaryTotalAmount +
-        Number(data[index][ExcelColumnKeys.TotalAmount]),
-      summaryTotalQuantity:
-        acc.summaryTotalQuantity +
-        Number(data[index][ExcelColumnKeys.Quantity]),
-      summaryTotalNetWeight:
-        acc.summaryTotalNetWeight +
-        Number(data[index][ExcelColumnKeys.NetWeight]),
-    }),
-    {
-      summaryGrossWeight: 0,
-      summaryBoxNumber: 0,
-      summaryTotalAmount: 0,
-      summaryTotalQuantity: 0,
-      summaryTotalNetWeight: 0,
-    },
-  );
+  const initData = keys.reduce((acc, key) => {
+    return {
+      ...acc,
+      [key]: 0,
+    };
+  }, {}) as { [key in ExcelColumnKeys]: number };
+
+  return sameNameDataIndex.reduce((acc, index) => {
+    const currentData = data[index];
+
+    keys.forEach((key) => {
+      acc[key] += Number(currentData[key]);
+    });
+
+    return acc;
+  }, initData);
 }
 
 function setSteetPrices(
@@ -384,16 +385,16 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
       groupedData,
       (item) => item[ExcelColumnKeys.ShippingOrderNumber] === name,
     );
-    const { summaryGrossWeight, summaryBoxNumber } = getSummaries(
-      sameNameDataIndex,
-      groupedData,
-    );
+    const summaries = getSummaries(sameNameDataIndex, groupedData, [
+      ExcelColumnKeys.GrossWeight,
+      ExcelColumnKeys.TotalBoxes,
+    ]);
 
     const systemSetting = getSystemSetting();
 
     const totalItemCount = sameNameDataIndex.length;
     const totalAmount = calculateTotalAmountByBoxes(
-      summaryBoxNumber,
+      summaries[ExcelColumnKeys.TotalBoxes],
       systemSetting.DEFAULT_PRICE_SETTING,
     );
 
@@ -407,8 +408,10 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
       );
 
       if (numberOfIndex === 0) {
-        newGroupedData[index][ExcelColumnKeys.GrossWeight] = summaryGrossWeight;
-        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = summaryBoxNumber;
+        newGroupedData[index][ExcelColumnKeys.GrossWeight] =
+          summaries[ExcelColumnKeys.GrossWeight];
+        newGroupedData[index][ExcelColumnKeys.TotalBoxes] =
+          summaries[ExcelColumnKeys.TotalBoxes];
       } else {
         newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
@@ -434,22 +437,29 @@ function summarizeAndUpdateGroupedDataShopee(
       groupedData,
       (item) => item[ExcelColumnKeys.ShippingOrderNumber] === name,
     );
-    const {
-      summaryGrossWeight,
-      summaryBoxNumber,
-      // summaryTotalAmount,
-      // summaryTotalQuantity,
-      // summaryTotalNetWeight,
-    } = getSummaries(sameNameDataIndex, groupedData);
+    const summaries = getSummaries(sameNameDataIndex, groupedData, [
+      ExcelColumnKeys.GrossWeight,
+      ExcelColumnKeys.TotalBoxes,
+      ExcelColumnKeys.OriginalAmount,
+      ExcelColumnKeys.TotalAmount,
+    ]);
 
     sameNameDataIndex.forEach((index, numberOfIndex) => {
       if (numberOfIndex === 0) {
-        newGroupedData[index][ExcelColumnKeys.GrossWeight] = summaryGrossWeight;
-        newGroupedData[index][ExcelColumnKeys.TotalBoxes] = summaryBoxNumber;
+        newGroupedData[index][ExcelColumnKeys.GrossWeight] =
+          summaries[ExcelColumnKeys.GrossWeight];
+        newGroupedData[index][ExcelColumnKeys.TotalBoxes] =
+          summaries[ExcelColumnKeys.TotalBoxes];
+        newGroupedData[index][ExcelColumnKeys.OriginalAmount] =
+          summaries[ExcelColumnKeys.OriginalAmount];
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] =
+          summaries[ExcelColumnKeys.TotalAmount];
       } else {
         newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
         newGroupedData[index][ExcelColumnKeys.TotalBoxes] = '';
+        newGroupedData[index][ExcelColumnKeys.OriginalAmount] = '';
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] = '';
       }
     });
   });

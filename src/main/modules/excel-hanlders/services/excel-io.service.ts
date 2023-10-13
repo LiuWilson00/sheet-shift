@@ -5,7 +5,12 @@ import {
 import path from 'path';
 import { ExcelColumnKeys, SheetData } from '../index.interface';
 import { Cell, Workbook, Worksheet } from 'exceljs';
-import { ORIGINAL_DATA_TEMPLATE_PATH, columnOrder } from '../index.const';
+import {
+  ORIGINAL_DATA_TEMPLATE_PATH,
+  SHOPEE_DATA_TEMPLATE_PATH,
+  defaultColumnOrder,
+  shopeeColumnOrder,
+} from '../index.const';
 
 export async function selectExcelFile(mainWindow: electronBrowserWindow) {
   const result = await electronDialog.showOpenDialog(mainWindow, {
@@ -22,20 +27,37 @@ export async function selectExcelFile(mainWindow: electronBrowserWindow) {
 export async function saveProcessedData(
   completedData: SheetData[],
   filePath: string,
+  isShopee: boolean = false,
 ) {
   const newFilePath = generateNewFileName(filePath);
-  const completedWorkbook = await addJsonToExcelTemplate(completedData);
+  const completedWorkbook = await addJsonToExcelTemplate(completedData, {
+    filePath: isShopee
+      ? SHOPEE_DATA_TEMPLATE_PATH
+      : ORIGINAL_DATA_TEMPLATE_PATH,
+    columnOrder: isShopee ? shopeeColumnOrder : defaultColumnOrder,
+  });
   await addStatisticsSheet(completedWorkbook, completedData);
   await completedWorkbook.xlsx.writeFile(newFilePath);
   return newFilePath;
 }
+type JsonToExcelOptions = {
+  startRow?: number;
+  filePath?: string;
+  columnOrder?: typeof defaultColumnOrder;
+};
 async function addJsonToExcelTemplate(
   jsonData: SheetData[],
-  startRow: number = 3,
+  options: JsonToExcelOptions = {},
 ): Promise<Workbook> {
+  const defaultOptions = {
+    startRow: 3,
+    filePath: ORIGINAL_DATA_TEMPLATE_PATH,
+    columnOrder: defaultColumnOrder,
+  };
+  const { startRow, filePath, columnOrder } = { ...defaultOptions, ...options };
   // 1. 讀取現有的Excel模板
   const workbook = new Workbook();
-  await workbook.xlsx.readFile(ORIGINAL_DATA_TEMPLATE_PATH);
+  await workbook.xlsx.readFile(filePath);
 
   // 2. 獲取第一個工作表
   const worksheet: Worksheet = workbook.worksheets[0];
