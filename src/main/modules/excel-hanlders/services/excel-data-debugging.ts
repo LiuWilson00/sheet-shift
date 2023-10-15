@@ -17,13 +17,7 @@ import {
 
 export function findUnMappingData(filePath: string) {
   const productNameMap = getProductNameMap();
-  console.log(
-    'productNameMap',
-    productNameMap.find(
-      (map) =>
-        map[ProductNameMappingColumnKeys.OriginalProductName] === 'Opp袋',
-    ),
-  );
+
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
   });
