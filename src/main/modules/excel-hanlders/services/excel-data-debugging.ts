@@ -1,20 +1,54 @@
-import { excelToJSON, tariffCodeSheet } from "../../../utils";
-import { TariffCodeSheetColumnKeys } from "../../../utils/google-sheets.tool/index.interface";
-import { ExcelColumnKeys, SheetData } from "../index.interface";
+import { excelToJSON, jsonGroupBy, tariffCodeSheet } from '../../../utils';
+import {
+  getProductNameMap,
+  systemTariffCodeSheet,
+} from '../../../utils/google-sheets.tool';
+import {
+  ExcelColumnKeys,
+  ProductNameMappingColumnKeys,
+  SheetData,
+} from '../index.interface';
+import {
+  dataAddIndex,
+  deleteNullProductNameData,
+  fillDownColumn,
+  trimAllData,
+} from './data-process.service';
 
+export function findUnMappingData(filePath: string) {
+  const productNameMap = getProductNameMap();
+  console.log(
+    'productNameMap',
+    productNameMap.find(
+      (map) =>
+        map[ProductNameMappingColumnKeys.OriginalProductName] === 'Opp袋',
+    ),
+  );
+  const originalData: SheetData[] = excelToJSON(filePath, {
+    xlsxOpts: { range: 2 },
+  });
+  const trimedData = trimAllData(originalData);
+  const dataWithIndex = dataAddIndex(trimedData);
+  const fillDownShopingOrderNumber = fillDownColumn(
+    dataWithIndex,
+    ExcelColumnKeys.ShippingOrderNumber,
+  );
+  const dtatDeleteNullProductName = deleteNullProductNameData(
+    fillDownShopingOrderNumber,
+  );
+  const dataGrouped = jsonGroupBy(
+    dtatDeleteNullProductName,
+    [ExcelColumnKeys.ProductName],
+    (datas) => ({ ...datas[0] }),
+  );
 
-export function findUnMappingData(filePath: string){
+  const unMappingData = dataGrouped.filter((entry) => {
+    const productName = entry[ExcelColumnKeys.ProductName];
+    return !productNameMap.find(
+      (map) =>
+        map[ProductNameMappingColumnKeys.OriginalProductName] === productName,
+    );
+  });
 
-    const productNameMap = tariffCodeSheet.get();
-
-    const originalData: SheetData[] = excelToJSON(filePath, {
-      xlsxOpts: { range: 2 },
-    });
-
-    const unMappingData = originalData.filter(entry => {
-        const productName = entry[ExcelColumnKeys.ProductName];
-        return !productNameMap.find(map => map[TariffCodeSheetColumnKeys.OriginalProductName] === productName);
-    })
-
-    return unMappingData;
+  return unMappingData;
 }

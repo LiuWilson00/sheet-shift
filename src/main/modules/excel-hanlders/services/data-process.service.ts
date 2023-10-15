@@ -17,13 +17,20 @@ import {
   ProductNameMappingColumnKeys,
 } from '../index.interface';
 import { DefaultPriceSetting } from '../../../utils/setting.tool';
+import {
+  getProductNameMap,
+  systemTariffCodeSheet,
+} from '../../../utils/google-sheets.tool';
 
 export async function processExcelData(filePath: string) {
-  const productNameMap = tariffCodeSheet.get();
+  const productNameMap = getProductNameMap();
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
   });
-  const preDebugedData = dataPreDebuggingProcess(originalData);
+  const trimedData = trimAllData(originalData);
+  const preDebugedData = deleteNullProductNameData(
+    dataPreDebuggingProcess(trimedData),
+  );
 
   const groupedData = groupExcelData(preDebugedData);
   const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
@@ -34,11 +41,14 @@ export async function processExcelData(filePath: string) {
   return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);
 }
 export async function processExcelDataShopee(filePath: string) {
-  const productNameMap = tariffCodeSheet.get();
+  const productNameMap = getProductNameMap();
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
   });
-  const preDebugedData = dataPreDebuggingProcess(originalData);
+  const trimedData = trimAllData(originalData);
+  const preDebugedData = deleteNullProductNameData(
+    dataPreDebuggingProcess(trimedData),
+  );
 
   const groupedData = groupExcelDataShopee(preDebugedData);
   const dataBeforeSummaryUpdate =
@@ -91,17 +101,18 @@ export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
     });
     return newData;
   }
-
-  function dataAddIndex(data: SheetData[]) {
-    return data.map((entry, index) => {
-      return {
-        ...entry,
-        index,
-      };
-    });
-  }
 }
-function fillDownColumn(data: SheetData[], columnKey: ExcelColumnKeys) {
+
+export function dataAddIndex(data: SheetData[]) {
+  return data.map((entry, index) => {
+    return {
+      ...entry,
+      index,
+    };
+  });
+}
+
+export function fillDownColumn(data: SheetData[], columnKey: ExcelColumnKeys) {
   let previousValue: string | number = '';
   return data.map((entry) => {
     const value =
@@ -519,4 +530,28 @@ function formatRecipientPhone(phone: string): string {
 function getRandomAddress(addressData: AddressSheet[]): string {
   const randomIndex = getRandomIntBetween(0, addressData.length - 1);
   return addressData[randomIndex][AddressSheetColumnKeys.Address];
+}
+
+export function deleteNullProductNameData(data: SheetData[]): SheetData[] {
+  return data.filter((entry) => {
+    return (
+      entry[ExcelColumnKeys.ProductName] !== '' &&
+      entry[ExcelColumnKeys.ProductName] !== undefined &&
+      entry[ExcelColumnKeys.ProductName] !== null
+    );
+  });
+}
+
+export function trimAllData(data: SheetData[]): SheetData[] {
+  return data.map((entry) => {
+    const newEntry = {} as SheetData;
+    Object.keys(entry).forEach((key: string) => {
+      const _key = key as keyof SheetData;
+      if (typeof entry[_key] === 'string') {
+        const value = entry[_key] as string;
+        newEntry[_key] = value.trim();
+      }
+    });
+    return { ...entry, ...newEntry };
+  });
 }

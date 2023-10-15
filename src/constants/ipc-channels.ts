@@ -30,6 +30,10 @@ export enum IPC_CHANNELS {
   EXPORT_SHOPEE_SHEET_COMPLATED = 'export-shopee-sheet-complated',
   GET_WRONG_DATA = 'get-wrong-data',
   GET_WRONG_DATA_RESPONSE = 'get-wrong-data-response',
+  ADD_NEW_PRODUCT_MAP = 'add-new-product-map',
+  ADD_NEW_PRODUCT_MAP_RESPONSE = 'add-new-product-map-response',
+  GET_PRODUCT_MAP = 'get-product-map',
+  GET_PRODUCT_MAP_RESPONSE = 'get-product-map-response',
 
   // Debug
   DEBUG_MESSAGE = 'debug-message',

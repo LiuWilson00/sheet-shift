@@ -11,12 +11,11 @@ export {
   initGoogleSheetData,
   tariffCodeSheet,
   addressSheet,
-//   systemSettingSheets,
+  //   systemSettingSheets,
 } from './google-sheets.tool';
 export {
   SystemSettingSheets,
   AddressSheet,
-  TariffCodeSheet,
 } from './google-sheets.tool/index.interface';
 
 export { getSystemSetting } from './setting.tool';

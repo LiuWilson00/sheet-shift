@@ -12,6 +12,7 @@ export enum SheetRangeName {
   Address = '地址',
   SystemSetting = '系統設定',
   template = 'Template',
+  SystemProductMap = 'system_product_map',
 }
 
 export const SHEET_RANGES = [
@@ -19,4 +20,5 @@ export const SHEET_RANGES = [
   SheetRangeName.Address,
   SheetRangeName.SystemSetting,
   SheetRangeName.template,
+  SheetRangeName.SystemProductMap,
 ];

@@ -1,0 +1,43 @@
+.data-debugging-item .data-debugging-item__wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  height: 60px;
+  border-bottom: 1px solid #e8e8e8;
+}
+.data-debugging-items {
+  height: 60vh;
+  overflow: scroll;
+}
+
+.data-debugging-item .data-debugging-item__wrapper .data-debugging-item__title {
+  flex: 1;
+}
+
+.data-debugging-item
+  .data-debugging-item__wrapper
+  .data-debugging-item__content {
+  flex: 1;
+}
+
+.data-debugging-item .data-debugging-item__wrapper .data-debugging-item__input {
+  flex: 1;
+}
+
+.data-debugging-items__title__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  height: 40px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.data-debugging-items__title__content .data-debugging-items__title__content__name {
+  flex: 1;
+}
+
+.data-debugging-items__title__content .data-debugging-items__title__content__input {
+    flex: 1;
+  }

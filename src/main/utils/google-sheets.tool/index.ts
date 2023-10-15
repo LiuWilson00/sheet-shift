@@ -6,14 +6,11 @@ import {
   SHEET_RANGES,
   SheetRangeName,
 } from './index.const';
-import {
-  TariffCodeSheet,
-  AddressSheet,
-  SystemSettingSheets,
-} from './index.interface';
+import { AddressSheet, SystemSettingSheets } from './index.interface';
 import { DataStore } from '../data-store.tool';
 import { GaxiosResponse } from 'gaxios';
 import { GoogleSheetConnectionStore } from '../../status-store';
+import { ProductNameMapping } from '../../../renderer/utils/excel.interface';
 
 export interface GoogleSheetConnectionResult {
   isConnected: boolean;
@@ -36,8 +33,14 @@ const googleSheetConnectionSetting =
     private_key: '',
     spreadsheet_id: '',
   });
-export const tariffCodeSheet = new DataStore<TariffCodeSheet[]>([]);
+export const tariffCodeSheet = new DataStore<ProductNameMapping[]>([]);
+export const systemTariffCodeSheet = new DataStore<ProductNameMapping[]>([]);
 export const addressSheet = new DataStore<AddressSheet[]>([]);
+
+export const getProductNameMap = () => [
+  ...systemTariffCodeSheet.get(),
+  ...tariffCodeSheet.get(),
+];
 export const systemSettingSheets = new DataStore<SystemSettingSheets[]>([]);
 
 export function getGoogleSheetAPISetting():
@@ -152,14 +155,12 @@ function getDataByRangeName<T>(
 ): T[] {
   const nameIndex = SHEET_RANGES.findIndex((name) => name === rangeName);
   let dataArray = data?.data?.valueRanges?.[nameIndex]?.values ?? [];
-
   if (!dataArray) {
     console.log('No data found.');
     return [];
   }
 
   const newData = originalSheetArrayToJson<T>(dataArray);
-
   return newData;
 }
 
@@ -190,7 +191,10 @@ export async function initGoogleSheetData(cl: JWT) {
     let data = await gsapi.spreadsheets.values.batchGet(opt);
 
     tariffCodeSheet.set(
-      getDataByRangeName<TariffCodeSheet>(data, SheetRangeName.TariffCodeSheet),
+      getDataByRangeName<ProductNameMapping>(
+        data,
+        SheetRangeName.TariffCodeSheet,
+      ),
     );
     addressSheet.set(
       getDataByRangeName<AddressSheet>(data, SheetRangeName.Address),
@@ -201,23 +205,60 @@ export async function initGoogleSheetData(cl: JWT) {
         SheetRangeName.SystemSetting,
       ),
     );
+    systemTariffCodeSheet.set(
+      getDataByRangeName<ProductNameMapping>(
+        data,
+        SheetRangeName.SystemProductMap,
+      ),
+    );
+
     return true;
   } catch (e) {
     console.log(e);
     return false;
   }
 }
+type JsonToSheetArrayOptions = {
+  disableAddTitle?: boolean;
+  keySorting?: string[];
+};
 
-function jsonToSheetArray(jsonArray: any[]): any[][] {
+function jsonToSheetArray(
+  jsonArray: any[],
+  options: JsonToSheetArrayOptions = {
+    disableAddTitle: false,
+    keySorting: [],
+  },
+): any[][] {
   if (!jsonArray.length) return [];
+  const { disableAddTitle, keySorting } = options;
 
   // 取得所有的標題 (keys)
   const keys = Object.keys(jsonArray[0]);
-  const result: any[][] = [keys];
+  const result: any[][] = disableAddTitle ? [] : [keys];
 
   // 轉換每一個物件成為一個陣列並加到結果中
   for (const obj of jsonArray) {
-    const row = keys.map((key) => obj[key]);
+    const row = keys
+      .sort((keyA, keyB) => {
+        if (!keySorting) return 0;
+
+        if (keySorting.length) {
+          const indexA = keySorting.findIndex((key) => key === keyA);
+          const indexB = keySorting.findIndex((key) => key === keyB);
+
+          if (indexA > indexB) {
+            return 1;
+          } else if (indexA < indexB) {
+            return -1;
+          } else {
+            return 0;
+          }
+        } else {
+          return 0;
+        }
+      })
+      .map((key) => obj[key]);
     result.push(row);
   }
 
@@ -227,11 +268,12 @@ function jsonToSheetArray(jsonArray: any[]): any[][] {
 export async function updateSheetData(
   rangeName: string,
   jsonArray: any[],
-  cl: JWT = client.get()!,
+  options: { cl?: JWT } = { cl: client.get()! },
 ): Promise<boolean> {
+  const { cl } = options;
   try {
     const sheetSetting = googleSheetConnectionSetting.get();
-    const gsapi = google.sheets({ version: 'v4', auth: cl });
+    const gsapi = google.sheets({ version: 'v4', auth: cl ?? client.get()! });
 
     const values = jsonToSheetArray(jsonArray);
 
@@ -245,6 +287,46 @@ export async function updateSheetData(
     };
 
     const response = await gsapi.spreadsheets.values.update(opt);
+
+    if (response.status === 200) {
+      systemSettingSheets.set(jsonArray);
+      console.log('Sheet updated successfully!');
+      return true;
+    } else {
+      console.error('Error updating sheet:', response.statusText);
+      return false;
+    }
+  } catch (e) {
+    console.error('Error updating sheet:', e);
+    return false;
+  }
+}
+
+export async function addSheetData(
+  rangeName: string,
+  jsonArray: any[],
+  options: { cl?: JWT; jsonTransfromOptions?: JsonToSheetArrayOptions } = {
+    cl: client.get()!,
+    jsonTransfromOptions: undefined,
+  },
+): Promise<boolean> {
+  const { cl, jsonTransfromOptions } = options;
+
+  try {
+    const sheetSetting = googleSheetConnectionSetting.get();
+    const gsapi = google.sheets({ version: 'v4', auth: cl ?? client.get()! });
+
+    const values = jsonToSheetArray(jsonArray, jsonTransfromOptions);
+
+    const opt = {
+      spreadsheetId: sheetSetting.spreadsheet_id,
+      range: rangeName, // 確保傳入的 rangeName 有指定具體的範圍，例如 'Sheet1!A1:D10'
+      valueInputOption: 'RAW', // 這表示我們直接將值放入，不進行任何其他處理
+      resource: {
+        values: values,
+      },
+    };
+    const response = await gsapi.spreadsheets.values.append(opt);
 
     if (response.status === 200) {
       systemSettingSheets.set(jsonArray);

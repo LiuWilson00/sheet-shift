@@ -4,10 +4,14 @@ import './style.css';
 import { useLoading } from '../../contexts/loading.context';
 import { useDialog } from '../../contexts/dialog.context';
 import DebugConsole from '../../components/debug-console';
+import { DataDebuggingDialog } from './components/data-debugging-dialog';
+import { SheetData } from '../../utils/excel.interface';
 
 function Hello() {
   const { showDialog, hideDialog } = useDialog();
   const { showLoading, hideLoading } = useLoading();
+  const [showDataDebugging, setShowDataDebugging] = useState<boolean>(false);
+  const [wrongData, setWrongData] = useState<SheetData[]>([]);
   const [selectFilePath, setSelectFilePath] = useState<string>();
 
   const fetchData = async () => {
@@ -72,9 +76,24 @@ function Hello() {
       },
     });
   }
+  async function originalDataDebugging() {
+    showLoading();
+    const wrongDataResult =
+      await window.electron.excelBridge.sendGetWrongData();
+    hideLoading();
+    if (wrongDataResult.isError) return;
+    setWrongData(wrongDataResult.data.unMappingData);
+    setShowDataDebugging(true);
+    console.log('wrongData', wrongData);
+  }
 
   return (
     <div className="home-context">
+      <DataDebuggingDialog
+        show={showDataDebugging}
+        setShow={setShowDataDebugging}
+        wrongData={wrongData}
+      ></DataDebuggingDialog>
       <button
         onClick={() => {
           fetchData();
@@ -97,6 +116,11 @@ function Hello() {
         <div className="file-selected-group">
           <span>檔案已上傳，檔案路徑：</span>
           <a href="#">{selectFilePath}</a>
+          <div>
+            <button className="export-button" onClick={originalDataDebugging}>
+              進行資料前處理
+            </button>
+          </div>
           <div className="file-selected-group-button">
             <button className="export-button" onClick={exportDefualtFormat}>
               匯出成預設格式

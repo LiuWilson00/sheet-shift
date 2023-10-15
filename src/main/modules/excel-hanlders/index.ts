@@ -7,10 +7,24 @@ import {
   saveProcessedData,
   selectExcelFile,
 } from './services/excel-io.service';
-import { processExcelData, processExcelDataShopee } from './services/data-process.service';
+import {
+  processExcelData,
+  processExcelDataShopee,
+} from './services/data-process.service';
 import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { DataStore } from '../../utils/data-store.tool';
 import { findUnMappingData } from './services/excel-data-debugging';
+import {
+  ProductNameMapping,
+  ProductNameMappingColumnKeys,
+} from './index.interface';
+import {
+  addSheetData,
+  getProductNameMap,
+  systemTariffCodeSheet,
+} from '../../utils/google-sheets.tool';
+import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
+import { jsonGroupBy } from '../../utils';
 
 const currentSelectedFilePath = new DataStore<string>('');
 
@@ -123,6 +137,50 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
 
     event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
       data: { unMappingData },
+      isError: false,
+    });
+  });
+
+  electronIpcMain.on(
+    IPC_CHANNELS.ADD_NEW_PRODUCT_MAP,
+    async (event, data: ProductNameMapping[]) => {
+      await addSheetData(SheetRangeName.SystemProductMap, data, {
+        jsonTransfromOptions: {
+          disableAddTitle: true,
+          keySorting: [
+            ProductNameMappingColumnKeys.OriginalProductName,
+            ProductNameMappingColumnKeys.CorrectProductName,
+            ProductNameMappingColumnKeys.TariffCode,
+          ],
+        },
+      });
+      const newSystemProductMap = systemTariffCodeSheet.get();
+      newSystemProductMap.push(...data);
+      systemTariffCodeSheet.set(newSystemProductMap);
+
+      event.reply(IPC_CHANNELS.ADD_NEW_PRODUCT_MAP_RESPONSE, {
+        data: true,
+        isError: false,
+      });
+    },
+  );
+  electronIpcMain.on(IPC_CHANNELS.GET_PRODUCT_MAP, async (event) => {
+    const data = getProductNameMap();
+    const dataGrouped = jsonGroupBy(
+      data,
+      [ProductNameMappingColumnKeys.CorrectProductName],
+      (datas) => {
+        return {
+          [ProductNameMappingColumnKeys.CorrectProductName]:
+            datas[0][ProductNameMappingColumnKeys.CorrectProductName],
+          [ProductNameMappingColumnKeys.TariffCode]:
+            datas[0][ProductNameMappingColumnKeys.TariffCode],
+        };
+      },
+    );
+
+    event.reply(IPC_CHANNELS.GET_PRODUCT_MAP_RESPONSE, {
+      data: dataGrouped,
       isError: false,
     });
   });

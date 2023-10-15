@@ -1,6 +1,6 @@
 /* src/renderer/components/Input.css */
 .input-wrapper {
-  margin-bottom: 16px;
+  /* margin-bottom: 16px; */
 }
 
 .input-wrapper label {
@@ -26,4 +26,30 @@
 
 .input-wrapper p {
   margin-top: 4px;
+}
+.input-wrapper .search-results {
+  max-height: 200px; /* 設定最大高度，超過會滾動 */
+  overflow-y: auto; /* 啟用垂直滾動條 */
+  border: 1px solid #ccc; /* 邊框 */
+  border-radius: 4px; /* 圓角 */
+  margin-top: 8px; /* 與 input 之間的間隔 */
+  background-color: #fff; /* 背景色 */
+  z-index: 1000; /* 確保 search results 在其他元素上方 */
+  position: absolute;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 陰影效果 */
+}
+
+.input-wrapper .search-results div {
+  padding: 8px 12px; /* 內邊距 */
+  cursor: pointer; /* 當滑鼠移至上方時，顯示為手指形狀，提示可點擊 */
+  border-bottom: 1px solid #eee; /* 項目之間的分隔線 */
+  transition: background-color 0.2s ease; /* 點擊時的背景顏色變化動畫 */
+}
+
+.input-wrapper .search-results div:hover {
+  background-color: #f5f5f5; /* 當滑鼠移至上方時的背景顏色 */
+}
+
+.input-wrapper .search-results div:last-child {
+  border-bottom: none; /* 最後一個選項不需要分隔線 */
 }

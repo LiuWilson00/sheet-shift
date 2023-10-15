@@ -1,11 +1,19 @@
 import { IpcRendererEvent, ipcRenderer } from 'electron';
 import { IPC_CHANNELS } from '../../constants/ipc-channels';
+import {
+  ProductNameMapping,
+  ProductTariffCodeMap,
+  SheetData,
+} from '../modules/excel-hanlders/index.interface';
 
-interface ExcelDataResult {
-  path: string;
-  data: Array<unknown>;
+interface BaseResult {
   isError: boolean;
   message?: string;
+}
+
+interface ExcelDataResult extends BaseResult {
+  path: string;
+  data: Array<unknown>;
 }
 
 export const onceExcelData = (func: (data: ExcelDataResult) => void) => {
@@ -53,9 +61,11 @@ export function sendExportShopeeSheet() {
   });
 }
 
-type WrongData = {
-  unMappingData: Array<unknown>;
-};
+interface WrongData extends BaseResult {
+  data: {
+    unMappingData: Array<SheetData>;
+  };
+}
 
 export function sendGetWrongData() {
   ipcRenderer.send(IPC_CHANNELS.GET_WRONG_DATA);
@@ -70,10 +80,46 @@ export function sendGetWrongData() {
   });
 }
 
+interface AddNewProductMap extends BaseResult {
+  data: boolean;
+}
+
+export function sendAddNewProductMap(data: ProductNameMapping[]) {
+  ipcRenderer.send(IPC_CHANNELS.ADD_NEW_PRODUCT_MAP, data);
+
+  return new Promise<AddNewProductMap>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.ADD_NEW_PRODUCT_MAP_RESPONSE,
+      (_event, data: AddNewProductMap) => {
+        resolve(data);
+      },
+    );
+  });
+}
+
+interface ProductTariffCodeMapResult extends BaseResult {
+  data: ProductTariffCodeMap[];
+}
+
+export function sendGetProductMap() {
+  ipcRenderer.send(IPC_CHANNELS.GET_PRODUCT_MAP);
+
+  return new Promise<ProductTariffCodeMapResult>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.GET_PRODUCT_MAP_RESPONSE,
+      (_event, data: ProductTariffCodeMapResult) => {
+        resolve(data);
+      },
+    );
+  });
+}
+
 export default {
   onceExcelData,
   sendSelectExcelFile,
   sendExportDefaultSheet,
   sendExportShopeeSheet,
   sendGetWrongData,
+  sendAddNewProductMap,
+  sendGetProductMap
 };

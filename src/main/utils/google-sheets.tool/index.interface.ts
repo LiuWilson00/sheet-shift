@@ -7,11 +7,6 @@ export interface GoogleSheetSetting {
     spreadsheetId: string;
   };
 }
-export enum TariffCodeSheetColumnKeys {
-  OriginalProductName = '原始品名',
-  CorrectProductName = '正確品名',
-  TariffCode = '稅則', // 貨品分類編號
-}
 
 export enum AddressSheetColumnKeys {
   Number = '序號',
@@ -23,11 +18,7 @@ export enum SystemSettingSheetsColumnKeys {
   Value = 'Value',
 }
 
-export interface TariffCodeSheet {
-  [TariffCodeSheetColumnKeys.OriginalProductName]: string;
-  [TariffCodeSheetColumnKeys.CorrectProductName]: string;
-  [TariffCodeSheetColumnKeys.TariffCode]: number;
-}
+
 
 export interface AddressSheet {
   [AddressSheetColumnKeys.Number]: number;

@@ -148,7 +148,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                       ...settings,
                       SYSTEM_SETTING: {
                         ...settings.SYSTEM_SETTING,
-                        NET_WEIGHT_INTERVAL: parseInt(e.target.value, 10),
+                        NET_WEIGHT_INTERVAL: e.target.value,
                       },
                     });
                   }}
