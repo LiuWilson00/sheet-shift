@@ -18,7 +18,7 @@ function Hello() {
     showLoading();
     const result = await window.electron.excelBridge.sendSelectExcelFile();
     hideLoading();
-    if (result.isError) {
+    if (result.isError && result.path !== null) {
       showDialog({
         content: '上傳失敗，請確認檔案是否正確。',
         onConfirm: () => {
@@ -26,8 +26,6 @@ function Hello() {
         },
       });
     }
-    // const test = await window.electron.excelBridge.sendGetWrongData();
-    // console.log('test',test);
 
     setSelectFilePath(result.path);
   };
@@ -98,7 +96,11 @@ function Hello() {
         onClick={() => {
           fetchData();
         }}
-        disabled={selectFilePath !== undefined}
+        disabled={
+          selectFilePath !== undefined &&
+          selectFilePath !== '' &&
+          selectFilePath !== null
+        }
       >
         點擊上傳文件{' '}
         <span

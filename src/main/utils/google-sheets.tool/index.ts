@@ -289,7 +289,6 @@ export async function updateSheetData(
     const response = await gsapi.spreadsheets.values.update(opt);
 
     if (response.status === 200) {
-      systemSettingSheets.set(jsonArray);
       console.log('Sheet updated successfully!');
       return true;
     } else {
@@ -329,7 +328,6 @@ export async function addSheetData(
     const response = await gsapi.spreadsheets.values.append(opt);
 
     if (response.status === 200) {
-      systemSettingSheets.set(jsonArray);
       console.log('Sheet updated successfully!');
       return true;
     } else {

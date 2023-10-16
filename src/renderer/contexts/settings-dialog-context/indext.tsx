@@ -175,7 +175,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                       ...settings,
                       DEFAULT_PRICE_SETTING: {
                         ...settings.DEFAULT_PRICE_SETTING,
-                        DEFAULT_PRICE_SETTING: value,
+                        TWO_PIECE: value,
                       },
                     });
                   }}
