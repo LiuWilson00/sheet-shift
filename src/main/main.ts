@@ -33,7 +33,6 @@ let mainWindow: BrowserWindow | null = null;
 ipcMain.on(IPC_CHANNELS.IPC_EXAMPLE, async (event, arg) => {
   const msgTemplate = (pingPong: string) =>
     `IPC test: ${pingPong} ${__dirname}`;
-  console.log(msgTemplate(arg));
   event.reply(IPC_CHANNELS.IPC_EXAMPLE, msgTemplate('pong'));
 });
 

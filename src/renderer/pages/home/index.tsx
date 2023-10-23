@@ -33,7 +33,6 @@ function Hello() {
     showLoading();
     const result = await window.electron.excelBridge.sendExportDefaultSheet();
     hideLoading();
-    console.log(result);
     if (result.isError) {
       showDialog({
         content: '匯出失敗，請確認檔案是否正確。',
@@ -56,7 +55,6 @@ function Hello() {
     showLoading();
     const result = await window.electron.excelBridge.sendExportShopeeSheet();
     hideLoading();
-    console.log(result);
     if (result.isError) {
       showDialog({
         content: '匯出失敗，請確認檔案是否正確。',

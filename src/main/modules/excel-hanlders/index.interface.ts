@@ -31,9 +31,44 @@ export enum ExcelColumnKeys {
   ProductClassNumber = '貨品分類編號',
   index = 'index',
 }
-
-export type SheetData = {
+export type SheetDataOriginal = {
   [key in ExcelColumnKeys]: string | number;
+};
+
+// 明確指定型別的 SheetData
+export type SheetData = {
+  // 以下是字串的欄位
+  [ExcelColumnKeys.ShippingOrderNumber]: string;
+  [ExcelColumnKeys.CourierTaxNumber]: string;
+  [ExcelColumnKeys.ProductName]: string;
+  [ExcelColumnKeys.Brand]: string;
+  [ExcelColumnKeys.Specification]: string;
+  [ExcelColumnKeys.QuantityUnit]: string;
+  [ExcelColumnKeys.TradeConditionCode]: string;
+  [ExcelColumnKeys.CurrencyCode]: string;
+  [ExcelColumnKeys.BoxUnit]: string;
+  [ExcelColumnKeys.CountryOfOriginCode]: string;
+  [ExcelColumnKeys.RecipientTaxNumber]: string;
+  [ExcelColumnKeys.RecipientEnglishName]: string;
+  [ExcelColumnKeys.RecipientPhone]: string;
+  [ExcelColumnKeys.RecipientEnglishAddress]: string;
+  [ExcelColumnKeys.RecipientIDNumber]: string;
+  [ExcelColumnKeys.Mark]: string;
+  [ExcelColumnKeys.SenderEnglishName]: string;
+  [ExcelColumnKeys.SenderPhoneNumber]: string;
+  [ExcelColumnKeys.SenderEnglishAddress]: string;
+  [ExcelColumnKeys.RealProductName]: string;
+  [ExcelColumnKeys.ProductClassNumber]: string;
+  // 以下是數字的欄位
+  [ExcelColumnKeys.NetWeight]: number;
+  [ExcelColumnKeys.GrossWeight]: number | '';
+  [ExcelColumnKeys.Quantity]: number;
+  [ExcelColumnKeys.TotalBoxes]: number | '';
+  [ExcelColumnKeys.UnitPrice]: number;
+  [ExcelColumnKeys.TotalAmount]: number;
+  [ExcelColumnKeys.OriginalAmount]: number | '';
+  [ExcelColumnKeys.ProcessedAmount]: number | '';
+  [ExcelColumnKeys.index]: number;
 };
 
 export enum ProductNameMappingColumnKeys {

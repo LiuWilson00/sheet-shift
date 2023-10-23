@@ -51,7 +51,7 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
         <div className="data-debugging-item__input">
           <Input
             onChange={(event) => {
-              console.log(event.target.value);
+
               setCorrectProductName(event.target.value);
             }}
             searchHandler={(inputValue) => {

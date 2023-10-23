@@ -36,7 +36,7 @@ function transformSettingsArray(arr: Array<SystemSettingSheets>): Settings {
       ADJUSTMENT_RATE: [0, 0],
     },
   };
-  console.log(arr);
+
   arr.forEach((item) => {
     const splitedArr = item[SystemSettingSheetsColumnKeys.Key].split('--');
     const category = splitedArr[0] as keyof Settings;

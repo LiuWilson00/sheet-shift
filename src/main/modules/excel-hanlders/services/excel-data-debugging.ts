@@ -1,8 +1,5 @@
-import { excelToJSON, jsonGroupBy, tariffCodeSheet } from '../../../utils';
-import {
-  getProductNameMap,
-  systemTariffCodeSheet,
-} from '../../../utils/google-sheets.tool';
+import { excelToJSON, jsonGroupBy } from '../../../utils';
+import { getProductNameMap } from '../../../utils/google-sheets.tool';
 import {
   ExcelColumnKeys,
   ProductNameMappingColumnKeys,
@@ -12,7 +9,7 @@ import {
   dataAddIndex,
   deleteNullProductNameData,
   fillDownColumn,
-  trimAllData,
+  sheetDataProcess,
 } from './data-process.service';
 
 export function findUnMappingData(filePath: string) {
@@ -20,9 +17,10 @@ export function findUnMappingData(filePath: string) {
 
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
+    resultProcess: sheetDataProcess,
   });
-  const trimedData = trimAllData(originalData);
-  const dataWithIndex = dataAddIndex(trimedData);
+
+  const dataWithIndex = dataAddIndex(originalData);
   const fillDownShopingOrderNumber = fillDownColumn(
     dataWithIndex,
     ExcelColumnKeys.ShippingOrderNumber,

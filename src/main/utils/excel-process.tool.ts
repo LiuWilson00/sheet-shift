@@ -10,14 +10,15 @@ export function jsonToExcel(data: any[], outputPath: string): void {
   XLSX.writeFile(workbook, outputPath);
 }
 
-export function excelToJSON(
+export function excelToJSON<I, O = I>(
   filePath: string,
   options?: {
     sheetName?: string;
     sheetIndex?: number;
     xlsxOpts?: XLSX.Sheet2JSONOpts;
+    resultProcess?: (datas: I[]) => O[];
   },
-): any[] {
+): O[] {
   try {
     if (!fs.existsSync(filePath)) {
       throw {
@@ -38,9 +39,9 @@ export function excelToJSON(
 
     const worksheet = workbook.Sheets[sheetName];
 
-    const data = XLSX.utils.sheet_to_json(worksheet, options?.xlsxOpts);
+    const data: any[] = XLSX.utils.sheet_to_json(worksheet, options?.xlsxOpts);
 
-    return data;
+    return options?.resultProcess ? options.resultProcess(data) : (data as O[]);
   } catch (error) {
     const _error = error as Error;
     console.error('Error reading the Excel file:', error);
