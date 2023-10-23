@@ -311,7 +311,7 @@ function calculateTotalAmountByBoxes(
 
   const [min, max] = range;
 
-  return [min, max]; //getRandomIntBetween(min, max) * boxes;
+  return [min * boxes, max * boxes]; //getRandomIntBetween(min, max) * boxes;
 }
 
 function calculateOriginalAmountAndUnitPrice(

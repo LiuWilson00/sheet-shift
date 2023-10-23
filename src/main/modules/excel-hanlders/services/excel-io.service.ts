@@ -62,11 +62,11 @@ async function addJsonToExcelTemplate(
   // 2. 獲取第一個工作表
   const worksheet: Worksheet = workbook.worksheets[0];
 
+  let previousBoxnumber: number | '' = '';
   // 3. 將 JSON 數據添加到工作表中
   jsonData.forEach((row, index) => {
     const currentRow = startRow + index; // 根據起始行和當前索引計算要插入的行
     const currentJsonData = jsonData[index];
-    const nextRowJsonData = jsonData[index + 1];
 
     Object.keys(row).forEach((key) => {
       const columnInfo = columnOrder.find((col) => col.valueKey === key);
@@ -79,11 +79,12 @@ async function addJsonToExcelTemplate(
       );
       cell.value = row[key as keyof SheetData];
     });
-    if (
-      currentJsonData[ExcelColumnKeys.ShippingOrderNumber] === '' ||
-      (nextRowJsonData &&
-        nextRowJsonData[ExcelColumnKeys.ShippingOrderNumber] === '')
-    ) {
+
+    if (currentJsonData[ExcelColumnKeys.TotalBoxes] !== '') {
+      previousBoxnumber = currentJsonData[ExcelColumnKeys.TotalBoxes];
+    }
+
+    if (previousBoxnumber !== '' && previousBoxnumber > 1) {
       const row = worksheet.getRow(currentRow + 1);
       row.fill = {
         type: 'pattern',
