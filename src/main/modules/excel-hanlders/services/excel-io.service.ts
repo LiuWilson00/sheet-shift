@@ -65,6 +65,8 @@ async function addJsonToExcelTemplate(
   // 3. 將 JSON 數據添加到工作表中
   jsonData.forEach((row, index) => {
     const currentRow = startRow + index; // 根據起始行和當前索引計算要插入的行
+    const currentJsonData = jsonData[index];
+    const nextRowJsonData = jsonData[index + 1];
 
     Object.keys(row).forEach((key) => {
       const columnInfo = columnOrder.find((col) => col.valueKey === key);
@@ -77,6 +79,25 @@ async function addJsonToExcelTemplate(
       );
       cell.value = row[key as keyof SheetData];
     });
+    if (
+      currentJsonData[ExcelColumnKeys.ShippingOrderNumber] === '' ||
+      (nextRowJsonData &&
+        nextRowJsonData[ExcelColumnKeys.ShippingOrderNumber] === '')
+    ) {
+      const row = worksheet.getRow(currentRow + 1);
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF00' }, // ARGB for yellow
+      };
+
+      row.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    }
   });
 
   return workbook;
