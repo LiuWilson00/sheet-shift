@@ -65,7 +65,7 @@ const Input: React.FC<InputProps> = ({
 
   return (
     <BaseInputComponent label={label} validationFn={validationFn}>
-      <div>
+      <div className='input-container'>
         <input value={value} {...restProps} onChange={handleInputChange} />
         {searchResults.length > 0 && (
           <div className="search-results">

@@ -2,6 +2,9 @@
 .input-wrapper {
   /* margin-bottom: 16px; */
 }
+.input-container {
+  position: relative;
+}
 
 .input-wrapper label {
   display: block;

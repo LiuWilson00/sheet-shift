@@ -37,7 +37,12 @@ export async function saveProcessedData(
     columnOrder: isShopee ? shopeeColumnOrder : defaultColumnOrder,
   });
   await addStatisticsSheet(completedWorkbook, completedData);
-  await completedWorkbook.xlsx.writeFile(newFilePath);
+  // await completedWorkbook.xlsx.writeFile(newFilePath);
+  copyTemplateWorksheetToNewExcelByWorkSheet(
+    completedWorkbook.worksheets[0],
+    filePath,
+    newFilePath,
+  );
   return newFilePath;
 }
 type JsonToExcelOptions = {
@@ -58,7 +63,6 @@ async function addJsonToExcelTemplate(
   // 1. 讀取現有的Excel模板
   const workbook = new Workbook();
   await workbook.xlsx.readFile(filePath);
-
   // 2. 獲取第一個工作表
   const worksheet: Worksheet = workbook.worksheets[0];
 
@@ -165,4 +169,73 @@ async function addStatisticsSheet(
     worksheet.getCell(`${ORDER_COUNT_ROW_INDEX}${currentRow}`).value = count;
     currentRow++;
   });
+}
+
+export async function copyTemplateWorksheetToNewExcelByWorkSheet(
+  templateWorksheet: Worksheet,
+  targetPath: string,
+  outputPath: string,
+) {
+  const targetWorkbook = new Workbook();
+
+  await targetWorkbook.xlsx.readFile(targetPath);
+
+  // 複製工作表
+
+  const targetSheet = targetWorkbook.addWorksheet(
+    `${templateWorksheet.name}-completed`,
+  );
+
+  // 複製行和列數據及其樣式
+  templateWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const newRow = targetSheet.getRow(rowNumber);
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const newCell = newRow.getCell(colNumber);
+      Object.assign(newCell, cell); // 使用Object.assign來複製所有屬性
+    });
+    newRow.commit();
+  });
+
+  // 直接複製合併的單元格
+  // targetSheet.model = Object.assign(targetSheet.model, {
+  //   mergeCells: sourceWorksheet.model.merges
+  // });
+
+  // 保存新的 Excel 檔案
+  await targetWorkbook.xlsx.writeFile(outputPath);
+}
+
+export async function copyTemplateWorksheetToNewExcel(
+  templatePath: string,
+  outputPath: string,
+) {
+  // 讀取模板檔案
+  const sourceWorkbook = new Workbook();
+  await sourceWorkbook.xlsx.readFile(templatePath);
+
+  // 創建新的工作簿
+  const targetWorkbook = new Workbook();
+
+  // 複製工作表
+  sourceWorkbook.eachSheet((sourceWorksheet, id) => {
+    const targetSheet = targetWorkbook.addWorksheet(sourceWorksheet.name);
+
+    // 複製行和列數據及其樣式
+    sourceWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+      const newRow = targetSheet.getRow(rowNumber);
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const newCell = newRow.getCell(colNumber);
+        Object.assign(newCell, cell); // 使用Object.assign來複製所有屬性
+      });
+      newRow.commit();
+    });
+
+    // 直接複製合併的單元格
+    // targetSheet.model = Object.assign(targetSheet.model, {
+    //   mergeCells: sourceWorksheet.model.merges
+    // });
+  });
+
+  // 保存新的 Excel 檔案
+  await targetWorkbook.xlsx.writeFile(outputPath);
 }

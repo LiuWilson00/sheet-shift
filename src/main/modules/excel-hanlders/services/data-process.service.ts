@@ -55,8 +55,15 @@ export async function processExcelDataShopee(filePath: string) {
   const groupedData = groupExcelDataShopee(preDebugedData);
   const dataBeforeSummaryUpdate =
     summarizeAndUpdateGroupedDataShopee(groupedData);
-
-  return mappingRealProductName(dataBeforeSummaryUpdate, productNameMap);
+  const dataProcessPhone = dataBeforeSummaryUpdate.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
+        entry[ExcelColumnKeys.RecipientPhone] as string,
+      ),
+    };
+  });
+  return mappingRealProductName(dataProcessPhone, productNameMap);
 }
 
 export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
@@ -216,6 +223,9 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
     originalData,
     [ExcelColumnKeys.ShippingOrderNumber, ExcelColumnKeys.ProductName],
     (datas) => {
+      const SHOPEE_UNIT_PRICE_RANGE = [10, 15];
+      const SHOPEE_UNIT_PRICE_LIMIT = 10;
+      const SHOPEE_UNIT_PRICE_RATE = 0.7;
       const {
         totalNetWeight,
         totalGrossWeight,
@@ -223,9 +233,14 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
         totalBoxes,
         summaryTotalAmount,
       } = getDataSummary(datas);
-      const minUnitPrice = findMinUnitPrice(datas);
+      const minUnitPrice = findMinUnitPrice(datas) * SHOPEE_UNIT_PRICE_RATE;
       const newPrice =
-        minUnitPrice < 10 ? getRandomIntBetween(10, 20) : minUnitPrice;
+        minUnitPrice < SHOPEE_UNIT_PRICE_LIMIT
+          ? getRandomIntBetween(
+              SHOPEE_UNIT_PRICE_RANGE[0],
+              SHOPEE_UNIT_PRICE_RANGE[1],
+            )
+          : minUnitPrice;
 
       const { newQuantity, newUnit } = unitTranslate(totalQuantity);
 

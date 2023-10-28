@@ -35,16 +35,32 @@ const settingTemplate: Settings = {
     ADJUSTMENT_RATE: [0, 0],
   },
 };
+const AUTH_CODE = '8800885';
 
 export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
-
+  const [isAuth, setIsAuth] = useState(false);
+  const [authCode, setAuthCode] = useState('');
   const [settings, setSettings] = useState<Settings>(settingTemplate); // 初始化設定
   const { showDialog, hideDialog } = useDialog();
   const showSettings = () => setIsSettingsVisible(true);
   const hideSettings = () => setIsSettingsVisible(false);
   const updateSettings = (newSettings: any) => setSettings(newSettings);
   const handleConfirm = () => {
+    if (!isAuth) {
+      if (authCode === AUTH_CODE) {
+        setIsAuth(true);
+      } else {
+        showDialog({
+          content: '驗證碼錯誤',
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
+      }
+      return;
+    }
+
     window.electron.settingBridge.sendSetting(settings).then((result) => {
       if (result) {
         showDialog({
@@ -104,8 +120,19 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           contentRender={() => {
-            return (
-              <div>
+            return !isAuth ? (
+              <div className="settings-auth">
+                <Input
+                  label="請輸入驗證碼"
+                  name="AUTH_CODE"
+                  value={authCode}
+                  onChange={(e) => {
+                    setAuthCode(e.target.value);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="settings">
                 <Input
                   label="轉換成KCP的單位數量上限"
                   name="SYSTEM_SETTING--UNIT_TRANSLATE_LIMIT"
