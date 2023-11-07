@@ -1,11 +1,12 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import Hello from './pages/home';
-import Loading from './components/loading';
-import { LoadingProvider, useLoading } from './contexts/loading.context';
+
+import { LoadingProvider } from './contexts/loading.context';
 import Layout from './layout';
 import { DialogProvider } from './contexts/dialog.context';
 import { SettingsProvider } from './contexts/settings-dialog-context/indext';
 import { SheetSettingsProvider } from './contexts/sheet-settings-dialog-context';
+import { AuthDialogProvider } from './contexts/auth-dialog-context';
 const wrapWithProviders = (
   child: React.ReactNode,
   providers: React.ComponentType<any>[],
@@ -20,6 +21,7 @@ export default function App() {
     DialogProvider,
     SheetSettingsProvider,
     SettingsProvider,
+    AuthDialogProvider,
   ];
 
   return wrapWithProviders(

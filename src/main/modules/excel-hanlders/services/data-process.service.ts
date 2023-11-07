@@ -234,13 +234,14 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
         summaryTotalAmount,
       } = getDataSummary(datas);
       const minUnitPrice = findMinUnitPrice(datas) * SHOPEE_UNIT_PRICE_RATE;
-      const newPrice =
+      const _newPrice =
         minUnitPrice < SHOPEE_UNIT_PRICE_LIMIT
           ? getRandomIntBetween(
               SHOPEE_UNIT_PRICE_RANGE[0],
               SHOPEE_UNIT_PRICE_RANGE[1],
             )
           : minUnitPrice;
+      const newPrice = Math.ceil(_newPrice);
 
       const { newQuantity, newUnit } = unitTranslate(totalQuantity);
 
@@ -366,22 +367,22 @@ function getSummaries(
   }, initData);
 }
 
-function setSteetPrices(
-  index: number,
-  data: SheetData[],
-  totalAmount: number,
-  itemCount: number,
-  setting: DefaultPriceSetting,
-): void {
-  const quantity = data[index][ExcelColumnKeys.Quantity];
-  const newUnitPrice = calculateOriginalAmountAndUnitPrice(
-    totalAmount / itemCount,
-    quantity,
-    setting,
-  );
-  data[index][ExcelColumnKeys.UnitPrice] = newUnitPrice;
-  data[index][ExcelColumnKeys.TotalAmount] = newUnitPrice * quantity;
-}
+// function setSteetPrices(
+//   index: number,
+//   data: SheetData[],
+//   totalAmount: number,
+//   itemCount: number,
+//   setting: DefaultPriceSetting,
+// ): void {
+//   const quantity = data[index][ExcelColumnKeys.Quantity];
+//   const newUnitPrice = calculateOriginalAmountAndUnitPrice(
+//     totalAmount / itemCount,
+//     quantity,
+//     setting,
+//   );
+//   data[index][ExcelColumnKeys.UnitPrice] = newUnitPrice;
+//   data[index][ExcelColumnKeys.TotalAmount] = newUnitPrice * quantity;
+// }
 function generateRandomProportions(n: number): number[] {
   // Handle special case where n is 1
   if (n === 1) {

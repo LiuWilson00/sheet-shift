@@ -2,7 +2,8 @@ import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { BrowserWindow, app, dialog, ipcMain } from 'electron';
 import { getSystemSetting } from '../../utils/setting.tool';
 import {
-  systemSettingSheets,
+  systemSettingMap,
+  systemSettingSheetNames,
   updateSheetData,
 } from '../../utils/google-sheets.tool';
 import { GoogleSheetConnectionStore } from '../../status-store';
@@ -16,26 +17,40 @@ export const ENV_PATH = app.isPackaged
 const SETTINGS_SHEET_PATH = path.join(ENV_PATH, 'settings.sheet.json');
 
 export const setupSaveSettingsHandlers = (mainWindow: BrowserWindow) => {
-  ipcMain.on(IPC_CHANNELS.SAVE_SETTINGS, (event, settings) => {
-    const settingsJsonArray = transformSettingsToObjectArray(settings);
-    updateSheetData(
-      SheetRangeName.SystemSetting,
-      settingsJsonArray,
-    ).then((res) => {
-      if (res) {
-        systemSettingSheets.set(settingsJsonArray);
-        event.reply(IPC_CHANNELS.SETTINGS_SAVED, true);
-      } else {
-        event.reply(IPC_CHANNELS.SETTINGS_SAVED, false);
-      }
-    });
-  });
+  ipcMain.on(
+    IPC_CHANNELS.SAVE_SETTINGS,
+    (event, settings, settingName: string) => {
+      const settingsJsonArray = transformSettingsToObjectArray(settings);
+      updateSheetData(
+        settingName ?? SheetRangeName.SystemSetting,
+        settingsJsonArray,
+      ).then((res) => {
+        if (res) {
+          systemSettingMap[settingName ?? 'default'].set(settingsJsonArray);
+          event.reply(IPC_CHANNELS.SETTINGS_SAVED, true);
+        } else {
+          event.reply(IPC_CHANNELS.SETTINGS_SAVED, false);
+        }
+      });
+    },
+  );
 
-  ipcMain.on(IPC_CHANNELS.GET_SETTINGS, (event) => {
-    const settingsData = getSystemSetting();
+  ipcMain.on(IPC_CHANNELS.GET_SETTINGS, (event, settingName: string) => {
+    const settingsData = getSystemSetting(settingName ?? 'default');
 
     event.reply(IPC_CHANNELS.SETTINGS_RESPONSE, settingsData);
   });
+
+  ipcMain.on(
+    IPC_CHANNELS.GET_SYSTEM_SETTINGS_SHEET_NAMES,
+    (event, settingName: string) => {
+      event.reply(
+        IPC_CHANNELS.SYSTEM_SETTINGS_SHEET_NAMES_RESPONSE,
+        systemSettingSheetNames.get(),
+      );
+    },
+  );
+
   ipcMain.on(IPC_CHANNELS.SAVE_SETTINGS_SHEET, (event, settings) => {
     fs.writeFileSync(
       SETTINGS_SHEET_PATH,

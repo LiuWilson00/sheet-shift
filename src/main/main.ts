@@ -16,6 +16,7 @@ import { setupExcelHandlers } from './modules/excel-hanlders';
 import { setupSaveSettingsHandlers } from './modules/save-settings-handlers';
 import { setupAppStatusHandlers } from './modules/app-status-handlers';
 import { IPC_CHANNELS } from '../constants/ipc-channels';
+import { setupAuthHandlers } from './modules/auth-handlers';
 
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
@@ -43,6 +44,7 @@ ipcMain.on(IPC_CHANNELS.DEBUG_MESSAGE, (event, message) => {
 setupExcelHandlers(mainWindow!);
 setupSaveSettingsHandlers(mainWindow!);
 setupAppStatusHandlers();
+setupAuthHandlers();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

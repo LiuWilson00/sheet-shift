@@ -1,11 +1,17 @@
-import { systemSettingSheets } from './google-sheets.tool';
+import { systemSettingMap } from './google-sheets.tool';
 import {
   SystemSettingSheets,
   SystemSettingSheetsColumnKeys,
 } from './google-sheets.tool/index.interface';
 
-export function getSystemSetting() {
-  return transformSettingsArray(systemSettingSheets.get());
+let systemSettingName = 'default';
+
+export function setSystemSettingName(name: string) {
+  systemSettingName = name;
+}
+
+export function getSystemSetting(settingName = systemSettingName) {
+  return transformSettingsArray(systemSettingMap[settingName].get());
 }
 
 const systemSettingTypeMap = {

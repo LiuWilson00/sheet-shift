@@ -6,6 +6,7 @@ import appStatusBridge from './context-bridge/app-status.bridge';
 import debugBridge from './context-bridge/debug.bridge';
 import excelBridge from './context-bridge/excel.bridge';
 import settingBridge from './context-bridge/setting.bridge';
+import authBridge from './context-bridge/auth.bridge';
 
 export type Channels = keyof typeof IPC_CHANNELS;
 const debugMessages: string[] = [];
@@ -32,6 +33,7 @@ const electronHandler = {
   appStatusBridge,
   debugBridge,
   settingBridge,
+  authBridge,
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

@@ -18,8 +18,6 @@ export enum SystemSettingSheetsColumnKeys {
   Value = 'Value',
 }
 
-
-
 export interface AddressSheet {
   [AddressSheetColumnKeys.Number]: number;
   [AddressSheetColumnKeys.Address]: string;
@@ -28,4 +26,10 @@ export interface AddressSheet {
 export interface SystemSettingSheets {
   [SystemSettingSheetsColumnKeys.Key]: string;
   [SystemSettingSheetsColumnKeys.Value]: string;
+}
+
+export interface UsersSheet {
+  name: string;
+  account: string;
+  password: string;
 }

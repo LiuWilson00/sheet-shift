@@ -6,7 +6,11 @@ import {
   SHEET_RANGES,
   SheetRangeName,
 } from './index.const';
-import { AddressSheet, SystemSettingSheets } from './index.interface';
+import {
+  AddressSheet,
+  SystemSettingSheets,
+  UsersSheet,
+} from './index.interface';
 import { DataStore } from '../data-store.tool';
 import { GaxiosResponse } from 'gaxios';
 import { GoogleSheetConnectionStore } from '../../status-store';
@@ -36,12 +40,21 @@ const googleSheetConnectionSetting =
 export const tariffCodeSheet = new DataStore<ProductNameMapping[]>([]);
 export const systemTariffCodeSheet = new DataStore<ProductNameMapping[]>([]);
 export const addressSheet = new DataStore<AddressSheet[]>([]);
+export const systemSettingSheetNames = new DataStore<string[]>([]);
 
 export const getProductNameMap = () => [
   ...systemTariffCodeSheet.get(),
   ...tariffCodeSheet.get(),
 ];
-export const systemSettingSheets = new DataStore<SystemSettingSheets[]>([]);
+export const systemSettingMap: {
+  [key: string]: DataStore<SystemSettingSheets[]>;
+} = {
+  default: new DataStore<SystemSettingSheets[]>([]),
+};
+
+// export const systemSettingSheets = new DataStore<SystemSettingSheets[]>([]);
+
+export const usersSheet = new DataStore<UsersSheet[]>([]);
 
 export function getGoogleSheetAPISetting():
   | GoogleSheetConnectionSetting
@@ -151,10 +164,14 @@ export function reconnectGoogleSheet(
 
 function getDataByRangeName<T>(
   data: GaxiosResponse<sheets_v4.Schema$BatchGetValuesResponse>,
-  rangeName: SheetRangeName,
+  rangeName: string,
+  systemSettingSheetNames: string[] = [],
 ): T[] {
-  const nameIndex = SHEET_RANGES.findIndex((name) => name === rangeName);
+  const nameIndex = [...SHEET_RANGES, ...systemSettingSheetNames].findIndex(
+    (name) => name === rangeName,
+  );
   let dataArray = data?.data?.valueRanges?.[nameIndex]?.values ?? [];
+
   if (!dataArray) {
     console.log('No data found.');
     return [];
@@ -183,9 +200,16 @@ export async function initGoogleSheetData(cl: JWT) {
   try {
     const sheetSetting = googleSheetConnectionSetting.get();
     const gsapi = google.sheets({ version: 'v4', auth: cl });
+    const sheetNames = await getSheetNames(cl);
+    const _systemSettingSheetNames = sheetNames?.filter(
+      (name) =>
+        name?.startsWith(SheetRangeName.SystemSetting) &&
+        name !== SheetRangeName.SystemSetting,
+    ) as string[];
+    systemSettingSheetNames.set(_systemSettingSheetNames);
     const opt = {
       spreadsheetId: sheetSetting.spreadsheet_id,
-      ranges: SHEET_RANGES, // Or whatever is the name of your sheet
+      ranges: [...SHEET_RANGES, ..._systemSettingSheetNames],
     };
 
     let data = await gsapi.spreadsheets.values.batchGet(opt);
@@ -199,18 +223,34 @@ export async function initGoogleSheetData(cl: JWT) {
     addressSheet.set(
       getDataByRangeName<AddressSheet>(data, SheetRangeName.Address),
     );
-    systemSettingSheets.set(
+    systemSettingMap?.default.set(
       getDataByRangeName<SystemSettingSheets>(
         data,
         SheetRangeName.SystemSetting,
       ),
     );
+
     systemTariffCodeSheet.set(
       getDataByRangeName<ProductNameMapping>(
         data,
         SheetRangeName.SystemProductMap,
       ),
     );
+    usersSheet.set(getDataByRangeName<UsersSheet>(data, SheetRangeName.Users));
+
+    _systemSettingSheetNames?.forEach(async (name) => {
+      const _name = name as string;
+
+      systemSettingMap[_name] = new DataStore<SystemSettingSheets[]>([]);
+
+      systemSettingMap[_name]?.set(
+        getDataByRangeName<SystemSettingSheets>(
+          data,
+          _name,
+          _systemSettingSheetNames,
+        ),
+      );
+    });
 
     return true;
   } catch (e) {
@@ -337,5 +377,79 @@ export async function addSheetData(
   } catch (e) {
     console.error('Error updating sheet:', e);
     return false;
+  }
+}
+
+export async function getSheetNames(cl: JWT = client.get()!) {
+  try {
+    const sheetSetting = googleSheetConnectionSetting.get();
+    const gsapi = google.sheets({ version: 'v4', auth: cl });
+
+    const response = await gsapi.spreadsheets.get({
+      spreadsheetId: sheetSetting.spreadsheet_id,
+    });
+
+    const sheetNames = response?.data?.sheets?.map(
+      (sheet) => sheet?.properties?.title,
+    );
+    return sheetNames;
+  } catch (e) {
+    console.error('Error fetching sheet names:', e);
+    throw e; // 或者處理錯誤
+  }
+}
+export function addSheet(sheetTitle: string, cl: JWT = client.get()!) {
+  try {
+    const sheetSetting = googleSheetConnectionSetting.get();
+    const gsapi = google.sheets({ version: 'v4', auth: cl });
+
+    const addSheetRequest = {
+      addSheet: {
+        properties: {
+          title: sheetTitle,
+        },
+      },
+    };
+
+    gsapi.spreadsheets.batchUpdate(
+      {
+        spreadsheetId: sheetSetting.spreadsheet_id,
+        requestBody: { requests: [addSheetRequest] },
+      },
+      (err: any, _response: any) => {
+        if (err) {
+          console.error('Error adding sheet:', err);
+          throw err;
+        }
+        console.log(`Sheet "${sheetTitle}" added successfully.`);
+      },
+    );
+  } catch (e) {
+    console.error('Error adding sheet:', e);
+    throw e;
+  }
+}
+export async function deleteSheet(sheetId: number, cl: JWT = client.get()!) {
+  try {
+    const sheetSetting = googleSheetConnectionSetting.get();
+    const gsapi = google.sheets({ version: 'v4', auth: cl });
+
+    const deleteSheetRequest = {
+      deleteSheet: {
+        sheetId: sheetId,
+      },
+    };
+
+    await gsapi.spreadsheets.batchUpdate({
+      spreadsheetId: sheetSetting.spreadsheet_id,
+      requestBody: {
+        requests: [deleteSheetRequest],
+      },
+    });
+
+    console.log(`Sheet with ID ${sheetId} deleted successfully.`);
+  } catch (e) {
+    console.error('Error deleting sheet:', e);
+    throw e;
   }
 }

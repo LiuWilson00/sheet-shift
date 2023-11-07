@@ -1,19 +1,23 @@
-import React, { PropsWithChildren, useEffect } from 'react';
+import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { useLoading } from '../contexts/loading.context';
 import { useSheetSetting } from '../contexts/sheet-settings-dialog-context';
 import Loading from '../components/loading';
 import { useDialog } from '../contexts/dialog.context';
 import { useSetting } from '../contexts/settings-dialog-context/indext';
 import './style.css';
+import { useAuthDialog } from '../contexts/auth-dialog-context';
+import Select from '../components/select';
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const { isLoading, hideLoading, showLoading } = useLoading();
+  const [systemSettingNames, setSystemSettingNames] = useState<string[]>([]);
   const sheetSettings = useSheetSetting();
   const systemSettings = useSetting();
+  const { initAuth } = useAuthDialog();
   const { showDialog, hideDialog } = useDialog();
   useEffect(() => {
     showLoading();
-    window.electron.appStatusBridge.appStartInit().then((result) => {
+    window.electron.appStatusBridge.appStartInit().then(async (result) => {
       hideLoading();
       if (result?.code === 'NO_GOOGLE_SHEET_SETTING') {
         showDialog({
@@ -32,6 +36,11 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
         });
         sheetSettings.showSettings();
       }
+      initAuth();
+      const names =
+        await window.electron.settingBridge.getSystemSettingSheetNames();
+      console.log('names: ', names);
+      setSystemSettingNames(names);
     });
   }, []);
   const handleConnectionSettingsClick = () => {
@@ -50,6 +59,23 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
       <header className="layout-header">
         <button onClick={handleConnectionSettingsClick}>設定連線資訊</button>
         <button onClick={handleSystemSettingsClick}>設定系統設定</button>
+        <span>目前系統設定：</span>
+        <Select
+          items={[
+            {
+              value: 'default',
+              label: '預設',
+            },
+            ...systemSettingNames.map((name) => ({
+              value: name,
+              label: name.split('_')[1],
+            })),
+          ]}
+          onChange={(e) => {
+            console.log('e.target.value: ', e.target.value);
+            systemSettings.setSettingName(e.target.value);
+          }}
+        ></Select>
       </header>
       {children}
       <Loading isVisible={isLoading} />

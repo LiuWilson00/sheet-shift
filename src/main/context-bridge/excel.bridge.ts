@@ -35,8 +35,8 @@ export function sendSelectExcelFile() {
   });
 }
 
-export function sendExportDefaultSheet() {
-  ipcRenderer.send(IPC_CHANNELS.EXPORT_DEFAULT_SHEET);
+export function sendExportDefaultSheet(settingName: string) {
+  ipcRenderer.send(IPC_CHANNELS.EXPORT_DEFAULT_SHEET, settingName);
 
   return new Promise<ExcelDataResult>((resolve, reject) => {
     ipcRenderer.once(
@@ -48,8 +48,8 @@ export function sendExportDefaultSheet() {
   });
 }
 
-export function sendExportShopeeSheet() {
-  ipcRenderer.send(IPC_CHANNELS.EXPORT_SHOPEE_SHEET);
+export function sendExportShopeeSheet(settingName: string) {
+  ipcRenderer.send(IPC_CHANNELS.EXPORT_SHOPEE_SHEET, settingName);
 
   return new Promise<ExcelDataResult>((resolve, reject) => {
     ipcRenderer.once(
@@ -121,5 +121,5 @@ export default {
   sendExportShopeeSheet,
   sendGetWrongData,
   sendAddNewProductMap,
-  sendGetProductMap
+  sendGetProductMap,
 };

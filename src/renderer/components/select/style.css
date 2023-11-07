@@ -1,0 +1,42 @@
+/* src/renderer/components/select/style.css */
+
+/* Style for the select container if needed, you can target using .input-wrapper if it's the class used in BaseInputComponent */
+.input-wrapper {
+  margin: 10px 0;
+  position: relative;
+}
+
+/* Style for the select element */
+select {
+  width: 100%; /* Make the select box full width of its parent */
+  padding: 8px 12px; /* Some padding inside the select box */
+  border: 1px solid #ccc; /* A light border around the select box */
+  border-radius: 4px; /* Rounded corners */
+  background-color: white; /* A white background color */
+  font-size: 16px; /* Standard font size */
+  cursor: pointer; /* Change cursor to pointer when hovering over the select box */
+}
+
+/* Hover effect for select element */
+select:hover {
+  border-color: #888; /* Darken the border a bit when hovering */
+}
+
+/* Focus effect for select element */
+select:focus {
+  outline: none; /* Remove default focus outline */
+  border-color: #555; /* Darken border when select is focused */
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Add a light blue shadow for some focus effect */
+}
+
+/* Style for the option element */
+option {
+  padding: 8px; /* Add some padding for each option */
+}
+
+/* Error message styling */
+.input-wrapper p {
+  color: red; /* Error messages in red */
+  font-size: 14px; /* Slightly smaller font size for error messages */
+  margin-top: 4px; /* Margin top to separate it from select box */
+}

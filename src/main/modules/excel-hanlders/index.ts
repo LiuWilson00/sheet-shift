@@ -25,6 +25,7 @@ import {
 } from '../../utils/google-sheets.tool';
 import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
 import { jsonGroupBy } from '../../utils';
+import { setSystemSettingName } from '../../utils/setting.tool';
 
 const currentSelectedFilePath = new DataStore<string>('');
 
@@ -56,74 +57,82 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       });
     }
   });
-  electronIpcMain.on(IPC_CHANNELS.EXPORT_DEFAULT_SHEET, async (event) => {
-    try {
-      if (currentSelectedFilePath.get()) {
-        const completedData = await processExcelData(
-          currentSelectedFilePath.get(),
-        );
-        const newFilePath = await saveProcessedData(
-          completedData,
-          currentSelectedFilePath.get(),
-        );
-        event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
-          path: newFilePath,
-          data: completedData,
-          isError: false,
-        });
-      } else {
+  electronIpcMain.on(
+    IPC_CHANNELS.EXPORT_DEFAULT_SHEET,
+    async (event, settingName: string) => {
+      try {
+        setSystemSettingName(settingName);
+        if (currentSelectedFilePath.get()) {
+          const completedData = await processExcelData(
+            currentSelectedFilePath.get(),
+          );
+          const newFilePath = await saveProcessedData(
+            completedData,
+            currentSelectedFilePath.get(),
+          );
+          event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
+            path: newFilePath,
+            data: completedData,
+            isError: false,
+          });
+        } else {
+          event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
+            path: '',
+            data: [],
+            isError: true,
+            message: 'No file selected',
+          });
+        }
+      } catch (error) {
+        const _error = error as Error;
+        console.error(error);
         event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
           path: '',
           data: [],
           isError: true,
-          message: 'No file selected',
+          message: _error.message,
         });
       }
-    } catch (error) {
-      const _error = error as Error;
-      console.error(error);
-      event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
-        path: '',
-        data: [],
-        isError: true,
-        message: _error.message,
-      });
-    }
-  });
+    },
+  );
 
-  electronIpcMain.on(IPC_CHANNELS.EXPORT_SHOPEE_SHEET, async (event) => {
-    try {
-      if (currentSelectedFilePath.get()) {
-        const completedData = await processExcelDataShopee(
-          currentSelectedFilePath.get(),
-        );
-        const newFilePath = await saveProcessedData(
-          completedData,
-          currentSelectedFilePath.get(),
-          true,
-        );
-        event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
-          path: newFilePath,
-          data: completedData,
-          isError: false,
-        });
-      } else {
+  electronIpcMain.on(
+    IPC_CHANNELS.EXPORT_SHOPEE_SHEET,
+    async (event, settingName: string) => {
+      try {
+        setSystemSettingName(settingName);
+        if (currentSelectedFilePath.get()) {
+          const completedData = await processExcelDataShopee(
+            currentSelectedFilePath.get(),
+          );
+          const newFilePath = await saveProcessedData(
+            completedData,
+            currentSelectedFilePath.get(),
+            true,
+          );
+          event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
+            path: newFilePath,
+            data: completedData,
+            isError: false,
+          });
+        } else {
+          event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
+            path: '',
+            data: [],
+            isError: true,
+            message: 'No file selected',
+          });
+        }
+      } catch (error) {
         event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
           path: '',
           data: [],
           isError: true,
-          message: 'No file selected',
+          message: JSON.stringify(error),
         });
       }
-    } catch (error) {
-      event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
-        path: '',
-        data: [],
-        isError: true,
-        message: JSON.stringify(error),
-      });
-    }
-  });
+    },
+  );
   electronIpcMain.on(IPC_CHANNELS.GET_WRONG_DATA, async (event) => {
     if (!currentSelectedFilePath.get()) {
       event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {

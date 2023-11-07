@@ -19,6 +19,8 @@ export enum IPC_CHANNELS {
   SETTINGS_SAVED = 'settings-saved',
   IMPORT_SETTINGS_SHEET = 'import-settings-sheet',
   IMPORT_SETTINGS_SHEET_RESPONSE = 'import-settings-sheet-response',
+  GET_SYSTEM_SETTINGS_SHEET_NAMES = 'get-system-settings-sheet-names',
+  SYSTEM_SETTINGS_SHEET_NAMES_RESPONSE = 'system-settings-sheet-names-response',
 
   // Excel
   EXCEL_DATA = 'excel-data',
@@ -38,4 +40,10 @@ export enum IPC_CHANNELS {
   // Debug
   DEBUG_MESSAGE = 'debug-message',
   IPC_EXAMPLE = 'ipc-example',
+
+  // Auth
+  LOGIN = 'login',
+  LOGIN_RESPONSE = 'login-response',
+  LOGOUT = 'logout',
+  LOGOUT_RESPONSE = 'logout-response',
 }

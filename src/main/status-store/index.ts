@@ -7,6 +7,7 @@ interface GoogleSheetConnection {
   isConnected: boolean;
 }
 
+// eslint-disable-next-line import/prefer-default-export
 export const GoogleSheetConnectionStore = new DataStore<GoogleSheetConnection>({
   client_email: '',
   private_key: '',

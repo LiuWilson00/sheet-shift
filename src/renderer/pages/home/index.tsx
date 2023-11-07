@@ -6,6 +6,8 @@ import { useDialog } from '../../contexts/dialog.context';
 import DebugConsole from '../../components/debug-console';
 import { DataDebuggingDialog } from './components/data-debugging-dialog';
 import { SheetData } from '../../utils/excel.interface';
+import { useAuthDialog } from '../../contexts/auth-dialog-context';
+import { useSetting } from '../../contexts/settings-dialog-context/indext';
 
 function Hello() {
   const { showDialog, hideDialog } = useDialog();
@@ -13,6 +15,8 @@ function Hello() {
   const [showDataDebugging, setShowDataDebugging] = useState<boolean>(false);
   const [wrongData, setWrongData] = useState<SheetData[]>([]);
   const [selectFilePath, setSelectFilePath] = useState<string>();
+  const { isAuth, userName, showLogin } = useAuthDialog();
+  const { settingName } = useSetting();
 
   const fetchData = async () => {
     showLoading();
@@ -31,7 +35,8 @@ function Hello() {
   };
   const exportDefualtFormat = async () => {
     showLoading();
-    const result = await window.electron.excelBridge.sendExportDefaultSheet();
+    const result =
+      await window.electron.excelBridge.sendExportDefaultSheet(settingName);
     hideLoading();
     if (result.isError) {
       showDialog({
@@ -53,7 +58,8 @@ function Hello() {
 
   async function exportShopeeFormat() {
     showLoading();
-    const result = await window.electron.excelBridge.sendExportShopeeSheet();
+    const result =
+      await window.electron.excelBridge.sendExportShopeeSheet(settingName);
     hideLoading();
     if (result.isError) {
       showDialog({
@@ -83,6 +89,8 @@ function Hello() {
     console.log('wrongData', wrongData);
   }
 
+  useEffect(() => {}, []);
+
   return (
     <div className="home-context">
       <DataDebuggingDialog
@@ -90,28 +98,39 @@ function Hello() {
         setShow={setShowDataDebugging}
         wrongData={wrongData}
       ></DataDebuggingDialog>
-      <button
-        onClick={() => {
-          fetchData();
-        }}
-        disabled={
-          selectFilePath !== undefined &&
-          selectFilePath !== '' &&
-          selectFilePath !== null
-        }
-      >
-        點擊上傳文件{' '}
-        <span
-          style={{
-            color: 'red',
-            fontSize: '16px',
-            fontWeight: 'bold',
+      {isAuth ? (
+        <button
+          onClick={() => {
+            fetchData();
+          }}
+          disabled={
+            selectFilePath !== undefined &&
+            selectFilePath !== '' &&
+            selectFilePath !== null
+          }
+        >
+          hello {userName}! 點擊上傳文件{' '}
+          <span
+            style={{
+              color: 'red',
+              fontSize: '16px',
+              fontWeight: 'bold',
+            }}
+          >
+            {' '}
+            (xlsx or xls)
+          </span>
+        </button>
+      ) : (
+        <button
+          onClick={() => {
+            showLogin();
           }}
         >
-          {' '}
-          (xlsx or xls)
-        </span>
-      </button>
+          請登入
+        </button>
+      )}
+
       {selectFilePath ? (
         <div className="file-selected-group">
           <span>檔案已上傳，檔案路徑：</span>

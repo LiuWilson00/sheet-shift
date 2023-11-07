@@ -16,6 +16,8 @@ interface SettingsContextType {
   showSettings: () => void;
   hideSettings: () => void;
   settings: any; // 您可以根據需要更詳細地定義這裡的型態
+  setSettingName: (names: string) => void;
+  settingName: string;
   updateSettings: (newSettings: any) => void;
 }
 
@@ -42,6 +44,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [isAuth, setIsAuth] = useState(false);
   const [authCode, setAuthCode] = useState('');
   const [settings, setSettings] = useState<Settings>(settingTemplate); // 初始化設定
+  const [settingName, setSettingName] = useState<string>('default');
   const { showDialog, hideDialog } = useDialog();
   const showSettings = () => setIsSettingsVisible(true);
   const hideSettings = () => setIsSettingsVisible(false);
@@ -61,24 +64,26 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
       return;
     }
 
-    window.electron.settingBridge.sendSetting(settings).then((result) => {
-      if (result) {
-        showDialog({
-          content: '儲存成功',
-          onConfirm: () => {
-            hideDialog();
-          },
-        });
-        hideSettings();
-      } else {
-        showDialog({
-          content: '儲存失敗',
-          onConfirm: () => {
-            hideDialog();
-          },
-        });
-      }
-    });
+    window.electron.settingBridge
+      .sendSetting(settings, settingName)
+      .then((result) => {
+        if (result) {
+          showDialog({
+            content: '儲存成功',
+            onConfirm: () => {
+              hideDialog();
+            },
+          });
+          hideSettings();
+        } else {
+          showDialog({
+            content: '儲存失敗',
+            onConfirm: () => {
+              hideDialog();
+            },
+          });
+        }
+      });
   };
 
   const handleCancel = () => {
@@ -93,7 +98,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
   };
   useEffect(() => {
     if (!isSettingsVisible) return;
-    window.electron.settingBridge.getSetting().then((result) => {
+    window.electron.settingBridge.getSetting(settingName).then((result) => {
       if (result) {
         setSettings(result);
       }
@@ -108,6 +113,8 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
         hideSettings,
         settings,
         updateSettings,
+        setSettingName,
+        settingName,
       }}
     >
       {isSettingsVisible ? (
