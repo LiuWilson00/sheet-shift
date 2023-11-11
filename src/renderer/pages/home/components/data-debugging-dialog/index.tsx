@@ -30,6 +30,14 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
   const [tariffCode, setTariffCode] = useState<string>('');
 
   useEffect(() => {
+    setCorrectProductName(data[ExcelColumnKeys.RealProductName] as string);
+  }, [data[ExcelColumnKeys.RealProductName]]);
+  
+  useEffect(() => {
+    setTariffCode(data[ExcelColumnKeys.ProductClassNumber] as string);
+  }, [data[ExcelColumnKeys.ProductClassNumber]]);
+
+  useEffect(() => {
     onChange({
       [ProductNameMappingColumnKeys.OriginalProductName]: data[
         ExcelColumnKeys.ProductName
@@ -51,9 +59,9 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
         <div className="data-debugging-item__input">
           <Input
             onChange={(event) => {
-
               setCorrectProductName(event.target.value);
             }}
+            defaultValue={data[ExcelColumnKeys.RealProductName] as string}
             searchHandler={(inputValue) => {
               const result = productNameMap
                 .filter((map) => {
@@ -92,6 +100,7 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
             onChange={(event) => {
               setTariffCode(event.target.value);
             }}
+            defaultValue={data[ExcelColumnKeys.ProductClassNumber] as string}
             value={tariffCode}
             name={ProductNameMappingColumnKeys.TariffCode}
           ></Input>

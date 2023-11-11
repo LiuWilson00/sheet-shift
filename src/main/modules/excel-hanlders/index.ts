@@ -13,7 +13,10 @@ import {
 } from './services/data-process.service';
 import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { DataStore } from '../../utils/data-store.tool';
-import { findUnMappingData } from './services/excel-data-debugging';
+import {
+  classifyData,
+  findUnMappingData,
+} from './services/excel-data-debugging';
 import {
   ProductNameMapping,
   ProductNameMappingColumnKeys,
@@ -143,9 +146,10 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
     }
 
     const unMappingData = findUnMappingData(currentSelectedFilePath.get());
+    const result = await classifyData(unMappingData);
 
     event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
-      data: { unMappingData },
+      data: { unMappingData: result },
       isError: false,
     });
   });

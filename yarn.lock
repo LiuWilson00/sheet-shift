@@ -8799,6 +8799,18 @@ onetime@^6.0.0:
   dependencies:
     mimic-fn "^4.0.0"
 
+onnxruntime-common@~1.16.2:
+  version "1.16.2"
+  resolved "https://registry.yarnpkg.com/onnxruntime-common/-/onnxruntime-common-1.16.2.tgz#bfd0d60406e5842185a1be0962e645ebd578ec97"
+  integrity sha512-S2/wPoW2uaq5WzpStS6XKOsy8EvKZOOdpzq++HpIV6XZYl0EIfoWBV/Pi5PWcJPFBcu7Rkopo/oPk9IbD9qRlw==
+
+onnxruntime-node@^1.16.2:
+  version "1.16.2"
+  resolved "https://registry.yarnpkg.com/onnxruntime-node/-/onnxruntime-node-1.16.2.tgz#54e9aa27f5e85dae9e02b43eb09e356ff586844e"
+  integrity sha512-Qe/Fjx2n5Tlfm++RP/IHAmHrXaXoP75PK9p8XrDf6wI59Jk5ypL5F/bNH7lV3gOT8XIsjJmCBC2sfCVuivz1eQ==
+  dependencies:
+    onnxruntime-common "~1.16.2"
+
 open@^8.0.9:
   version "8.4.2"
   resolved "https://registry.yarnpkg.com/open/-/open-8.4.2.tgz#5b5ffe2a8f793dcd2aad73e550cb87b59cb084f9"
@@ -11583,6 +11595,7 @@ word@~0.3.0:
   integrity sha512-OELeY0Q61OXpdUfTp+oweA/vtLVg5VDOXh+3he3PNzLGG/y0oylSOC1xRVj0+l4vQ3tj/bB1HVHv1ocXkQceFA==
 
 "wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+  name wrap-ansi-cjs
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==

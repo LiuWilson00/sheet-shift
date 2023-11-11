@@ -82,6 +82,7 @@ function Hello() {
     showLoading();
     const wrongDataResult =
       await window.electron.excelBridge.sendGetWrongData();
+    console.log('wrongDataResult', wrongDataResult);
     hideLoading();
     if (wrongDataResult.isError) return;
     setWrongData(wrongDataResult.data.unMappingData);

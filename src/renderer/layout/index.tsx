@@ -39,7 +39,6 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
       initAuth();
       const names =
         await window.electron.settingBridge.getSystemSettingSheetNames();
-      console.log('names: ', names);
       setSystemSettingNames(names);
     });
   }, []);
