@@ -51,6 +51,13 @@ export declare namespace Binding {
 export const binding =
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   require(
-    `${RESOURCES_PATH}/onnxruntime-node/bin/napi-v3/${process.platform}/${process.arch}/onnxruntime_binding.node`,
-  ) as // eslint-disable-next-line @typescript-eslint/naming-convention
-  { InferenceSession: Binding.InferenceSessionConstructor };
+    path.join(
+      RESOURCES_PATH,
+      'onnxruntime-node',
+      'bin',
+      'napi-v3',
+      process.platform,
+      process.arch,
+      'onnxruntime_binding.node',
+    ),
+  ) as { InferenceSession: Binding.InferenceSessionConstructor }; // eslint-disable-next-line @typescript-eslint/naming-convention
