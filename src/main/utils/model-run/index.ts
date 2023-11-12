@@ -1,12 +1,13 @@
-const ort = require('onnxruntime-node');
 import tokenizer from './tokenizer.json';
 import path from 'path';
 import idToCategory from './id_to_category.json';
-
+import { InferenceSession, Tensor } from './onnxruntime-node/lib/index';
 import { app } from 'electron';
 const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
   : path.join(__dirname, '../../../../assets');
+
+// const ort = require(`${RESOURCES_PATH}/onnxruntime-node/dist/index`);
 // 定義BERT特殊標記的ID
 const CLS_TOKEN_ID = 101;
 const SEP_TOKEN_ID = 102;
@@ -42,25 +43,23 @@ function toBigInt64Arr(arr: number[]): BigInt64Array {
 // 封裝為 runClassifier 函數
 export async function runClassifier(inputText: string): Promise<string> {
   // 加載ONNX模型
-  const session = await ort.InferenceSession.create(
-    `${RESOURCES_PATH}/model.onnx`,
-  );
+  const session = await InferenceSession.create(`${RESOURCES_PATH}/model.onnx`);
 
   // 準備輸入數據
   const tokenMap = tokenizer.model.vocab;
   const { inputIds, attentionMask } = await tokenize(inputText, tokenMap);
 
   // 創建輸入tensors
-  const tensorInputIds = new ort.Tensor('int64', toBigInt64Arr(inputIds), [
+  const tensorInputIds = new Tensor('int64', toBigInt64Arr(inputIds), [
     1,
     inputIds.length,
   ]);
-  const tensorAttentionMask = new ort.Tensor(
+  const tensorAttentionMask = new Tensor(
     'int64',
     toBigInt64Arr(attentionMask),
     [1, attentionMask.length],
   );
-  const tensorInput3 = new ort.Tensor(
+  const tensorInput3 = new Tensor(
     'int64',
     toBigInt64Arr(new Array(inputIds.length).fill(0)),
     [1, inputIds.length],
@@ -77,7 +76,7 @@ export async function runClassifier(inputText: string): Promise<string> {
   const results = await session.run(feeds);
 
   // 處理輸出
-  const logits = results.logits.data as number[];
+  const logits = results.logits.data as any;
   const predictedClass = logits.indexOf(Math.max(...logits));
   const _idToCategory = idToCategory as Record<string, string>;
   const result = _idToCategory[predictedClass.toString()];
