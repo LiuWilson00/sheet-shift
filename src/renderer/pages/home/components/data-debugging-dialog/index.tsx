@@ -17,19 +17,27 @@ interface DataDebuggingDialogProps {
   setShow: (show: boolean) => void;
   wrongData: SheetData[];
   setWrongData: (wrongData: SheetData[]) => void;
+  isNeedAI: boolean;
 }
 
 interface DebugItemProps {
   data: SheetData;
   onChange: (data: ProductNameMapping) => void;
   productNameMap: ProductTariffCodeMap[];
+  isNeedAI: boolean;
 }
 
-function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
+function DebugItem({
+  data,
+  onChange,
+  productNameMap,
+  isNeedAI,
+}: DebugItemProps) {
   const [correctProductName, setCorrectProductName] = useState<string>('');
 
   const [tariffCode, setTariffCode] = useState<string>('');
   const tryToClassify = async () => {
+    if (!isNeedAI) return;
     const classifyData =
       await window.electron.excelBridge.sendGetClassifyPrdouctName(
         data[ExcelColumnKeys.ProductName] as string,
@@ -63,6 +71,7 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
         {/* <div className="data-debugging-item__title">
           {data[ExcelColumnKeys.ShippingOrderNumber]}
         </div> */}
+
         <div className="data-debugging-item__content">
           {data[ExcelColumnKeys.ProductName]}
         </div>
@@ -116,7 +125,6 @@ function DebugItem({ data, onChange, productNameMap }: DebugItemProps) {
             name={ProductNameMappingColumnKeys.TariffCode}
           ></Input>
         </div>
-    
       </div>
     </div>
   );
@@ -127,6 +135,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
   setShow,
   wrongData,
   setWrongData,
+  isNeedAI,
 }) => {
   const { showDialog, hideDialog } = useDialog();
   const { showLoading, hideLoading } = useLoading();
@@ -179,6 +188,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
             productNameMap={productNameMap}
             data={data}
             key={index}
+            isNeedAI={isNeedAI}
           ></DebugItem>
         ))}
       </div>

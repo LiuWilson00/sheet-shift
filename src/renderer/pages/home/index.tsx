@@ -12,11 +12,17 @@ import { useSetting } from '../../contexts/settings-dialog-context/indext';
 function Hello() {
   const { showDialog, hideDialog } = useDialog();
   const { showLoading, hideLoading } = useLoading();
+  const [isNeedAI, setIsNeedAI] = useState<boolean>(false);
   const [showDataDebugging, setShowDataDebugging] = useState<boolean>(false);
   const [wrongData, setWrongData] = useState<SheetData[]>([]);
   const [selectFilePath, setSelectFilePath] = useState<string>();
   const { isAuth, userName, showLogin } = useAuthDialog();
   const { settingName } = useSetting();
+
+  useEffect(() => {
+    const isNeedAI = window.localStorage.getItem('isNeedAI');
+    setIsNeedAI(isNeedAI === 'true');
+  }, []);
 
   const fetchData = async () => {
     showLoading();
@@ -90,12 +96,11 @@ function Hello() {
     console.log('wrongData', wrongData);
   }
 
-  useEffect(() => {}, []);
-
   return (
     <div className="home-context">
       <DataDebuggingDialog
         show={showDataDebugging}
+        isNeedAI={isNeedAI}
         setShow={setShowDataDebugging}
         wrongData={wrongData}
         setWrongData={setWrongData}
@@ -141,6 +146,16 @@ function Hello() {
             <button className="export-button" onClick={originalDataDebugging}>
               進行資料前處理
             </button>
+            <input
+              type="radio"
+              id="is-need-ai"
+              checked={isNeedAI}
+              onClick={(e: any) => {
+                setIsNeedAI(!isNeedAI);
+                window.localStorage.setItem('isNeedAI', (!isNeedAI).toString());
+              }}
+            ></input>
+            <label> 智能辨識</label>
           </div>
           <div className="file-selected-group-button">
             <button className="export-button" onClick={exportDefualtFormat}>
