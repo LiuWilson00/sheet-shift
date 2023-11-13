@@ -18,6 +18,7 @@ interface SheetSettingsContextType {
   settings: any; // 您可以根據需要更詳細地定義這裡的型態
   updateSettings: (newSettings: any) => void;
   isConnected: boolean;
+  setIsConnected: (isConnected: boolean) => void;
 }
 
 const defualtSheetSettings = {
@@ -109,7 +110,8 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
         hideSettings,
         settings,
         updateSettings,
-        isConnected
+        isConnected,
+        setIsConnected
       }}
     >
       {isSettingsVisible ? (

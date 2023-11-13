@@ -20,6 +20,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
     window.electron.appStatusBridge.appStartInit().then(async (result) => {
       hideLoading();
       if (result?.code === 'NO_GOOGLE_SHEET_SETTING') {
+        sheetSettings.setIsConnected(false);
         showDialog({
           content: '尚未設定連線資訊，請先設定連線資訊。',
           onConfirm: () => {
@@ -28,6 +29,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
         });
         sheetSettings.showSettings();
       } else if (!result.isConnected) {
+        sheetSettings.setIsConnected(false);
         showDialog({
           content: '連線異常，請確定網路環境或確認設定是否正確。',
           onConfirm: () => {
@@ -35,11 +37,10 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
           },
         });
         sheetSettings.showSettings();
+      }else{
+        sheetSettings.setIsConnected(true);
       }
       initAuth();
-      const names =
-        await window.electron.settingBridge.getSystemSettingSheetNames();
-      setSystemSettingNames(names);
     });
   }, []);
   const handleConnectionSettingsClick = () => {
@@ -52,6 +53,16 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
     // 例如: useSystemSetting().showSettings();
     systemSettings.showSettings();
   };
+
+  useEffect(() => {
+    console.log('sheetSettings.isConnected: ', sheetSettings.isConnected);
+    if (!sheetSettings.isConnected) return;
+    (async () => {
+      const names =
+        await window.electron.settingBridge.getSystemSettingSheetNames();
+      setSystemSettingNames(names);
+    })();
+  }, [sheetSettings.isConnected]);
 
   return (
     <div>
