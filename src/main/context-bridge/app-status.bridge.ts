@@ -33,6 +33,7 @@ const appStartInit = () => {
   });
 };
 
+
 export default {
   onDataInitialized,
   getDataInitialized,

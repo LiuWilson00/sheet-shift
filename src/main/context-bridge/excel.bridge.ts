@@ -6,14 +6,15 @@ import {
   SheetData,
 } from '../modules/excel-hanlders/index.interface';
 
-interface BaseResult {
+interface BaseResult<T = unknown> {
   isError: boolean;
+  data?: T;
   message?: string;
 }
 
-interface ExcelDataResult extends BaseResult {
+interface ExcelDataResult<T = unknown> extends BaseResult {
   path: string;
-  data: Array<unknown>;
+  data: Array<T>;
 }
 
 export const onceExcelData = (func: (data: ExcelDataResult) => void) => {
@@ -113,6 +114,26 @@ export function sendGetProductMap() {
     );
   });
 }
+interface PrdouctNameClassify {
+  pruductName: string;
+  realProductName: string;
+  tariffcode: string;
+}
+
+export function sendGetClassifyPrdouctName(productName: string) {
+  ipcRenderer.send(IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME, productName);
+
+  return new Promise<BaseResult<PrdouctNameClassify>>(
+    (resolve, reject) => {
+      ipcRenderer.once(
+        IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME_RESPONSE,
+        (_event, data: BaseResult<PrdouctNameClassify>) => {
+          resolve(data);
+        },
+      );
+    },
+  );
+}
 
 export default {
   onceExcelData,
@@ -122,4 +143,5 @@ export default {
   sendGetWrongData,
   sendAddNewProductMap,
   sendGetProductMap,
+  sendGetClassifyPrdouctName,
 };

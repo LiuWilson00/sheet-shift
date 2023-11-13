@@ -29,6 +29,7 @@ import {
 import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
 import { jsonGroupBy } from '../../utils';
 import { setSystemSettingName } from '../../utils/setting.tool';
+import { runClassifier } from '../../utils/model-run';
 
 const currentSelectedFilePath = new DataStore<string>('');
 
@@ -146,13 +147,34 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
     }
 
     const unMappingData = findUnMappingData(currentSelectedFilePath.get());
-    const result = await classifyData(unMappingData);
+    // const result = await classifyData(unMappingData);
 
     event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
-      data: { unMappingData: result },
+      data: { unMappingData: unMappingData },
       isError: false,
     });
   });
+
+  electronIpcMain.on(
+    IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME,
+    async (event, productName: string) => {
+      const map = getProductNameMap();
+      const tryClassify = await runClassifier(productName);
+      const tariffcode =
+        map.find(
+          (i) =>
+            i[ProductNameMappingColumnKeys.CorrectProductName] === tryClassify,
+        )?.[ProductNameMappingColumnKeys.TariffCode] ?? '';
+      event.reply(IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME_RESPONSE, {
+        data: {
+          productName: productName,
+          realProductName: tryClassify,
+          tariffcode: tariffcode,
+        },
+        isError: false,
+      });
+    },
+  );
 
   electronIpcMain.on(
     IPC_CHANNELS.ADD_NEW_PRODUCT_MAP,

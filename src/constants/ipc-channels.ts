@@ -37,6 +37,9 @@ export enum IPC_CHANNELS {
   GET_PRODUCT_MAP = 'get-product-map',
   GET_PRODUCT_MAP_RESPONSE = 'get-product-map-response',
 
+  GET_CLASSIFY_PRODUCT_NAME = 'get-classify-product-name',
+  GET_CLASSIFY_PRODUCT_NAME_RESPONSE = 'get-classify-product-name-response',
+
   // Debug
   DEBUG_MESSAGE = 'debug-message',
   IPC_EXAMPLE = 'ipc-example',

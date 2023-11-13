@@ -98,6 +98,7 @@ function Hello() {
         show={showDataDebugging}
         setShow={setShowDataDebugging}
         wrongData={wrongData}
+        setWrongData={setWrongData}
       ></DataDebuggingDialog>
       {isAuth ? (
         <button
