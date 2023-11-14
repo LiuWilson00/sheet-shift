@@ -68,8 +68,8 @@ interface WrongData extends BaseResult {
   };
 }
 
-export function sendGetWrongData() {
-  ipcRenderer.send(IPC_CHANNELS.GET_WRONG_DATA);
+export function sendGetWrongData(aiClassify = false) {
+  ipcRenderer.send(IPC_CHANNELS.GET_WRONG_DATA, aiClassify);
 
   return new Promise<WrongData>((resolve, reject) => {
     ipcRenderer.once(
@@ -123,16 +123,14 @@ interface PrdouctNameClassify {
 export function sendGetClassifyPrdouctName(productName: string) {
   ipcRenderer.send(IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME, productName);
 
-  return new Promise<BaseResult<PrdouctNameClassify>>(
-    (resolve, reject) => {
-      ipcRenderer.once(
-        IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME_RESPONSE,
-        (_event, data: BaseResult<PrdouctNameClassify>) => {
-          resolve(data);
-        },
-      );
-    },
-  );
+  return new Promise<BaseResult<PrdouctNameClassify>>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME_RESPONSE,
+      (_event, data: BaseResult<PrdouctNameClassify>) => {
+        resolve(data);
+      },
+    );
+  });
 }
 
 export default {

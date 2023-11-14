@@ -13,6 +13,8 @@ function Hello() {
   const { showDialog, hideDialog } = useDialog();
   const { showLoading, hideLoading } = useLoading();
   const [isNeedAI, setIsNeedAI] = useState<boolean>(false);
+  const [isNeedBatchAIClassify, setIsNeedBatchAIClassify] =
+    useState<boolean>(false);
   const [showDataDebugging, setShowDataDebugging] = useState<boolean>(false);
   const [wrongData, setWrongData] = useState<SheetData[]>([]);
   const [selectFilePath, setSelectFilePath] = useState<string>();
@@ -22,6 +24,10 @@ function Hello() {
   useEffect(() => {
     const isNeedAI = window.localStorage.getItem('isNeedAI');
     setIsNeedAI(isNeedAI === 'true');
+
+    const isNeedBatchAIClassify =
+      window.localStorage.getItem('batchAIClassify');
+    setIsNeedBatchAIClassify(isNeedBatchAIClassify === 'true');
   }, []);
 
   const fetchData = async () => {
@@ -87,8 +93,7 @@ function Hello() {
   async function originalDataDebugging() {
     showLoading();
     const wrongDataResult =
-      await window.electron.excelBridge.sendGetWrongData();
-    console.log('wrongDataResult', wrongDataResult);
+      await window.electron.excelBridge.sendGetWrongData(isNeedBatchAIClassify);
     hideLoading();
     if (wrongDataResult.isError) return;
     setWrongData(wrongDataResult.data.unMappingData);
@@ -146,16 +151,36 @@ function Hello() {
             <button className="export-button" onClick={originalDataDebugging}>
               進行資料前處理
             </button>
-            <input
-              type="radio"
-              id="is-need-ai"
-              checked={isNeedAI}
-              onClick={(e: any) => {
-                setIsNeedAI(!isNeedAI);
-                window.localStorage.setItem('isNeedAI', (!isNeedAI).toString());
-              }}
-            ></input>
-            <label> 智能辨識</label>
+            <div>
+              <input
+                type="radio"
+                id="is-need-ai"
+                checked={isNeedAI}
+                onClick={() => {
+                  setIsNeedAI(!isNeedAI);
+                  window.localStorage.setItem(
+                    'isNeedAI',
+                    (!isNeedAI).toString(),
+                  );
+                }}
+              ></input>
+              <label> 智能辨識</label>
+            </div>
+            <div>
+              <input
+                type="radio"
+                id="is-need-ai"
+                checked={isNeedBatchAIClassify}
+                onClick={() => {
+                  setIsNeedBatchAIClassify(!isNeedBatchAIClassify);
+                  window.localStorage.setItem(
+                    'batchAIClassify',
+                    (!isNeedBatchAIClassify).toString(),
+                  );
+                }}
+              ></input>
+              <label> 批量智能辨識</label>
+            </div>
           </div>
           <div className="file-selected-group-button">
             <button className="export-button" onClick={exportDefualtFormat}>

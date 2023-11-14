@@ -46,24 +46,28 @@ export function findUnMappingData(filePath: string) {
   return unMappingData;
 }
 
-export function classifyData(data: SheetData[]): Promise<SheetData[]> {
+export async function classifyData(data: SheetData[]): Promise<SheetData[]> {
   const map = getProductNameMap();
-  return Promise.all(
-    data.map(async (entry) => {
-      const tryClassify = await runClassifier(
-        entry[ExcelColumnKeys.ProductName] as string,
-      );
+  const result: SheetData[] = [];
 
-      return {
-        ...entry,
-        [ExcelColumnKeys.RealProductName]: tryClassify,
-        [ExcelColumnKeys.ProductClassNumber]:
-          map.find(
-            (i) =>
-              i[ProductNameMappingColumnKeys.CorrectProductName] ===
-              tryClassify,
-          )?.[ProductNameMappingColumnKeys.TariffCode] ?? '',
-      };
-    }),
-  );
+  for (const entry of data) {
+    const tryClassify = await runClassifier(
+      entry[ExcelColumnKeys.ProductName] as string,
+    );
+
+    const classifiedEntry = {
+      ...entry,
+      [ExcelColumnKeys.RealProductName]: tryClassify,
+      [ExcelColumnKeys.ProductClassNumber]:
+        map.find(
+          (i) =>
+            i[ProductNameMappingColumnKeys.CorrectProductName] ===
+            tryClassify,
+        )?.[ProductNameMappingColumnKeys.TariffCode] ?? '',
+    };
+
+    result.push(classifiedEntry);
+  }
+
+  return result;
 }

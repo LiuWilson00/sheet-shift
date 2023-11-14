@@ -137,23 +137,29 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       }
     },
   );
-  electronIpcMain.on(IPC_CHANNELS.GET_WRONG_DATA, async (event) => {
-    if (!currentSelectedFilePath.get()) {
+  electronIpcMain.on(
+    IPC_CHANNELS.GET_WRONG_DATA,
+    async (event, aiClassify: boolean) => {
+      if (!currentSelectedFilePath.get()) {
+        event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
+          data: {},
+          isError: true,
+        });
+        return;
+      }
+
+      const unMappingData = findUnMappingData(currentSelectedFilePath.get());
+
       event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
-        data: {},
-        isError: true,
+        data: {
+          unMappingData: aiClassify
+            ? await classifyData(unMappingData)
+            : unMappingData,
+        },
+        isError: false,
       });
-      return;
-    }
-
-    const unMappingData = findUnMappingData(currentSelectedFilePath.get());
-    // const result = await classifyData(unMappingData);
-
-    event.reply(IPC_CHANNELS.GET_WRONG_DATA_RESPONSE, {
-      data: { unMappingData: unMappingData },
-      isError: false,
-    });
-  });
+    },
+  );
 
   electronIpcMain.on(
     IPC_CHANNELS.GET_CLASSIFY_PRODUCT_NAME,

@@ -39,11 +39,19 @@ async function tokenize(
 function toBigInt64Arr(arr: number[]): BigInt64Array {
   return BigInt64Array.from(arr.map((n) => BigInt(n)));
 }
+let _session:any = null;
 
+const getSession = async () => {
+  if (!_session) {
+    _session = await ort.InferenceSession.create(`${RESOURCES_PATH}/model.onnx`);
+  }
+
+  return _session;
+}
 // 封裝為 runClassifier 函數
 export async function runClassifier(inputText: string): Promise<string> {
   // 加載ONNX模型
-  const session = await ort.InferenceSession.create(`${RESOURCES_PATH}/model.onnx`);
+  const session = await getSession();
 
   // 準備輸入數據
   const tokenMap = tokenizer.model.vocab;
