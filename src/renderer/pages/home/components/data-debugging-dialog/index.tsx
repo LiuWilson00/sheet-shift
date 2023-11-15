@@ -180,14 +180,15 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
             onChange={(correctDataMap) => {
               if (correctDataMap[ExcelColumnKeys.RealProductName] === '')
                 return;
-
-              const newCorrectDataMaps = [...correctDataMaps];
-              newCorrectDataMaps[index] = correctDataMap;
-              setCorrectDataMaps(newCorrectDataMaps);
+              setCorrectDataMaps((prevMaps) => {
+                const newMaps = [...prevMaps];
+                newMaps[index] = correctDataMap;
+                return newMaps;
+              });
             }}
             productNameMap={productNameMap}
             data={data}
-            key={index}
+            key={data[ExcelColumnKeys.ProductName] || index}
             isNeedAI={isNeedAI}
           ></DebugItem>
         ))}
@@ -207,7 +208,6 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
           contentRender={debuggingContentRender}
           onConfirm={async () => {
             showLoading();
-
             const result =
               await window.electron.excelBridge.sendAddNewProductMap(
                 correctDataMaps,

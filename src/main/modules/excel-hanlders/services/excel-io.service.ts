@@ -38,11 +38,20 @@ export async function saveProcessedData(
   });
   await addStatisticsSheet(completedWorkbook, completedData);
   // await completedWorkbook.xlsx.writeFile(newFilePath);
-  copyTemplateWorksheetToNewExcelByWorkSheet(
-    completedWorkbook.worksheets[0],
-    filePath,
-    newFilePath,
-  );
+  const targetWorkbookHaveData =
+    await copyTemplateWorksheetToNewExcelByWorkSheet(
+      completedWorkbook.worksheets[0],
+      filePath,
+      `${completedWorkbook.worksheets[0].name}-completed`,
+    );
+  const targetWorkbookHaveStatistic =
+    await copyTemplateWorksheetToNewExcelByWorkSheet(
+      completedWorkbook.worksheets[completedWorkbook.worksheets.length - 1],
+      filePath,
+      '統計資料',
+      targetWorkbookHaveData,
+    );
+  await targetWorkbookHaveStatistic.xlsx.writeFile(newFilePath);
   return newFilePath;
 }
 type JsonToExcelOptions = {
@@ -174,17 +183,16 @@ async function addStatisticsSheet(
 export async function copyTemplateWorksheetToNewExcelByWorkSheet(
   templateWorksheet: Worksheet,
   targetPath: string,
-  outputPath: string,
+  sheetName: string,
+  targetWorkbook?: Workbook,
 ) {
-  const targetWorkbook = new Workbook();
-
-  await targetWorkbook.xlsx.readFile(targetPath);
+  const _targetWorkbook = targetWorkbook ?? new Workbook();
+  console.log('targetPath', targetPath);
+  if (!targetWorkbook) await _targetWorkbook.xlsx.readFile(targetPath);
 
   // 複製工作表
 
-  const targetSheet = targetWorkbook.addWorksheet(
-    `${templateWorksheet.name}-completed`,
-  );
+  const targetSheet = _targetWorkbook.addWorksheet(sheetName);
 
   // 複製行和列數據及其樣式
   templateWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
@@ -202,7 +210,8 @@ export async function copyTemplateWorksheetToNewExcelByWorkSheet(
   // });
 
   // 保存新的 Excel 檔案
-  await targetWorkbook.xlsx.writeFile(outputPath);
+  // await targetWorkbook.xlsx.writeFile(outputPath);
+  return _targetWorkbook;
 }
 
 export async function copyTemplateWorksheetToNewExcel(

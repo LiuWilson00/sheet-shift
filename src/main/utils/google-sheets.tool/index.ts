@@ -274,7 +274,7 @@ function jsonToSheetArray(
   const { disableAddTitle, keySorting } = options;
 
   // 取得所有的標題 (keys)
-  const keys = Object.keys(jsonArray[0]);
+  const keys = Object.keys(jsonArray[0] ?? []);
   const result: any[][] = disableAddTitle ? [] : [keys];
 
   // 轉換每一個物件成為一個陣列並加到結果中

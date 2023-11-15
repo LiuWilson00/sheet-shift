@@ -207,6 +207,7 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
   );
   electronIpcMain.on(IPC_CHANNELS.GET_PRODUCT_MAP, async (event) => {
     const data = getProductNameMap();
+
     const dataGrouped = jsonGroupBy(
       data,
       [ProductNameMappingColumnKeys.CorrectProductName],

@@ -127,6 +127,8 @@ export function mappingRealProductName(
   const completedData: SheetData[] = [];
 
   originalDataJson.forEach((originalData) => {
+    if(!originalData[ExcelColumnKeys.ProductName]) return;
+
     const realNameItem = productNameMap.find(
       (item) =>
         item[ProductNameMappingColumnKeys.OriginalProductName] ===
