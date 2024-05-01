@@ -1,28 +1,14 @@
-import {
-  excelToJSON,
-  jsonGroupBy,
-  getDistinctValuesForKey,
-  findAllIndex,
-  getRandomIntBetween,
-  addressSheet,
-  AddressSheet,
-} from '../../../utils';
-import { AddressSheetColumnKeys } from '../../../utils/google-sheets.tool/index.interface';
-import { getSystemSetting } from '../../../utils';
+import { excelToJSON } from '../../../utils';
 import {
   SheetData,
   ExcelColumnKeys,
-  ProductNameMapping,
-  ProductNameMappingColumnKeys,
   SheetDataOriginal,
 } from '../index.interface';
-import { DefaultPriceSetting } from '../../../utils/setting.tool';
 import { getProductNameMap } from '../../../utils/google-sheets.tool';
 import {
   sheetDataProcess,
   deleteNullProductNameData,
   dataPreDebuggingProcess,
-  groupExcelDataShopee,
   summarizeAndUpdateGroupedDataShopee,
   formatRecipientPhone,
   mappingRealProductName,
@@ -30,6 +16,10 @@ import {
   processRecipientDetails,
   summarizeAndUpdateGroupedData,
 } from './data-process.service';
+import {
+  groupExcelDataShopeeNew,
+  groupExcelDataShopee,
+} from './data-process-group.service';
 
 export async function processExcelDataShopee(filePath: string) {
   const productNameMap = getProductNameMap();
@@ -73,7 +63,7 @@ export async function processExcelDataShopeeNew(filePath: string) {
     dataPreDebuggingProcess(originalData),
   );
 
-  const groupedData = groupExcelDataShopee(preDebugedData);
+  const groupedData = groupExcelDataShopeeNew(preDebugedData);
   const dataBeforeSummaryUpdate =
     summarizeAndUpdateGroupedDataShopee(groupedData);
   const dataProcessPhone = dataBeforeSummaryUpdate.map((entry) => {

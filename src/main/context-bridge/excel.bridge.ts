@@ -154,4 +154,5 @@ export default {
   sendAddNewProductMap,
   sendGetProductMap,
   sendGetClassifyPrdouctName,
+  sendExportShopeeSheetNew
 };

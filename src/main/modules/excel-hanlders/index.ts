@@ -147,13 +147,19 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       try {
         setSystemSettingName(settingName);
         if (currentSelectedFilePath.get()) {
-          const completedData = await processExcelDataShopee(
+          const completedData = await processExcelDataShopeeNew(
             currentSelectedFilePath.get(),
           );
           const newFilePath = await saveProcessedData(
             completedData,
             currentSelectedFilePath.get(),
             true,
+            {
+              templateOptions: {
+                highlightTotalBoxes: false,
+                highlightTotalAmount2000: true,
+              },
+            },
           );
           event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW_COMPLATED, {
             path: newFilePath,

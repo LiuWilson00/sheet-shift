@@ -28,6 +28,7 @@ export async function saveProcessedData(
   completedData: SheetData[],
   filePath: string,
   isShopee: boolean = false,
+  options?: { templateOptions?: JsonToExcelOptions },
 ) {
   const newFilePath = generateNewFileName(filePath);
   const completedWorkbook = await addJsonToExcelTemplate(completedData, {
@@ -35,6 +36,7 @@ export async function saveProcessedData(
       ? SHOPEE_DATA_TEMPLATE_PATH
       : ORIGINAL_DATA_TEMPLATE_PATH,
     columnOrder: isShopee ? shopeeColumnOrder : defaultColumnOrder,
+    ...options?.templateOptions,
   });
   await addStatisticsSheet(completedWorkbook, completedData);
   // await completedWorkbook.xlsx.writeFile(newFilePath);
@@ -58,6 +60,8 @@ type JsonToExcelOptions = {
   startRow?: number;
   filePath?: string;
   columnOrder?: typeof defaultColumnOrder;
+  highlightTotalBoxes?: boolean;
+  highlightTotalAmount2000?: boolean;
 };
 async function addJsonToExcelTemplate(
   jsonData: SheetData[],
@@ -67,8 +71,19 @@ async function addJsonToExcelTemplate(
     startRow: 3,
     filePath: ORIGINAL_DATA_TEMPLATE_PATH,
     columnOrder: defaultColumnOrder,
+    highlightTotalBoxes: true,
+    highlightTotalAmount2000: false,
   };
-  const { startRow, filePath, columnOrder } = { ...defaultOptions, ...options };
+  const {
+    startRow,
+    filePath,
+    columnOrder,
+    highlightTotalBoxes,
+    highlightTotalAmount2000,
+  } = {
+    ...defaultOptions,
+    ...options,
+  };
   // 1. 讀取現有的Excel模板
   const workbook = new Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -97,12 +112,35 @@ async function addJsonToExcelTemplate(
       previousBoxnumber = currentJsonData[ExcelColumnKeys.TotalBoxes];
     }
 
-    if (previousBoxnumber !== '' && previousBoxnumber > 1) {
+    if (
+      highlightTotalBoxes &&
+      previousBoxnumber !== '' &&
+      previousBoxnumber > 1
+    ) {
       const row = worksheet.getRow(currentRow + 1);
       row.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'FFFFFF00' }, // ARGB for yellow
+      };
+
+      row.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    }
+
+    if (
+      highlightTotalAmount2000 &&
+      currentJsonData[ExcelColumnKeys.TotalAmount] > 2000
+    ) {
+      const row = worksheet.getRow(currentRow + 1);
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF00' }, //  ARGB for yellow
       };
 
       row.border = {

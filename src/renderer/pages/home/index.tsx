@@ -90,6 +90,29 @@ function Hello() {
       },
     });
   }
+  async function exportShopeeFormatNew() {
+    showLoading();
+    const result =
+      await window.electron.excelBridge.sendExportShopeeSheetNew(settingName);
+    hideLoading();
+    if (result.isError) {
+      showDialog({
+        content: '匯出失敗，請確認檔案是否正確。',
+        onConfirm: () => {
+          hideDialog();
+        },
+      });
+      return;
+    }
+
+    showDialog({
+      content: `檔案已匯出，檔案路徑：${result.path}`,
+      onConfirm: () => {
+        hideDialog();
+      },
+    });
+  }
+
   async function originalDataDebugging() {
     showLoading();
     const wrongDataResult = await window.electron.excelBridge.sendGetWrongData(
@@ -190,7 +213,7 @@ function Hello() {
             <button className="export-button" onClick={exportShopeeFormat}>
               匯出成蝦皮格式
             </button>
-            <button className="export-button" onClick={exportShopeeFormat}>
+            <button className="export-button" onClick={exportShopeeFormatNew}>
               匯出成蝦皮格式(new)
             </button>
           </div>
