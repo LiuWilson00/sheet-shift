@@ -62,6 +62,18 @@ export function sendExportShopeeSheet(settingName: string) {
   });
 }
 
+export function sendExportShopeeSheetNew(settingName: string) {
+  ipcRenderer.send(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW, settingName);
+
+  return new Promise<ExcelDataResult>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW_COMPLATED,
+      (_event, data: ExcelDataResult) => {
+        resolve(data);
+      },
+    );
+  });
+}
 interface WrongData extends BaseResult {
   data: {
     unMappingData: Array<SheetData>;

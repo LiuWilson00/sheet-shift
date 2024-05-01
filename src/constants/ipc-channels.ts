@@ -40,6 +40,8 @@ export enum IPC_CHANNELS {
   GET_CLASSIFY_PRODUCT_NAME = 'get-classify-product-name',
   GET_CLASSIFY_PRODUCT_NAME_RESPONSE = 'get-classify-product-name-response',
 
+  EXPORT_SHOPEE_SHEET_NEW = 'export-shopee-sheet-new',
+  EXPORT_SHOPEE_SHEET_NEW_COMPLATED = 'export-shopee-sheet-new-complated',
   // Debug
   DEBUG_MESSAGE = 'debug-message',
   IPC_EXAMPLE = 'ipc-example',

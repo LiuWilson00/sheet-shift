@@ -18,53 +18,7 @@ import {
 } from '../index.interface';
 import { DefaultPriceSetting } from '../../../utils/setting.tool';
 import { getProductNameMap } from '../../../utils/google-sheets.tool';
-
-export async function processExcelData(filePath: string) {
-  const productNameMap = getProductNameMap();
-  const originalData: SheetData[] = excelToJSON(filePath, {
-    xlsxOpts: { range: 2 },
-    resultProcess: sheetDataProcess,
-  });
-
-  const preDebugedData = deleteNullProductNameData(
-    dataPreDebuggingProcess(originalData),
-  );
-
-  const groupedData = groupExcelData(preDebugedData);
-  const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
-  const dataWithRecipientAndRealName = processRecipientDetails(
-    dataBeforeSummaryUpdate,
-  );
-
-  return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);
-}
-export async function processExcelDataShopee(filePath: string) {
-  const productNameMap = getProductNameMap();
-  const originalData: SheetData[] = excelToJSON<SheetDataOriginal, SheetData>(
-    filePath,
-    {
-      xlsxOpts: { range: 2 },
-      resultProcess: sheetDataProcess,
-    },
-  );
-
-  const preDebugedData = deleteNullProductNameData(
-    dataPreDebuggingProcess(originalData),
-  );
-
-  const groupedData = groupExcelDataShopee(preDebugedData);
-  const dataBeforeSummaryUpdate =
-    summarizeAndUpdateGroupedDataShopee(groupedData);
-  const dataProcessPhone = dataBeforeSummaryUpdate.map((entry) => {
-    return {
-      ...entry,
-      [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
-        entry[ExcelColumnKeys.RecipientPhone] as string,
-      ),
-    };
-  });
-  return mappingRealProductName(dataProcessPhone, productNameMap);
-}
+import { stringKeys, numbarKeys, defaultSheetData } from './service.const';
 
 export function dataPreDebuggingProcess(data: SheetData[]): SheetData[] {
   const dataFilledDown = fillDownProcess(data);
@@ -431,7 +385,9 @@ function setSteetPricesNew(
   data[index][ExcelColumnKeys.TotalAmount] = newUnitPrice * quantity;
 }
 
-function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
+export function summarizeAndUpdateGroupedData(
+  groupedData: SheetData[],
+): SheetData[] {
   const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
   const distinctShippingOrderNumber = getDistinctValuesForKey<string>(
     groupedData,
@@ -486,7 +442,6 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
       }
     });
 
-
     // 由於總金額的資料需要在第一次的時候就計算，所以這邊要再跑一次
     const summariesTotalAmount = getSummaries(
       sameShippingOrderNumberDataIndex,
@@ -506,7 +461,7 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
   return newGroupedData;
 }
 
-function summarizeAndUpdateGroupedDataShopee(
+export function summarizeAndUpdateGroupedDataShopee(
   groupedData: SheetData[],
 ): SheetData[] {
   const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
@@ -553,7 +508,7 @@ function summarizeAndUpdateGroupedDataShopee(
   return newGroupedData;
 }
 
-function processRecipientDetails(data: SheetData[]): SheetData[] {
+export function processRecipientDetails(data: SheetData[]): SheetData[] {
   return data.map((entry) => {
     return {
       ...entry,
@@ -591,7 +546,7 @@ function determineRecipientIDCode(taxNumber: string): string {
   return '58';
 }
 
-function formatRecipientPhone(phone: string): string {
+export function formatRecipientPhone(phone: string): string {
   if (!phone) return '';
 
   const cleanedPhone = String(phone).replace(/[()\-]/g, '');
@@ -602,7 +557,7 @@ function formatRecipientPhone(phone: string): string {
   return formattedPhone;
 }
 
-function getRandomAddress(addressData: AddressSheet[]): string {
+export function getRandomAddress(addressData: AddressSheet[]): string {
   const randomIndex = getRandomIntBetween(0, addressData.length - 1);
   return addressData[randomIndex][AddressSheetColumnKeys.Address];
 }
@@ -616,73 +571,6 @@ export function deleteNullProductNameData(data: SheetData[]): SheetData[] {
     );
   });
 }
-
-const stringKeys: ExcelColumnKeys[] = [
-  ExcelColumnKeys.ShippingOrderNumber,
-  ExcelColumnKeys.CourierTaxNumber,
-  ExcelColumnKeys.ProductName,
-  ExcelColumnKeys.Brand,
-  ExcelColumnKeys.Specification,
-  ExcelColumnKeys.QuantityUnit,
-  ExcelColumnKeys.TradeConditionCode,
-  ExcelColumnKeys.CurrencyCode,
-  ExcelColumnKeys.BoxUnit,
-  ExcelColumnKeys.CountryOfOriginCode,
-  ExcelColumnKeys.RecipientTaxNumber,
-  ExcelColumnKeys.RecipientEnglishName,
-  ExcelColumnKeys.RecipientPhone,
-  ExcelColumnKeys.RecipientEnglishAddress,
-  ExcelColumnKeys.RecipientIDNumber,
-  ExcelColumnKeys.Mark,
-  ExcelColumnKeys.SenderEnglishName,
-  ExcelColumnKeys.SenderPhoneNumber,
-  ExcelColumnKeys.SenderEnglishAddress,
-  ExcelColumnKeys.RealProductName,
-  ExcelColumnKeys.ProductClassNumber,
-];
-const numbarKeys: ExcelColumnKeys[] = [
-  ExcelColumnKeys.NetWeight,
-  ExcelColumnKeys.GrossWeight,
-  ExcelColumnKeys.Quantity,
-  ExcelColumnKeys.TotalBoxes,
-  ExcelColumnKeys.UnitPrice,
-  ExcelColumnKeys.TotalAmount,
-  ExcelColumnKeys.OriginalAmount,
-  ExcelColumnKeys.ProcessedAmount,
-  ExcelColumnKeys.index,
-];
-const defaultSheetData: SheetData = {
-  [ExcelColumnKeys.ShippingOrderNumber]: '',
-  [ExcelColumnKeys.CourierTaxNumber]: '',
-  [ExcelColumnKeys.ProductName]: '',
-  [ExcelColumnKeys.Brand]: '',
-  [ExcelColumnKeys.Specification]: '',
-  [ExcelColumnKeys.QuantityUnit]: '',
-  [ExcelColumnKeys.TradeConditionCode]: '',
-  [ExcelColumnKeys.CurrencyCode]: '',
-  [ExcelColumnKeys.BoxUnit]: '',
-  [ExcelColumnKeys.CountryOfOriginCode]: '',
-  [ExcelColumnKeys.RecipientTaxNumber]: '',
-  [ExcelColumnKeys.RecipientEnglishName]: '',
-  [ExcelColumnKeys.RecipientPhone]: '',
-  [ExcelColumnKeys.RecipientEnglishAddress]: '',
-  [ExcelColumnKeys.RecipientIDNumber]: '',
-  [ExcelColumnKeys.Mark]: '',
-  [ExcelColumnKeys.SenderEnglishName]: '',
-  [ExcelColumnKeys.SenderPhoneNumber]: '',
-  [ExcelColumnKeys.SenderEnglishAddress]: '',
-  [ExcelColumnKeys.RealProductName]: '',
-  [ExcelColumnKeys.ProductClassNumber]: '',
-  [ExcelColumnKeys.NetWeight]: 0,
-  [ExcelColumnKeys.GrossWeight]: 0,
-  [ExcelColumnKeys.Quantity]: 0,
-  [ExcelColumnKeys.TotalBoxes]: 0,
-  [ExcelColumnKeys.UnitPrice]: 0,
-  [ExcelColumnKeys.TotalAmount]: 0,
-  [ExcelColumnKeys.OriginalAmount]: 0,
-  [ExcelColumnKeys.ProcessedAmount]: 0,
-  [ExcelColumnKeys.index]: 0,
-};
 
 export function sheetDataProcess(
   originalDatas: SheetDataOriginal[],

@@ -92,8 +92,9 @@ function Hello() {
   }
   async function originalDataDebugging() {
     showLoading();
-    const wrongDataResult =
-      await window.electron.excelBridge.sendGetWrongData(isNeedBatchAIClassify);
+    const wrongDataResult = await window.electron.excelBridge.sendGetWrongData(
+      isNeedBatchAIClassify,
+    );
     hideLoading();
     if (wrongDataResult.isError) return;
     setWrongData(wrongDataResult.data.unMappingData);
@@ -188,6 +189,9 @@ function Hello() {
             </button>
             <button className="export-button" onClick={exportShopeeFormat}>
               匯出成蝦皮格式
+            </button>
+            <button className="export-button" onClick={exportShopeeFormat}>
+              匯出成蝦皮格式(new)
             </button>
           </div>
           <a

@@ -7,10 +7,13 @@ import {
   saveProcessedData,
   selectExcelFile,
 } from './services/excel-io.service';
+
 import {
+  processExcelDataShopeeNew,
   processExcelData,
   processExcelDataShopee,
-} from './services/data-process.service';
+} from './services/data-controller.service';
+
 import { IPC_CHANNELS } from '../../../constants/ipc-channels';
 import { DataStore } from '../../utils/data-store.tool';
 import {
@@ -137,6 +140,45 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
       }
     },
   );
+
+  electronIpcMain.on(
+    IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW,
+    async (event, settingName: string) => {
+      try {
+        setSystemSettingName(settingName);
+        if (currentSelectedFilePath.get()) {
+          const completedData = await processExcelDataShopee(
+            currentSelectedFilePath.get(),
+          );
+          const newFilePath = await saveProcessedData(
+            completedData,
+            currentSelectedFilePath.get(),
+            true,
+          );
+          event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW_COMPLATED, {
+            path: newFilePath,
+            data: completedData,
+            isError: false,
+          });
+        } else {
+          event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_NEW_COMPLATED, {
+            path: '',
+            data: [],
+            isError: true,
+            message: 'No file selected',
+          });
+        }
+      } catch (error) {
+        event.reply(IPC_CHANNELS.EXPORT_SHOPEE_SHEET_COMPLATED, {
+          path: '',
+          data: [],
+          isError: true,
+          message: JSON.stringify(error),
+        });
+      }
+    },
+  );
+
   electronIpcMain.on(
     IPC_CHANNELS.GET_WRONG_DATA,
     async (event, aiClassify: boolean) => {
