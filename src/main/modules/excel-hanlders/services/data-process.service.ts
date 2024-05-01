@@ -127,7 +127,7 @@ export function mappingRealProductName(
   const completedData: SheetData[] = [];
 
   originalDataJson.forEach((originalData) => {
-    if(!originalData[ExcelColumnKeys.ProductName]) return;
+    if (!originalData[ExcelColumnKeys.ProductName]) return;
 
     const realNameItem = productNameMap.find(
       (item) =>
@@ -475,10 +475,30 @@ function summarizeAndUpdateGroupedData(groupedData: SheetData[]): SheetData[] {
 
         newGroupedData[index][ExcelColumnKeys.TotalBoxes] =
           summaries[ExcelColumnKeys.TotalBoxes];
+
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] =
+          summaries[ExcelColumnKeys.TotalAmount];
       } else {
         newGroupedData[index][ExcelColumnKeys.ShippingOrderNumber] = '';
         newGroupedData[index][ExcelColumnKeys.GrossWeight] = '';
         newGroupedData[index][ExcelColumnKeys.TotalBoxes] = '';
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] = '';
+      }
+    });
+
+
+    // 由於總金額的資料需要在第一次的時候就計算，所以這邊要再跑一次
+    const summariesTotalAmount = getSummaries(
+      sameShippingOrderNumberDataIndex,
+      newGroupedData,
+      [ExcelColumnKeys.TotalAmount],
+    );
+    sameShippingOrderNumberDataIndex.forEach((index, numberOfIndex) => {
+      if (numberOfIndex === 0) {
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] =
+          summariesTotalAmount[ExcelColumnKeys.TotalAmount];
+      } else {
+        newGroupedData[index][ExcelColumnKeys.ProcessedAmount] = '';
       }
     });
   });
