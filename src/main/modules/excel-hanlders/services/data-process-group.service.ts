@@ -129,12 +129,11 @@ export function groupExcelDataShopeeNew(originalData: SheetData[]) {
         totalBoxes,
         summaryTotalAmount,
       } = getDataSummary(datas);
-      const _newPrice = summaryTotalAmount / totalQuantity;
-
-      const newPrice = Math.round(_newPrice);
 
       const { newQuantity, newUnit } = unitTranslate(totalQuantity);
+      const _newPrice = summaryTotalAmount / newQuantity;
 
+      const newPrice = Math.floor(_newPrice);
       return {
         ...datas[0],
         [ExcelColumnKeys.UnitPrice]: newPrice,

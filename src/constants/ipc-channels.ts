@@ -28,8 +28,14 @@ export enum IPC_CHANNELS {
   SELECT_EXCEL_FILE_COMPLATED = 'select-excel-file-complated',
   EXPORT_DEFAULT_SHEET = 'export-default-sheet',
   EXPORT_DEFAULT_SHEET_COMPLATED = 'export-default-sheet-complated',
+  EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS = 'export-default-sheet-with-weight-process',
+  EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS_COMPLATED = 'export-default-sheet-with-weight-process-complated',
   EXPORT_SHOPEE_SHEET = 'export-shopee-sheet',
   EXPORT_SHOPEE_SHEET_COMPLATED = 'export-shopee-sheet-complated',
+
+  EXPORT_PEGASUS_SHEET = 'export-pegasus-sheet',
+  EXPORT_PEGASUS_SHEET_COMPLATED = 'export-pegasus-sheet-complated',
+
   GET_WRONG_DATA = 'get-wrong-data',
   GET_WRONG_DATA_RESPONSE = 'get-wrong-data-response',
   ADD_NEW_PRODUCT_MAP = 'add-new-product-map',

@@ -77,21 +77,64 @@ export async function processExcelDataShopeeNew(filePath: string) {
   return mappingRealProductName(dataProcessPhone, productNameMap);
 }
 
-export async function processExcelData(filePath: string) {
+export async function processExcelData(
+  filePath: string,
+  options?: {
+    sheetPricesVersion?: 'v2' | 'v3';
+    disableRandomAddress?: boolean;
+    calculateTotalAmountByBoxesDisableThreeOrMore?: boolean;
+  },
+) {
+  const {
+    sheetPricesVersion,
+    disableRandomAddress,
+    calculateTotalAmountByBoxesDisableThreeOrMore,
+  } = options ?? {};
+  function countOfShoppingOrderNumber(
+    jsonData: SheetData[],
+  ): Map<string, number> {
+    const stats: Map<string, number> = new Map();
+
+    jsonData.forEach((data) => {
+      const orderNumber = data[ExcelColumnKeys.ShippingOrderNumber];
+
+      if (!orderNumber) return;
+
+      if (stats.has(orderNumber)) {
+        stats.set(orderNumber, stats.get(orderNumber)! + 1);
+      } else {
+        stats.set(orderNumber, 1);
+      }
+    });
+
+    return stats;
+  }
+
   const productNameMap = getProductNameMap();
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
     resultProcess: sheetDataProcess,
   });
+  const shoppingOrderNumberCountMap = countOfShoppingOrderNumber(originalData);
 
   const preDebugedData = deleteNullProductNameData(
     dataPreDebuggingProcess(originalData),
   );
 
   const groupedData = groupExcelData(preDebugedData);
-  const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(groupedData);
+  const dataBeforeSummaryUpdate = summarizeAndUpdateGroupedData(
+    groupedData,
+    shoppingOrderNumberCountMap,
+    {
+      sheetPricesVersion,
+      calculateTotalAmountByBoxesDisableThreeOrMore,
+    },
+  );
   const dataWithRecipientAndRealName = processRecipientDetails(
     dataBeforeSummaryUpdate,
+    {
+      disableRandomAddress: disableRandomAddress ?? false,
+    },
   );
 
   return mappingRealProductName(dataWithRecipientAndRealName, productNameMap);

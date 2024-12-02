@@ -104,6 +104,94 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
   );
 
   electronIpcMain.on(
+    IPC_CHANNELS.EXPORT_PEGASUS_SHEET,
+    async (event, settingName: string) => {
+      try {
+        setSystemSettingName(settingName);
+        if (currentSelectedFilePath.get()) {
+          const completedData = await processExcelData(
+            currentSelectedFilePath.get(),
+            {
+              disableRandomAddress: true,
+              calculateTotalAmountByBoxesDisableThreeOrMore: true,
+            },
+          );
+          const newFilePath = await saveProcessedData(
+            completedData,
+            currentSelectedFilePath.get(),
+          );
+          event.reply(IPC_CHANNELS.EXPORT_PEGASUS_SHEET_COMPLATED, {
+            path: newFilePath,
+            data: completedData,
+            isError: false,
+          });
+        } else {
+          event.reply(IPC_CHANNELS.EXPORT_PEGASUS_SHEET_COMPLATED, {
+            path: '',
+            data: [],
+            isError: true,
+            message: 'No file selected',
+          });
+        }
+      } catch (error) {
+        const _error = error as Error;
+        console.error(error);
+        event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
+          path: '',
+          data: [],
+          isError: true,
+          message: _error.message,
+        });
+      }
+    },
+  );
+  electronIpcMain.on(
+    IPC_CHANNELS.EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS,
+    async (event, settingName: string) => {
+      try {
+        setSystemSettingName(settingName);
+        if (currentSelectedFilePath.get()) {
+          const completedData = await processExcelData(
+            currentSelectedFilePath.get(),
+            { sheetPricesVersion: 'v3' },
+          );
+          const newFilePath = await saveProcessedData(
+            completedData,
+            currentSelectedFilePath.get(),
+          );
+          event.reply(
+            IPC_CHANNELS.EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS_COMPLATED,
+            {
+              path: newFilePath,
+              data: completedData,
+              isError: false,
+            },
+          );
+        } else {
+          event.reply(
+            IPC_CHANNELS.EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS_COMPLATED,
+            {
+              path: '',
+              data: [],
+              isError: true,
+              message: 'No file selected',
+            },
+          );
+        }
+      } catch (error) {
+        const _error = error as Error;
+        console.error(error);
+        event.reply(IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED, {
+          path: '',
+          data: [],
+          isError: true,
+          message: _error.message,
+        });
+      }
+    },
+  );
+
+  electronIpcMain.on(
     IPC_CHANNELS.EXPORT_SHOPEE_SHEET,
     async (event, settingName: string) => {
       try {

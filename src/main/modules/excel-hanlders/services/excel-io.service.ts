@@ -4,13 +4,19 @@ import {
 } from 'electron';
 import path from 'path';
 import { ExcelColumnKeys, SheetData } from '../index.interface';
-import { Cell, Workbook, Worksheet } from 'exceljs';
+import { Cell, Row, Workbook, Worksheet } from 'exceljs';
 import {
   ORIGINAL_DATA_TEMPLATE_PATH,
   SHOPEE_DATA_TEMPLATE_PATH,
   defaultColumnOrder,
   shopeeColumnOrder,
 } from '../index.const';
+
+let FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
+
+function init() {
+  FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
+}
 
 export async function selectExcelFile(mainWindow: electronBrowserWindow) {
   const result = await electronDialog.showOpenDialog(mainWindow, {
@@ -84,6 +90,8 @@ async function addJsonToExcelTemplate(
     ...defaultOptions,
     ...options,
   };
+  init();
+
   // 1. 讀取現有的Excel模板
   const workbook = new Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -112,48 +120,52 @@ async function addJsonToExcelTemplate(
       previousBoxnumber = currentJsonData[ExcelColumnKeys.TotalBoxes];
     }
 
+    if (currentJsonData[ExcelColumnKeys.ShippingOrderNumber] !== '') {
+      FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
+    }
+
+    if (FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW) {
+      const row = worksheet.getRow(currentRow + 1);
+      rowFillYellow(row);
+    }
+
     if (
       highlightTotalBoxes &&
       previousBoxnumber !== '' &&
       previousBoxnumber > 1
     ) {
       const row = worksheet.getRow(currentRow + 1);
-      row.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFFF00' }, // ARGB for yellow
-      };
-
-      row.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
-      };
+      rowFillYellow(row);
     }
 
     if (
       highlightTotalAmount2000 &&
-      currentJsonData[ExcelColumnKeys.TotalAmount] > 2000
+      typeof currentJsonData[ExcelColumnKeys.ProcessedAmount] === 'number' &&
+      currentJsonData[ExcelColumnKeys.ProcessedAmount] > 2000
     ) {
+      FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = true;
       const row = worksheet.getRow(currentRow + 1);
-      row.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFFF00' }, //  ARGB for yellow
-      };
-
-      row.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
-      };
+      rowFillYellow(row);
     }
   });
 
   return workbook;
 }
+
+function rowFillYellow(row: Row) {
+  row.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFFFFF00' }, // ARGB for yellow
+  };
+  row.border = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' },
+  };
+}
+
 function generateNewFileName(originalPath: string): string {
   const originalFilename = path.basename(
     originalPath,

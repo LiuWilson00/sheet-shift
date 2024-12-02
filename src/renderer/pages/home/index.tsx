@@ -67,11 +67,56 @@ function Hello() {
       },
     });
   };
+  const exportDefualtFormatWithWeightProcess = async () => {
+    showLoading();
+    const result =
+      await window.electron.excelBridge.sendExportDefaultSheetWithWeightProcess(settingName);
+    hideLoading();
+    if (result.isError) {
+      showDialog({
+        content: '匯出失敗，請確認檔案是否正確。',
+        onConfirm: () => {
+          hideDialog();
+        },
+      });
+      return;
+    }
+
+    showDialog({
+      content: `檔案已匯出，檔案路徑：${result.path}`,
+      onConfirm: () => {
+        hideDialog();
+      },
+    });
+  };
 
   async function exportShopeeFormat() {
     showLoading();
     const result =
       await window.electron.excelBridge.sendExportShopeeSheet(settingName);
+    hideLoading();
+    if (result.isError) {
+      showDialog({
+        content: '匯出失敗，請確認檔案是否正確。',
+        onConfirm: () => {
+          hideDialog();
+        },
+      });
+      return;
+    }
+
+    showDialog({
+      content: `檔案已匯出，檔案路徑：${result.path}`,
+      onConfirm: () => {
+        hideDialog();
+      },
+    });
+  }
+
+  async function exportPegasusSheet() {
+    showLoading();
+    const result =
+      await window.electron.excelBridge.sendExportPegasusSheet(settingName);
     hideLoading();
     if (result.isError) {
       showDialog({
@@ -210,11 +255,17 @@ function Hello() {
             <button className="export-button" onClick={exportDefualtFormat}>
               匯出成預設格式
             </button>
+            <button className="export-button" onClick={exportDefualtFormatWithWeightProcess}>
+              匯出成預設格式(重量進行處裡)
+            </button>
             <button className="export-button" onClick={exportShopeeFormat}>
               匯出成蝦皮格式
             </button>
             <button className="export-button" onClick={exportShopeeFormatNew}>
               匯出成蝦皮格式(new)
+            </button>
+            <button className="export-button" onClick={exportPegasusSheet}>
+              匯出成天馬格式
             </button>
           </div>
           <a

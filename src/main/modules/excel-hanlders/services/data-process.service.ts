@@ -267,18 +267,19 @@ export function groupExcelDataShopee(originalData: SheetData[]) {
   }
 }
 
-
-
-
 function calculateTotalAmountByBoxes(
   boxes: number,
   setting: DefaultPriceSetting,
+  options?: {
+    disableThreeOrMore: boolean;
+  },
 ): [number, number] {
+  const { disableThreeOrMore } = options ?? {};
   let range: [number, number];
 
   if (boxes === 1) {
     range = setting.OPE_PIECE;
-  } else if (boxes === 2) {
+  } else if (boxes === 2 || disableThreeOrMore) {
     range = setting.TWO_PIECE;
   } else {
     range = setting.THREE_OR_MORE_PIECES;
@@ -326,7 +327,7 @@ function getSummaries(
   }, initData);
 }
 
-// function setSteetPrices(
+// function setSheetPrices(
 //   index: number,
 //   data: SheetData[],
 //   totalAmount: number,
@@ -367,7 +368,75 @@ function generateRandomProportions(n: number): number[] {
   return proportions.map((prop) => prop / sum);
 }
 
-function setSteetPricesNew(
+function setSheetPricesV3(
+  index: number,
+  data: SheetData[],
+  totalAmountInfo: [number, number],
+  proportions: number,
+  setting: DefaultPriceSetting,
+  shoppingOrderNumberCountMap: Map<string, number>,
+  grossWeightSummary: number,
+) {
+  const [minRate, maxRate] = setting.ADJUSTMENT_RATE;
+  const quantity = data[index][ExcelColumnKeys.Quantity];
+  const maxUnitPrice = Math.ceil(
+    (totalAmountInfo[1] * maxRate * proportions) / quantity,
+  );
+  const minUnitPrice = Math.ceil(
+    (totalAmountInfo[0] * minRate * proportions) / quantity,
+  );
+  const CTN_1_GROSS_WEIGHT_LIMIT = 28;
+  const WEIGHT_UNIT_PRICE = 65;
+
+  const totalNetWeight = Number(data[index][ExcelColumnKeys.NetWeight]);
+  // const totalBoxes = Number(data[index][ExcelColumnKeys.TotalBoxes]);
+  const quantityNumber = Number(data[index][ExcelColumnKeys.Quantity]);
+  // console.log(
+  //   'ShippingOrderNumber',
+  //   data[index][ExcelColumnKeys.ShippingOrderNumber],
+  // );
+  const IS_SHOPPING_ORDER_NUMBER_COUNT_EQUAL_1 =
+    (shoppingOrderNumberCountMap.get(
+      data[index][ExcelColumnKeys.ShippingOrderNumber] as string,
+    ) ?? 0) === 1;
+
+  const IS_BIG_WEIGHT_AND_ONE_BOX =
+    grossWeightSummary > CTN_1_GROSS_WEIGHT_LIMIT &&
+    IS_SHOPPING_ORDER_NUMBER_COUNT_EQUAL_1;
+  // console.log(
+  //   'IS_SHOPPING_ORDER_NUMBER_COUNT_EQUAL_1',
+  //   IS_SHOPPING_ORDER_NUMBER_COUNT_EQUAL_1,
+  //   grossWeightSummary,
+  //   totalBoxes,
+  // );
+
+  if (IS_BIG_WEIGHT_AND_ONE_BOX) {
+    const _newTotalAmount = totalNetWeight * WEIGHT_UNIT_PRICE;
+
+    const newUnitPrice = Math.ceil(_newTotalAmount / quantityNumber);
+
+    const newTotalAmount = newUnitPrice * quantityNumber;
+
+    data[index][ExcelColumnKeys.UnitPrice] = newUnitPrice;
+    data[index][ExcelColumnKeys.TotalAmount] = newTotalAmount;
+  } else {
+    const newUnitPrice = getRandomIntBetween(minUnitPrice, maxUnitPrice);
+    data[index][ExcelColumnKeys.UnitPrice] = newUnitPrice;
+    data[index][ExcelColumnKeys.TotalAmount] = newUnitPrice * quantity;
+  }
+
+  // if (IS_BIG_WEIGHT_AND_ONE_BOX) {
+  //   console.log('IS_BIG_WEIGHT_AND_ONE_BOX');
+  //   console.log('newTotalAmount', newTotalAmount);
+  //   console.log('totalNetWeight', totalNetWeight);
+  //   console.log('grossWeightSummary', grossWeightSummary);
+  // }
+
+  // data[index][ExcelColumnKeys.UnitPrice] = newUnitPricd;
+  // data[index][ExcelColumnKeys.TotalAmount] = newTotalAmount;
+}
+
+function setSheetPricesV2(
   index: number,
   data: SheetData[],
   totalAmountInfo: [number, number],
@@ -390,7 +459,15 @@ function setSteetPricesNew(
 
 export function summarizeAndUpdateGroupedData(
   groupedData: SheetData[],
+  shoppingOrderNumberCountMap: Map<string, number>,
+  options?: {
+    sheetPricesVersion?: 'v2' | 'v3';
+    calculateTotalAmountByBoxesDisableThreeOrMore?: boolean;
+  },
 ): SheetData[] {
+  const { sheetPricesVersion, calculateTotalAmountByBoxesDisableThreeOrMore } =
+    options || {};
+
   const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
   const distinctShippingOrderNumber = getDistinctValuesForKey<string>(
     groupedData,
@@ -415,18 +492,37 @@ export function summarizeAndUpdateGroupedData(
     const totalAmountInfo = calculateTotalAmountByBoxes(
       summaries[ExcelColumnKeys.TotalBoxes],
       systemSetting.DEFAULT_PRICE_SETTING,
+      {
+        disableThreeOrMore:
+          calculateTotalAmountByBoxesDisableThreeOrMore ?? false,
+      },
     );
+    // console.log('totalItemCount', totalItemCount);
 
     const randomProportions = generateRandomProportions(totalItemCount);
-
+    const grossWeightSummary = summaries[ExcelColumnKeys.GrossWeight];
     sameShippingOrderNumberDataIndex.forEach((index, numberOfIndex) => {
-      setSteetPricesNew(
-        index,
-        newGroupedData,
-        totalAmountInfo,
-        randomProportions[numberOfIndex],
-        systemSetting.DEFAULT_PRICE_SETTING,
-      );
+      /**
+       * V3 有加上重量合併的處裡
+       * V2 則是一般預設的匯出
+       */
+      sheetPricesVersion === 'v3'
+        ? setSheetPricesV3(
+            index,
+            newGroupedData,
+            totalAmountInfo,
+            randomProportions[numberOfIndex],
+            systemSetting.DEFAULT_PRICE_SETTING,
+            shoppingOrderNumberCountMap,
+            grossWeightSummary,
+          )
+        : setSheetPricesV2(
+            index,
+            newGroupedData,
+            totalAmountInfo,
+            randomProportions[numberOfIndex],
+            systemSetting.DEFAULT_PRICE_SETTING,
+          );
 
       if (numberOfIndex === 0) {
         newGroupedData[index][ExcelColumnKeys.GrossWeight] =
@@ -511,7 +607,11 @@ export function summarizeAndUpdateGroupedDataShopee(
   return newGroupedData;
 }
 
-export function processRecipientDetails(data: SheetData[]): SheetData[] {
+export function processRecipientDetails(
+  data: SheetData[],
+  options: { disableRandomAddress?: boolean },
+): SheetData[] {
+  const { disableRandomAddress } = options;
   return data.map((entry) => {
     return {
       ...entry,
@@ -524,9 +624,9 @@ export function processRecipientDetails(data: SheetData[]): SheetData[] {
       [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
         entry[ExcelColumnKeys.RecipientPhone] as string,
       ),
-      [ExcelColumnKeys.RecipientEnglishAddress]: getRandomAddress(
-        addressSheet.get(),
-      ),
+      [ExcelColumnKeys.RecipientEnglishAddress]: disableRandomAddress
+        ? getRandomAddress(addressSheet.get())
+        : entry[ExcelColumnKeys.RecipientEnglishAddress],
     };
   });
 }

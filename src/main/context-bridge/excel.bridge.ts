@@ -49,6 +49,35 @@ export function sendExportDefaultSheet(settingName: string) {
   });
 }
 
+export function sendExportDefaultSheetWithWeightProcess(settingName: string) {
+  ipcRenderer.send(
+    IPC_CHANNELS.EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS,
+    settingName,
+  );
+
+  return new Promise<ExcelDataResult>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS_COMPLATED,
+      (_event, data: ExcelDataResult) => {
+        resolve(data);
+      },
+    );
+  });
+}
+
+export function sendExportPegasusSheet(settingName: string) {
+  ipcRenderer.send(IPC_CHANNELS.EXPORT_DEFAULT_SHEET, settingName);
+
+  return new Promise<ExcelDataResult>((resolve, reject) => {
+    ipcRenderer.once(
+      IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED,
+      (_event, data: ExcelDataResult) => {
+        resolve(data);
+      },
+    );
+  });
+}
+
 export function sendExportShopeeSheet(settingName: string) {
   ipcRenderer.send(IPC_CHANNELS.EXPORT_SHOPEE_SHEET, settingName);
 
@@ -149,10 +178,12 @@ export default {
   onceExcelData,
   sendSelectExcelFile,
   sendExportDefaultSheet,
+  sendExportDefaultSheetWithWeightProcess,
+  sendExportPegasusSheet,
   sendExportShopeeSheet,
   sendGetWrongData,
   sendAddNewProductMap,
   sendGetProductMap,
   sendGetClassifyPrdouctName,
-  sendExportShopeeSheetNew
+  sendExportShopeeSheetNew,
 };
