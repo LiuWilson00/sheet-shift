@@ -66,11 +66,11 @@ export function sendExportDefaultSheetWithWeightProcess(settingName: string) {
 }
 
 export function sendExportPegasusSheet(settingName: string) {
-  ipcRenderer.send(IPC_CHANNELS.EXPORT_DEFAULT_SHEET, settingName);
+  ipcRenderer.send(IPC_CHANNELS.EXPORT_PEGASUS_SHEET, settingName);
 
   return new Promise<ExcelDataResult>((resolve, reject) => {
     ipcRenderer.once(
-      IPC_CHANNELS.EXPORT_DEFAULT_SHEET_COMPLATED,
+      IPC_CHANNELS.EXPORT_PEGASUS_SHEET_COMPLATED,
       (_event, data: ExcelDataResult) => {
         resolve(data);
       },

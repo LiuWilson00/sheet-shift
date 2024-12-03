@@ -609,10 +609,15 @@ export function summarizeAndUpdateGroupedDataShopee(
 
 export function processRecipientDetails(
   data: SheetData[],
-  options: { disableRandomAddress?: boolean },
+  options?: { disableRandomAddress?: boolean },
 ): SheetData[] {
-  const { disableRandomAddress } = options;
+  const { disableRandomAddress } = options ?? {};
+
   return data.map((entry) => {
+    const address = disableRandomAddress
+      ? entry[ExcelColumnKeys.RecipientEnglishAddress]
+      : getRandomAddress(addressSheet.get());
+
     return {
       ...entry,
       [ExcelColumnKeys.RecipientTaxNumber]: formatRecipientTaxNumber(
@@ -624,9 +629,7 @@ export function processRecipientDetails(
       [ExcelColumnKeys.RecipientPhone]: formatRecipientPhone(
         entry[ExcelColumnKeys.RecipientPhone] as string,
       ),
-      [ExcelColumnKeys.RecipientEnglishAddress]: disableRandomAddress
-        ? getRandomAddress(addressSheet.get())
-        : entry[ExcelColumnKeys.RecipientEnglishAddress],
+      [ExcelColumnKeys.RecipientEnglishAddress]: address,
     };
   });
 }
