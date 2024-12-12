@@ -25,6 +25,8 @@ const systemSettingTypeMap = {
     TWO_PIECE: 'array',
     THREE_OR_MORE_PIECES: 'array',
     ADJUSTMENT_RATE: 'array',
+    PEGASUS_OPE_PIECE: 'array',
+    PEGASUS_TWO_PIECE: 'array',
   },
 };
 
@@ -40,6 +42,8 @@ function transformSettingsArray(arr: Array<SystemSettingSheets>): Settings {
       TWO_PIECE: [0, 0],
       THREE_OR_MORE_PIECES: [0, 0],
       ADJUSTMENT_RATE: [0, 0],
+      PEGASUS_OPE_PIECE: [0, 0],
+      PEGASUS_TWO_PIECE: [0, 0],
     },
   };
 
@@ -81,6 +85,8 @@ export interface DefaultPriceSetting {
   TWO_PIECE: [number, number];
   THREE_OR_MORE_PIECES: [number, number];
   ADJUSTMENT_RATE: [number, number];
+  PEGASUS_OPE_PIECE: [number, number];
+  PEGASUS_TWO_PIECE: [number, number];
 }
 
 export interface Settings {

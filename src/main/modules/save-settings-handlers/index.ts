@@ -21,6 +21,7 @@ export const setupSaveSettingsHandlers = (mainWindow: BrowserWindow) => {
     IPC_CHANNELS.SAVE_SETTINGS,
     (event, settings, settingName: string) => {
       const settingsJsonArray = transformSettingsToObjectArray(settings);
+      console.log('settingName!!!!!!!!!!!!!!!!!', settingName);
       updateSheetData(
         settingName ?? SheetRangeName.SystemSetting,
         settingsJsonArray,

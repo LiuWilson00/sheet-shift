@@ -316,7 +316,8 @@ export async function updateSheetData(
     const gsapi = google.sheets({ version: 'v4', auth: cl ?? client.get()! });
 
     const values = jsonToSheetArray(jsonArray);
-
+    console.log('values', values);
+    console.log('rangeName', rangeName);
     const opt = {
       spreadsheetId: sheetSetting.spreadsheet_id,
       range: rangeName, // 確保傳入的 rangeName 有指定具體的範圍，例如 'Sheet1!A1:D10'

@@ -35,6 +35,8 @@ const settingTemplate: Settings = {
     TWO_PIECE: [0, 0],
     THREE_OR_MORE_PIECES: [0, 0],
     ADJUSTMENT_RATE: [0, 0],
+    PEGASUS_OPE_PIECE: [0, 0],
+    PEGASUS_TWO_PIECE: [0, 0],
   },
 };
 const AUTH_CODE = '8800885';
@@ -63,7 +65,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
       }
       return;
     }
-
+    console.log('settings', settings);
     window.electron.settingBridge
       .sendSetting(settings, settingName)
       .then((result) => {
@@ -241,6 +243,32 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                     });
                   }}
                   needParseFloat={true}
+                />
+                <NumberRange
+                  label="天馬一件"
+                  value={settings.DEFAULT_PRICE_SETTING.PEGASUS_OPE_PIECE}
+                  onChange={(value) => {
+                    updateSettings({
+                      ...settings,
+                      DEFAULT_PRICE_SETTING: {
+                        ...settings.DEFAULT_PRICE_SETTING,
+                        PEGASUS_OPE_PIECE: value,
+                      },
+                    });
+                  }}
+                />
+                <NumberRange
+                  label="天馬兩件以上"
+                  value={settings.DEFAULT_PRICE_SETTING.PEGASUS_TWO_PIECE}
+                  onChange={(value) => {
+                    updateSettings({
+                      ...settings,
+                      DEFAULT_PRICE_SETTING: {
+                        ...settings.DEFAULT_PRICE_SETTING,
+                        PEGASUS_TWO_PIECE: value,
+                      },
+                    });
+                  }}
                 />
                 <span style={{ color: 'gray', fontSize: 12 }}>
                   調整倍率會確保每個物品總金額欄位有一點偏差，乘上一個隨機的倍率

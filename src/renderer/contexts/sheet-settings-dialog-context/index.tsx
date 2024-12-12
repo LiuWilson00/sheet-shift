@@ -50,6 +50,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
   const handleConfirm = async () => {
     // 儲存設定的邏輯
     showLoading();
+    console.log('settings');
     const savedResult =
       await window.electron.settingBridge.sendSettingSheet(settings);
     if (savedResult) {
@@ -111,7 +112,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
         settings,
         updateSettings,
         isConnected,
-        setIsConnected
+        setIsConnected,
       }}
     >
       {isSettingsVisible ? (

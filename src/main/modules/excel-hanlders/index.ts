@@ -114,6 +114,7 @@ export async function setupExcelHandlers(mainWindow: electronBrowserWindow) {
             {
               disableRandomAddress: true,
               calculateTotalAmountByBoxesDisableThreeOrMore: true,
+              usePegasusSetting: true,
             },
           );
           const newFilePath = await saveProcessedData(

@@ -272,15 +272,16 @@ function calculateTotalAmountByBoxes(
   setting: DefaultPriceSetting,
   options?: {
     disableThreeOrMore: boolean;
+    usePegasusSetting?: boolean;
   },
 ): [number, number] {
-  const { disableThreeOrMore } = options ?? {};
+  const { disableThreeOrMore, usePegasusSetting } = options ?? {};
   let range: [number, number];
 
   if (boxes === 1) {
-    range = setting.OPE_PIECE;
+    range = usePegasusSetting ? setting.PEGASUS_OPE_PIECE : setting.OPE_PIECE;
   } else if (boxes === 2 || disableThreeOrMore) {
-    range = setting.TWO_PIECE;
+    range = usePegasusSetting ? setting.PEGASUS_TWO_PIECE : setting.TWO_PIECE;
   } else {
     range = setting.THREE_OR_MORE_PIECES;
   }
@@ -463,10 +464,14 @@ export function summarizeAndUpdateGroupedData(
   options?: {
     sheetPricesVersion?: 'v2' | 'v3';
     calculateTotalAmountByBoxesDisableThreeOrMore?: boolean;
+    usePegasusSetting?: boolean;
   },
 ): SheetData[] {
-  const { sheetPricesVersion, calculateTotalAmountByBoxesDisableThreeOrMore } =
-    options || {};
+  const {
+    sheetPricesVersion,
+    calculateTotalAmountByBoxesDisableThreeOrMore,
+    usePegasusSetting,
+  } = options || {};
 
   const newGroupedData: SheetData[] = JSON.parse(JSON.stringify(groupedData));
   const distinctShippingOrderNumber = getDistinctValuesForKey<string>(
@@ -495,6 +500,7 @@ export function summarizeAndUpdateGroupedData(
       {
         disableThreeOrMore:
           calculateTotalAmountByBoxesDisableThreeOrMore ?? false,
+        usePegasusSetting: usePegasusSetting ?? false,
       },
     );
     // console.log('totalItemCount', totalItemCount);

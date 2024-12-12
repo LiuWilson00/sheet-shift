@@ -83,12 +83,14 @@ export async function processExcelData(
     sheetPricesVersion?: 'v2' | 'v3';
     disableRandomAddress?: boolean;
     calculateTotalAmountByBoxesDisableThreeOrMore?: boolean;
+    usePegasusSetting?: boolean;
   },
 ) {
   const {
     sheetPricesVersion,
     disableRandomAddress,
     calculateTotalAmountByBoxesDisableThreeOrMore,
+    usePegasusSetting,
   } = options ?? {};
   function countOfShoppingOrderNumber(
     jsonData: SheetData[],
@@ -128,6 +130,7 @@ export async function processExcelData(
     {
       sheetPricesVersion,
       calculateTotalAmountByBoxesDisableThreeOrMore,
+      usePegasusSetting,
     },
   );
   const dataWithRecipientAndRealName = processRecipientDetails(
