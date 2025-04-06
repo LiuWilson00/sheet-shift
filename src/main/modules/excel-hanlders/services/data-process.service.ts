@@ -649,7 +649,7 @@ function formatRecipientTaxNumber(taxNumber: string): string {
   return taxNumber;
 }
 
-function determineRecipientIDCode(taxNumber: string): string {
+export function determineRecipientIDCode(taxNumber: string): string {
   if (taxNumber === '') return '';
 
   if (taxNumber && /[a-zA-Z]/.test(String(taxNumber)[0])) {

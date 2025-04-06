@@ -15,6 +15,7 @@ import {
   groupExcelData,
   processRecipientDetails,
   summarizeAndUpdateGroupedData,
+  determineRecipientIDCode,
 } from './data-process.service';
 import {
   groupExcelDataShopeeNew,
@@ -46,7 +47,29 @@ export async function processExcelDataShopee(filePath: string) {
       ),
     };
   });
-  return mappingRealProductName(dataProcessPhone, productNameMap);
+
+  const dataProcessEnglishAddress = dataProcessPhone.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientEnglishAddress]: entry[
+        ExcelColumnKeys.RecipientEnglishAddress
+      ]
+        .toString()
+        .replace(/\(.*?\)/g, ''),
+    };
+  });
+
+  // 將 RecipientIDNumber 做判斷處裡
+  const dataProcessIDNumber = dataProcessEnglishAddress.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
+        entry[ExcelColumnKeys.RecipientIDNumber],
+      ),
+    };
+  });
+
+  return mappingRealProductName(dataProcessIDNumber, productNameMap);
 }
 
 export async function processExcelDataShopeeNew(filePath: string) {
@@ -74,7 +97,29 @@ export async function processExcelDataShopeeNew(filePath: string) {
       ),
     };
   });
-  return mappingRealProductName(dataProcessPhone, productNameMap);
+  // 將 RecipientEnglishAddress 中 '(' 和 ')' 之間的內容刪除
+  const dataProcessEnglishAddress = dataProcessPhone.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientEnglishAddress]: entry[
+        ExcelColumnKeys.RecipientEnglishAddress
+      ]
+        .toString()
+        .replace(/\(.*?\)/g, ''),
+    };
+  });
+
+  // 將 RecipientIDNumber 做判斷處裡
+  const dataProcessIDNumber = dataProcessEnglishAddress.map((entry) => {
+    return {
+      ...entry,
+      [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
+        entry[ExcelColumnKeys.RecipientIDNumber],
+      ),
+    };
+  });
+
+  return mappingRealProductName(dataProcessIDNumber, productNameMap);
 }
 
 export async function processExcelData(
