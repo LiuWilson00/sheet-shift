@@ -660,7 +660,6 @@ export function determineRecipientIDCode(taxNumber: string): string {
 
 export function formatRecipientPhone(phone: string): string {
   if (!phone) return '';
-
   const cleanedPhone = String(phone).replace(/[()\-]/g, '');
   let formattedPhone = cleanedPhone;
   while (formattedPhone.length < 10) {

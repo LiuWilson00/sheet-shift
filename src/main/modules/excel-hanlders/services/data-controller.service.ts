@@ -55,7 +55,7 @@ export async function processExcelDataShopee(filePath: string) {
         ExcelColumnKeys.RecipientEnglishAddress
       ]
         .toString()
-        .replace(/\(.*?\)/g, ''),
+        .replace(/[\(（][^）\)]*[\)）]/g, ''),
     };
   });
 
@@ -64,7 +64,7 @@ export async function processExcelDataShopee(filePath: string) {
     return {
       ...entry,
       [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
-        entry[ExcelColumnKeys.RecipientIDNumber],
+        entry[ExcelColumnKeys.RecipientTaxNumber],
       ),
     };
   });
@@ -105,7 +105,7 @@ export async function processExcelDataShopeeNew(filePath: string) {
         ExcelColumnKeys.RecipientEnglishAddress
       ]
         .toString()
-        .replace(/\(.*?\)/g, ''),
+        .replace(/[\(（][^）\)]*[\)）]/g, ''),
     };
   });
 
@@ -114,7 +114,7 @@ export async function processExcelDataShopeeNew(filePath: string) {
     return {
       ...entry,
       [ExcelColumnKeys.RecipientIDNumber]: determineRecipientIDCode(
-        entry[ExcelColumnKeys.RecipientIDNumber],
+        entry[ExcelColumnKeys.RecipientTaxNumber],
       ),
     };
   });
