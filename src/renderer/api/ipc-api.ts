@@ -38,6 +38,24 @@ export const ipcApi = {
     login: createClient(ipcContracts.auth.login),
     logout: createVoidClient(ipcContracts.auth.logout),
   },
+
+  /**
+   * Excel 處理 API
+   */
+  excel: {
+    selectFile: createVoidClient(ipcContracts.excel.selectFile),
+    exportDefault: createClient(ipcContracts.excel.exportDefault),
+    exportDefaultWithWeight: createClient(
+      ipcContracts.excel.exportDefaultWithWeight,
+    ),
+    exportShopee: createClient(ipcContracts.excel.exportShopee),
+    exportShopeeNew: createClient(ipcContracts.excel.exportShopeeNew),
+    exportPegasus: createClient(ipcContracts.excel.exportPegasus),
+    getWrongData: createClient(ipcContracts.excel.getWrongData),
+    addProductMap: createClient(ipcContracts.excel.addProductMap),
+    getProductMap: createVoidClient(ipcContracts.excel.getProductMap),
+    classifyProductName: createClient(ipcContracts.excel.classifyProductName),
+  },
 };
 
 export type IpcApi = typeof ipcApi;

@@ -15,6 +15,11 @@ import type {
   GoogleSheetConnectionResult,
 } from '../main/utils/google-sheets.tool';
 import type { UsersSheet } from '../main/utils/google-sheets.tool/index.interface';
+import type {
+  SheetData,
+  ProductNameMapping,
+  ProductTariffCodeMap,
+} from '../main/modules/excel-hanlders/index.interface';
 
 /**
  * IPC 契約介面
@@ -131,6 +136,117 @@ export const ipcContracts = {
       channel: 'auth-v2/logout',
     } as IpcContract<void, boolean>,
   },
+
+  /**
+   * Excel 處理相關 API
+   *
+   * 遷移自：src/main/context-bridge/excel.bridge.ts
+   */
+  excel: {
+    /**
+     * 選擇 Excel 檔案
+     */
+    selectFile: {
+      channel: 'excel-v2/select-file',
+    } as IpcContract<
+      void,
+      { path: string; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 匯出預設格式工作表
+     */
+    exportDefault: {
+      channel: 'excel-v2/export-default',
+    } as IpcContract<
+      { settingName: string },
+      { path: string; data: SheetData[]; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 匯出預設格式工作表（含重量計價）
+     */
+    exportDefaultWithWeight: {
+      channel: 'excel-v2/export-default-weight',
+    } as IpcContract<
+      { settingName: string },
+      { path: string; data: SheetData[]; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 匯出 Shopee 格式工作表
+     */
+    exportShopee: {
+      channel: 'excel-v2/export-shopee',
+    } as IpcContract<
+      { settingName: string },
+      { path: string; data: SheetData[]; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 匯出 Shopee 新格式工作表
+     */
+    exportShopeeNew: {
+      channel: 'excel-v2/export-shopee-new',
+    } as IpcContract<
+      { settingName: string },
+      { path: string; data: SheetData[]; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 匯出 Pegasus 格式工作表
+     */
+    exportPegasus: {
+      channel: 'excel-v2/export-pegasus',
+    } as IpcContract<
+      { settingName: string },
+      { path: string; data: SheetData[]; isError: boolean; message?: string }
+    >,
+
+    /**
+     * 取得無法對應的資料
+     */
+    getWrongData: {
+      channel: 'excel-v2/get-wrong-data',
+    } as IpcContract<
+      { aiClassify?: boolean },
+      { data: { unMappingData: SheetData[] }; isError: boolean }
+    >,
+
+    /**
+     * 新增產品對應
+     */
+    addProductMap: {
+      channel: 'excel-v2/add-product-map',
+    } as IpcContract<
+      { data: ProductNameMapping[] },
+      { data: boolean; isError: boolean }
+    >,
+
+    /**
+     * 取得產品對應表
+     */
+    getProductMap: {
+      channel: 'excel-v2/get-product-map',
+    } as IpcContract<void, { data: ProductTariffCodeMap[]; isError: boolean }>,
+
+    /**
+     * AI 分類產品名稱
+     */
+    classifyProductName: {
+      channel: 'excel-v2/classify-product-name',
+    } as IpcContract<
+      { productName: string },
+      {
+        data: {
+          productName: string;
+          realProductName: string;
+          tariffcode: string;
+        };
+        isError: boolean;
+      }
+    >,
+  },
 } as const;
 
 /**
@@ -141,13 +257,11 @@ export type IpcContracts = typeof ipcContracts;
 /**
  * 從契約中提取輸入類型
  */
-export type ExtractInput<T extends IpcContract<any, any>> = T extends IpcContract<infer I, any>
-  ? I
-  : never;
+export type ExtractInput<T extends IpcContract<any, any>> =
+  T extends IpcContract<infer I, any> ? I : never;
 
 /**
  * 從契約中提取輸出類型
  */
-export type ExtractOutput<T extends IpcContract<any, any>> = T extends IpcContract<any, infer O>
-  ? O
-  : never;
+export type ExtractOutput<T extends IpcContract<any, any>> =
+  T extends IpcContract<any, infer O> ? O : never;

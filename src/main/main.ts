@@ -26,6 +26,7 @@ import { logger } from './utils/logger.tool';
 import { setupSettingsHandlersV2 } from './modules/settings-handlers-v2';
 import { setupAppStatusHandlersV2 } from './modules/app-status-handlers-v2';
 import { setupAuthHandlersV2 } from './modules/auth-handlers-v2';
+import { setupExcelHandlersV2 } from './modules/excel-handlers-v2';
 
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
@@ -113,6 +114,7 @@ const createWindow = async () => {
   setupSettingsHandlersV2(mainWindow);
   setupAppStatusHandlersV2();
   setupAuthHandlersV2();
+  setupExcelHandlersV2(mainWindow);
   logger.info('V2 handlers registered [OK]');
 
   // Remove this if your app does not use auto updates

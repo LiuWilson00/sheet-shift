@@ -18,9 +18,9 @@
 | Settings | 6 | 6 | 100% |
 | App Status | 2 | 2 | 100% |
 | Auth | 2 | 2 | 100% |
-| Excel | 11 | 0 | 0% |
+| Excel | 11 | 10 | 91% |
 | Debug | 2 | 0 | 0% |
-| **總計** | **23** | **10** | **43%** |
+| **總計** | **23** | **20** | **87%** |
 
 ---
 
@@ -66,22 +66,23 @@ Handler 檔案：`src/main/modules/auth-handlers-v2/index.ts`
 
 ---
 
-## Excel 模組 ⬜ 待實作
+## Excel 模組 ✅ 完成（10/11）
 
 來源檔案：`src/main/context-bridge/excel.bridge.ts`
+Handler 檔案：`src/main/modules/excel-handlers-v2/index.ts`
 
 | # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
 |---|-------------|------------|--------|------|
-| 1 | `sendSelectExcelFile()` | `SELECT_EXCEL_FILE` | `ipcApi.excel.selectFile()` | ⬜ 待實作 |
-| 2 | `sendExportDefaultSheet()` | `EXPORT_DEFAULT_SHEET` | `ipcApi.excel.exportDefault()` | ⬜ 待實作 |
-| 3 | `sendExportDefaultSheetWithWeightProcess()` | `EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS` | `ipcApi.excel.exportDefaultWithWeight()` | ⬜ 待實作 |
-| 4 | `sendExportShopeeSheet()` | `EXPORT_SHOPEE_SHEET` | `ipcApi.excel.exportShopee()` | ⬜ 待實作 |
-| 5 | `sendExportShopeeSheetNew()` | `EXPORT_SHOPEE_SHEET_NEW` | `ipcApi.excel.exportShopeeNew()` | ⬜ 待實作 |
-| 6 | `sendExportPegasusSheet()` | `EXPORT_PEGASUS_SHEET` | `ipcApi.excel.exportPegasus()` | ⬜ 待實作 |
-| 7 | `sendGetWrongData()` | `GET_WRONG_DATA` | `ipcApi.excel.getWrongData()` | ⬜ 待實作 |
-| 8 | `sendAddNewProductMap()` | `ADD_NEW_PRODUCT_MAP` | `ipcApi.excel.addProductMap()` | ⬜ 待實作 |
-| 9 | `sendGetProductMap()` | `GET_PRODUCT_MAP` | `ipcApi.excel.getProductMap()` | ⬜ 待實作 |
-| 10 | `sendGetClassifyPrdouctName()` | `GET_CLASSIFY_PRODUCT_NAME` | `ipcApi.excel.classifyProductName()` | ⬜ 待實作 |
+| 1 | `sendSelectExcelFile()` | `SELECT_EXCEL_FILE` | `ipcApi.excel.selectFile()` | ✅ 完成 |
+| 2 | `sendExportDefaultSheet()` | `EXPORT_DEFAULT_SHEET` | `ipcApi.excel.exportDefault()` | ✅ 完成 |
+| 3 | `sendExportDefaultSheetWithWeightProcess()` | `EXPORT_DEFAULT_SHEET_WITH_WEIGHT_PROCESS` | `ipcApi.excel.exportDefaultWithWeight()` | ✅ 完成 |
+| 4 | `sendExportShopeeSheet()` | `EXPORT_SHOPEE_SHEET` | `ipcApi.excel.exportShopee()` | ✅ 完成 |
+| 5 | `sendExportShopeeSheetNew()` | `EXPORT_SHOPEE_SHEET_NEW` | `ipcApi.excel.exportShopeeNew()` | ✅ 完成 |
+| 6 | `sendExportPegasusSheet()` | `EXPORT_PEGASUS_SHEET` | `ipcApi.excel.exportPegasus()` | ✅ 完成 |
+| 7 | `sendGetWrongData()` | `GET_WRONG_DATA` | `ipcApi.excel.getWrongData()` | ✅ 完成 |
+| 8 | `sendAddNewProductMap()` | `ADD_NEW_PRODUCT_MAP` | `ipcApi.excel.addProductMap()` | ✅ 完成 |
+| 9 | `sendGetProductMap()` | `GET_PRODUCT_MAP` | `ipcApi.excel.getProductMap()` | ✅ 完成 |
+| 10 | `sendGetClassifyPrdouctName()` | `GET_CLASSIFY_PRODUCT_NAME` | `ipcApi.excel.classifyProductName()` | ✅ 完成 |
 | 11 | `onceExcelData()` | `EXCEL_DATA` | （事件監聽，需評估是否遷移） | ⬜ 待評估 |
 
 ---
@@ -113,21 +114,21 @@ Handler 檔案：`src/main/modules/auth-handlers-v2/index.ts`
 - [x] `sendLogin`
 - [x] `sendLogout`
 
-### 第四階段：Excel 核心功能
-- [ ] `sendSelectExcelFile`
-- [ ] `sendExportDefaultSheet`
-- [ ] `sendExportDefaultSheetWithWeightProcess`
+### 第四階段：Excel 核心功能 ✅ 完成
+- [x] `sendSelectExcelFile`
+- [x] `sendExportDefaultSheet`
+- [x] `sendExportDefaultSheetWithWeightProcess`
 
-### 第五階段：Excel 匯出功能
-- [ ] `sendExportShopeeSheet`
-- [ ] `sendExportShopeeSheetNew`
-- [ ] `sendExportPegasusSheet`
+### 第五階段：Excel 匯出功能 ✅ 完成
+- [x] `sendExportShopeeSheet`
+- [x] `sendExportShopeeSheetNew`
+- [x] `sendExportPegasusSheet`
 
-### 第六階段：Excel 資料處理
-- [ ] `sendGetWrongData`
-- [ ] `sendAddNewProductMap`
-- [ ] `sendGetProductMap`
-- [ ] `sendGetClassifyPrdouctName`
+### 第六階段：Excel 資料處理 ✅ 完成
+- [x] `sendGetWrongData`
+- [x] `sendAddNewProductMap`
+- [x] `sendGetProductMap`
+- [x] `sendGetClassifyPrdouctName`
 
 ### 第七階段：事件監聽（需評估）
 - [ ] `onceExcelData`
@@ -142,3 +143,4 @@ Handler 檔案：`src/main/modules/auth-handlers-v2/index.ts`
 |------|----------|
 | 2025-12-07 | 建立遷移清單，完成 Settings 模組 4 個 API |
 | 2025-12-07 | 完成 Settings、App Status、Auth 模組（共 10 個 API，進度 43%） |
+| 2025-12-07 | 完成 Excel 模組（10/11 API，進度 87%），僅剩事件監聽待評估 |
