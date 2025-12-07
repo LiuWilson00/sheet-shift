@@ -11,22 +11,24 @@
  * - 新：'settings-v2/save', 'settings-v2/get'
  */
 
-import { BrowserWindow, dialog } from 'electron';
+import { BrowserWindow, app, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createHandler, IpcError } from '../../utils/typed-ipc-handler';
 import { ipcContracts } from '../../../shared/ipc-contracts';
 import { getSystemSetting, Settings } from '../../utils/setting.tool';
 import {
-  getGoogleSheetConnectionSetting,
-  saveGoogleSheetConnectionSetting,
   systemSettingMap,
   systemSettingSheetNames,
   updateSheetData,
 } from '../../utils/google-sheets.tool';
+import { GoogleSheetConnectionStore } from '../../status-store';
 import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
 import { logger } from '../../utils/logger.tool';
-import { ENV_PATH } from '../save-settings-handlers';
+
+const ENV_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets', '.env')
+  : path.join(__dirname, '../../../.env');
 
 const SETTINGS_SHEET_PATH = path.join(ENV_PATH, 'settings.sheet.json');
 
@@ -58,7 +60,9 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
   // 獲取設置
   // ==========================================
   createHandler(ipcContracts.settingsV2.get, async (input) => {
-    logger.debug('[Settings V2] Getting settings', { settingName: input.settingName });
+    logger.debug('[Settings V2] Getting settings', {
+      settingName: input.settingName,
+    });
 
     try {
       const settings = getSystemSetting(input.settingName);
@@ -67,7 +71,7 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
     } catch (error) {
       throw new IpcError(
         `Settings not found: ${input.settingName || 'default'}`,
-        'SETTINGS_NOT_FOUND'
+        'SETTINGS_NOT_FOUND',
       );
     }
   });
@@ -91,7 +95,10 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
     const success = await updateSheetData(sheetName, settingsJsonArray);
 
     if (!success) {
-      throw new IpcError('Failed to save settings to Google Sheets', 'SAVE_FAILED');
+      throw new IpcError(
+        'Failed to save settings to Google Sheets',
+        'SAVE_FAILED',
+      );
     }
 
     // 更新本地快取
@@ -105,17 +112,19 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
   });
 
   // ==========================================
-  // 獲取 Google Sheets 設置
+  // 獲取 Google Sheets 連線設置
   // ==========================================
   createHandler(ipcContracts.settingsV2.getSheet, async (input) => {
-    logger.debug('[Settings V2] Getting sheet settings', { settingName: input.settingName });
+    logger.debug('[Settings V2] Getting sheet settings', {
+      settingName: input.settingName,
+    });
 
-    const settings = await getGoogleSheetConnectionSetting(input.settingName);
+    const settings = GoogleSheetConnectionStore.get();
 
     if (!settings) {
       throw new IpcError(
-        `Google Sheets settings not found: ${input.settingName || 'default'}`,
-        'SHEET_SETTINGS_NOT_FOUND'
+        'Google Sheets connection settings not found',
+        'SHEET_SETTINGS_NOT_FOUND',
       );
     }
 
@@ -124,7 +133,7 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
   });
 
   // ==========================================
-  // 保存 Google Sheets 設置
+  // 保存 Google Sheets 連線設置
   // ==========================================
   createHandler(ipcContracts.settingsV2.saveSheet, async (input) => {
     logger.debug('[Settings V2] Saving sheet settings');
@@ -132,18 +141,27 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
     if (!input.client_email || !input.private_key || !input.spreadsheet_id) {
       throw new IpcError(
         'Missing required fields: client_email, private_key, or spreadsheet_id',
-        'INVALID_INPUT'
+        'INVALID_INPUT',
       );
     }
 
-    const success = await saveGoogleSheetConnectionSetting(input);
-
-    if (!success) {
-      throw new IpcError('Failed to save Google Sheets settings', 'SAVE_FAILED');
+    try {
+      fs.writeFileSync(
+        SETTINGS_SHEET_PATH,
+        JSON.stringify(input, null, 2).replace(/\\\\/g, '\\'),
+      );
+      logger.info('[Settings V2] Sheet settings saved successfully');
+      return true;
+    } catch (error) {
+      logger.error(
+        '[Settings V2] Failed to save sheet settings',
+        error as Error,
+      );
+      throw new IpcError(
+        'Failed to save Google Sheets settings',
+        'SAVE_FAILED',
+      );
     }
-
-    logger.info('[Settings V2] Sheet settings saved successfully');
-    return true;
   });
 
   // ==========================================
@@ -181,7 +199,9 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
     logger.debug('[Settings V2] Getting sheet names');
 
     const names = systemSettingSheetNames.get();
-    logger.debug('[Settings V2] Sheet names retrieved', { count: names?.length || 0 });
+    logger.debug('[Settings V2] Sheet names retrieved', {
+      count: names?.length || 0,
+    });
 
     return names || [];
   });
@@ -192,7 +212,9 @@ export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
 /**
  * 開啟檔案對話框選擇 JSON 檔案
  */
-async function selectJsonFile(mainWindow: BrowserWindow): Promise<string | undefined> {
+async function selectJsonFile(
+  mainWindow: BrowserWindow,
+): Promise<string | undefined> {
   const options = {
     title: '選擇 JSON 設定檔',
     filters: [{ name: 'JSON', extensions: ['json'] }],
@@ -214,7 +236,10 @@ export function removeSettingsHandlersV2() {
 /**
  * 將 Settings 物件轉換為 Google Sheets 格式的陣列
  */
-function transformSettingsToObjectArray(settings: Settings, prefix = ''): Array<{ Key: string; Value: string }> {
+function transformSettingsToObjectArray(
+  settings: Settings,
+  prefix = '',
+): Array<{ Key: string; Value: string }> {
   let resultArray: Array<{ Key: string; Value: string }> = [];
 
   for (const key in settings) {

@@ -2,14 +2,9 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { IPC_CHANNELS } from '../constants/ipc-channels';
-import appStatusBridge from './context-bridge/app-status.bridge';
 import debugBridge from './context-bridge/debug.bridge';
-import excelBridge from './context-bridge/excel.bridge';
-import settingBridge from './context-bridge/setting.bridge';
-import authBridge from './context-bridge/auth.bridge';
 
 export type Channels = keyof typeof IPC_CHANNELS;
-const debugMessages: string[] = [];
 
 const electronHandler = {
   ipcRenderer: {
@@ -32,11 +27,7 @@ const electronHandler = {
       return ipcRenderer.invoke(channel, ...args);
     },
   },
-  excelBridge,
-  appStatusBridge,
   debugBridge,
-  settingBridge,
-  authBridge,
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

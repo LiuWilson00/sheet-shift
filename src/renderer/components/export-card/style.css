@@ -1,0 +1,112 @@
+/* ============================================
+   ExportCard 組件樣式
+   ============================================ */
+
+.export-card {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 150px;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.export-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.95));
+}
+
+.export-card:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.export-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(122, 44, 158, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.export-card--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badge */
+.export-card__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.export-card__badge--primary {
+  background: #7a2c9e;
+  color: #ffffff;
+}
+
+.export-card__badge--danger {
+  background: #dc3545;
+  color: #ffffff;
+}
+
+.export-card__badge--warning {
+  background: #ffc107;
+  color: #333333;
+}
+
+.export-card__badge--success {
+  background: #28a745;
+  color: #ffffff;
+}
+
+/* Icon */
+.export-card__icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Content */
+.export-card__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.export-card__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.export-card__description {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #666666;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

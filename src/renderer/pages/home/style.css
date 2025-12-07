@@ -2,29 +2,374 @@
  * @NOTE: Prepend a `~` to css file paths that are in your node_modules
  *        See https://github.com/webpack-contrib/sass-loader#imports
  */
+
+/* ============================================
+   全域樣式
+   ============================================ */
+
 body {
   position: relative;
   color: white;
-  height: 100vh;
-  background: linear-gradient(
-    200.96deg,
-    #fedc2a -29.09%,
-    #dd5789 51.77%,
-    #7a2c9e 129.35%
-  );
-  font-family: sans-serif;
-  overflow-y: hidden;
+  min-height: 100vh;
+  background: linear-gradient(200.96deg,
+      #fedc2a -29.09%,
+      #dd5789 51.77%,
+      #7a2c9e 129.35%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, sans-serif;
+  overflow-y: auto;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 70px 20px 40px;
+  /* 上方增加空間給 fixed header */
 }
+
+/* ============================================
+   首頁容器
+   ============================================ */
+
 .home-context {
   display: flex;
-  justify-content: center;
-  align-items: center;
   flex-direction: column;
+  align-items: center;
   width: 100%;
+  margin-top: 60px;
+
+  min-width: 350px;
+  max-width: 900px;
+  min-height: calc(100vh - 80px);
 }
+
+/* ============================================
+   歡迎區塊
+   ============================================ */
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.welcome-section__title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-section__subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* ============================================
+   上傳區塊
+   ============================================ */
+
+.upload-section {
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 30px;
+}
+
+.upload-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.upload-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+.upload-card__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.upload-card__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px;
+}
+
+.upload-card__desc {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 20px;
+}
+
+.upload-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #7a2c9e, #9b4dca);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(122, 44, 158, 0.4);
+}
+
+.upload-card__btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(122, 44, 158, 0.5);
+}
+
+.upload-card__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-card__btn--login {
+  background: linear-gradient(135deg, #dd5789, #ff7aa8);
+  box-shadow: 0 4px 15px rgba(221, 87, 137, 0.4);
+}
+
+.upload-card__btn--login:hover {
+  box-shadow: 0 6px 20px rgba(221, 87, 137, 0.5);
+}
+
+/* ============================================
+   檔案已選擇區塊
+   ============================================ */
+
+.file-info-section {
+  width: 100%;
+  max-width: 700px;
+  margin-bottom: 30px;
+}
+
+.file-info-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.file-info-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.file-info-card__path {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-info-card__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.file-info-card__text {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-info-card__reupload {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.file-info-card__reupload:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #333;
+}
+
+/* 前處理選項 */
+.file-info-card__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.file-info-card__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.file-info-card__option input {
+  accent-color: #7a2c9e;
+}
+
+.file-info-card__option span {
+  font-size: 14px;
+  color: #333;
+}
+
+/* 艙單編號選項 */
+.file-info-card__manifest {
+  padding: 12px;
+  margin-bottom: 16px;
+  background: rgba(122, 44, 158, 0.05);
+  border: 1px solid rgba(122, 44, 158, 0.15);
+  border-radius: 8px;
+}
+
+.file-info-card__manifest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.file-info-card__manifest-config {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-info-card__manifest-config:hover {
+  background: #f5f5f5;
+  border-color: #7a2c9e;
+  color: #7a2c9e;
+}
+
+.file-info-card__manifest-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(122, 44, 158, 0.2);
+}
+
+.file-info-card__manifest-select span {
+  font-size: 13px;
+  color: #666;
+}
+
+.file-info-card__manifest-select select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+
+.file-info-card__manifest-select select:focus {
+  outline: none;
+  border-color: #7a2c9e;
+  box-shadow: 0 0 0 2px rgba(122, 44, 158, 0.1);
+}
+
+/* 前處理按鈕 */
+.file-info-card__preprocess {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-info-card__preprocess-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #28a745, #34ce57);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+}
+
+.file-info-card__preprocess-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+/* ============================================
+   匯出按鈕區塊
+   ============================================ */
+
+.export-section {
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 30px;
+}
+
+.export-section__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.export-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+/* ============================================
+   工具區塊
+   ============================================ */
+
+.tools-section {
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 30px;
+}
+
+.tools-section__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tools-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+/* ============================================
+   舊版相容樣式（保留以避免影響現有功能）
+   ============================================ */
 
 button {
   background-color: white;
@@ -32,7 +377,7 @@ button {
   border-radius: 10px;
   border: none;
   appearance: none;
-  font-size: 1.3rem;
+  font-size: 1rem;
   box-shadow:
     0px 8px 28px -6px rgba(24, 39, 75, 0.12),
     0px 18px 88px -4px rgba(24, 39, 75, 0.14);
@@ -42,7 +387,7 @@ button {
 }
 
 button:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   opacity: 1;
 }
 
@@ -54,7 +399,6 @@ a {
   text-decoration: none;
   height: fit-content;
   width: fit-content;
-  margin: 10px;
 }
 
 a:hover {
@@ -62,13 +406,7 @@ a:hover {
   text-decoration: none;
 }
 
-.Hello {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 20px 0;
-}
-
+/* 舊版區塊（未來可移除） */
 .file-selected-group {
   display: flex;
   justify-content: center;
@@ -79,6 +417,8 @@ a:hover {
 
 .file-selected-group .file-selected-group-button {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .file-selected-group .file-selected-group-button .export-button {
@@ -90,4 +430,46 @@ a:hover {
   margin: 10px;
   font-size: 14px;
   color: bisque;
+}
+
+/* ============================================
+   響應式設計
+   ============================================ */
+
+@media (max-width: 768px) {
+  body {
+    padding: 20px 16px;
+  }
+
+  .welcome-section__title {
+    font-size: 24px;
+  }
+
+  .upload-card {
+    padding: 24px 20px;
+  }
+
+  .export-section__grid,
+  .tools-section__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+
+  .export-section__grid,
+  .tools-section__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-info-card__header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .file-info-card__reupload {
+    width: 100%;
+    text-align: center;
+  }
 }

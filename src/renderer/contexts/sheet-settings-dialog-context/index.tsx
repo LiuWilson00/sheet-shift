@@ -10,6 +10,7 @@ import Input from '../../components/input';
 import Textarea from '../../components/textarea';
 import { useLoading } from '../loading.context';
 import { useDialog } from '../dialog.context';
+import ipcApi from '../../api/ipc-api';
 
 interface SheetSettingsContextType {
   isSettingsVisible: boolean;
@@ -51,8 +52,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
     // 儲存設定的邏輯
     showLoading();
     console.log('settings');
-    const savedResult =
-      await window.electron.settingBridge.sendSettingSheet(settings);
+    const savedResult = await ipcApi.settingsV2.saveSheet(settings);
     if (savedResult) {
       hideSettings();
     } else {
@@ -64,7 +64,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
       });
     }
 
-    const initResult = await window.electron.appStatusBridge.appStartInit();
+    const initResult = await ipcApi.app.init();
 
     if (!initResult.isConnected) {
       showDialog({
@@ -88,7 +88,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
 
   useEffect(() => {
     if (!isSettingsVisible) return;
-    window.electron.settingBridge.getSettingSheet().then((result) => {
+    ipcApi.settingsV2.getSheet({}).then((result) => {
       if (result) {
         setSettings(result);
       } else {
@@ -117,65 +117,75 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
     >
       {isSettingsVisible ? (
         <Dialog
-          title="Google Sheet Settings"
+          title="Google Sheet 連線設定"
           showMask={true}
-          width="80%"
-          height="80%"
+          variant="settings"
           showCancel={isCancelEnable}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           contentRender={() => {
             return (
               <div>
-                <h3>連線資訊</h3>
-                <Input
-                  label="client_email"
-                  name="client_email"
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      client_email: e.target.value,
-                    });
-                  }}
-                  defaultValue={settings.client_email || ''}
-                />
-                <Textarea
-                  label="private_key"
-                  name="private_key"
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      private_key: e.target.value,
-                    });
-                  }}
-                  defaultValue={settings.private_key || ''}
-                />
-                <h3>表單資訊</h3>
-                <Input
-                  label="spreadsheet_id"
-                  name="spreadsheet_id"
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      spreadsheet_id: e.target.value,
-                    });
-                  }}
-                  defaultValue={settings.spreadsheet_id || ''}
-                />
+                {/* 連線資訊區塊 */}
+                <div className="settings-section">
+                  <div className="settings-section__title">
+                    <span className="settings-section__title-icon">🔐</span>
+                    <span>連線資訊</span>
+                  </div>
+                  <div className="settings-section__content">
+                    <Input
+                      label="Client Email"
+                      name="client_email"
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          client_email: e.target.value,
+                        });
+                      }}
+                      defaultValue={settings.client_email || ''}
+                    />
+                    <Textarea
+                      label="Private Key"
+                      name="private_key"
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          private_key: e.target.value,
+                        });
+                      }}
+                      defaultValue={settings.private_key || ''}
+                    />
+                  </div>
+                </div>
+
+                {/* 表單資訊區塊 */}
+                <div className="settings-section">
+                  <div className="settings-section__title">
+                    <span className="settings-section__title-icon">📊</span>
+                    <span>表單資訊</span>
+                  </div>
+                  <div className="settings-section__content">
+                    <Input
+                      label="Spreadsheet ID"
+                      name="spreadsheet_id"
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          spreadsheet_id: e.target.value,
+                        });
+                      }}
+                      defaultValue={settings.spreadsheet_id || ''}
+                    />
+                  </div>
+                </div>
+
+                {/* 匯入按鈕 */}
                 <button
-                  style={{
-                    marginTop: '20px',
-                    backgroundColor: '#f5f5f5',
-                    border: '1px solid #ccc',
-                    padding: '5px 10px',
-                    borderRadius: '5px',
-                  }}
+                  type="button"
+                  className="import-btn"
                   onClick={async () => {
                     showLoading();
-                    const result =
-                      await window.electron.settingBridge.importSettingSheet(
-                        settings,
-                      );
+                    const result = await ipcApi.settingsV2.importSheet();
                     if (!result) {
                       showDialog({
                         content: '匯入失敗，請確認連線資訊是否正確。',
@@ -186,7 +196,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
                       hideLoading();
                       return;
                     }
-                    await window.electron.appStatusBridge.appStartInit();
+                    await ipcApi.app.init();
 
                     hideSettings();
 
@@ -199,8 +209,12 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
                     hideLoading();
                   }}
                 >
-                  匯入連線設定檔
+                  <span>📁</span>
+                  <span>匯入連線設定檔</span>
                 </button>
+                <p className="settings-hint">
+                  可直接匯入 JSON 格式的 Google Service Account 憑證檔案
+                </p>
               </div>
             );
           }}

@@ -9,6 +9,7 @@ import Dialog from '../../components/dialog';
 import Input from '../../components/input';
 import { useLoading } from '../loading.context';
 import { useDialog } from '../dialog.context';
+import ipcApi from '../../api/ipc-api';
 
 interface AuthDialogContextType {
   isAuth: boolean;
@@ -56,8 +57,7 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
   const handleConfirm = async () => {
     showLoading();
     try {
-      const loginResult =
-        await window.electron.authBridge.sendLogin(credentials);
+      const loginResult = await ipcApi.auth.login(credentials);
 
       if (loginResult) {
         // Handle successful login here
@@ -89,7 +89,7 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
     if (!_user) return;
 
     const user = JSON.parse(_user);
-    const loginResult = await window.electron.authBridge.sendLogin({
+    const loginResult = await ipcApi.auth.login({
       account: user.account,
       password: user.password,
     });

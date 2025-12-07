@@ -6,7 +6,7 @@ import { useDialog } from '../contexts/dialog.context';
 import { useSetting } from '../contexts/settings-dialog-context/indext';
 import './style.css';
 import { useAuthDialog } from '../contexts/auth-dialog-context';
-import Select from '../components/select';
+import ipcApi from '../api/ipc-api';
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const { isLoading, hideLoading, showLoading } = useLoading();
@@ -15,9 +15,10 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const systemSettings = useSetting();
   const { initAuth } = useAuthDialog();
   const { showDialog, hideDialog } = useDialog();
+
   useEffect(() => {
     showLoading();
-    window.electron.appStatusBridge.appStartInit().then(async (result) => {
+    ipcApi.app.init().then(async (result) => {
       hideLoading();
       if (result?.code === 'NO_GOOGLE_SHEET_SETTING') {
         sheetSettings.setIsConnected(false);
@@ -37,29 +38,26 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
           },
         });
         sheetSettings.showSettings();
-      }else{
+      } else {
         sheetSettings.setIsConnected(true);
       }
       initAuth();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const handleConnectionSettingsClick = () => {
-    // 根據你的邏輯，顯示連線設定的 dialog
     sheetSettings.showSettings(true);
   };
 
   const handleSystemSettingsClick = () => {
-    // 這裡假定你已有一個類似 `useSheetSetting` 的 hook 用於系統設定
-    // 例如: useSystemSetting().showSettings();
     systemSettings.showSettings();
   };
 
   useEffect(() => {
-    console.log('sheetSettings.isConnected: ', sheetSettings.isConnected);
     if (!sheetSettings.isConnected) return;
     (async () => {
-      const names =
-        await window.electron.settingBridge.getSystemSettingSheetNames();
+      const names = await ipcApi.settingsV2.getSheetNames();
       setSystemSettingNames(names);
     })();
   }, [sheetSettings.isConnected]);
@@ -67,26 +65,68 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   return (
     <div>
       <header className="layout-header">
-        <button onClick={handleConnectionSettingsClick}>設定連線資訊</button>
-        <button onClick={handleSystemSettingsClick}>設定系統設定</button>
-        <span>目前系統設定：</span>
-        <Select
-          items={[
-            {
-              value: 'default',
-              label: '預設',
-            },
-            ...systemSettingNames.map((name) => ({
-              value: name,
-              label: name.split('_')[1],
-            })),
-          ]}
-          onChange={(e) => {
-            console.log('e.target.value: ', e.target.value);
-            systemSettings.setSettingName(e.target.value);
-          }}
-        ></Select>
+        {/* 品牌區域 */}
+        <div className="layout-header__brand">
+          <span className="layout-header__logo">📊</span>
+          <span className="layout-header__title">Sheet Shift</span>
+        </div>
+
+        {/* 連線狀態 */}
+        <div
+          className={`layout-header__status ${
+            sheetSettings.isConnected
+              ? 'layout-header__status--connected'
+              : 'layout-header__status--disconnected'
+          }`}
+        >
+          <span className="layout-header__status-dot" />
+          <span>{sheetSettings.isConnected ? '已連線' : '未連線'}</span>
+        </div>
+
+        <div className="layout-header__divider" />
+
+        {/* 設定按鈕 */}
+        <div className="layout-header__actions">
+          <button
+            type="button"
+            className="layout-header__btn"
+            onClick={handleConnectionSettingsClick}
+          >
+            <span className="layout-header__btn-icon">🔗</span>
+            <span>連線設定</span>
+          </button>
+          <button
+            type="button"
+            className="layout-header__btn"
+            onClick={handleSystemSettingsClick}
+          >
+            <span className="layout-header__btn-icon">⚙️</span>
+            <span>系統設定</span>
+          </button>
+        </div>
+
+        <div className="layout-header__divider" />
+
+        {/* 系統設定選擇 */}
+        <div className="layout-header__setting">
+          <span className="layout-header__setting-label">目前設定:</span>
+          <select
+            className="layout-header__select"
+            value={systemSettings.settingName}
+            onChange={(e) => {
+              systemSettings.setSettingName(e.target.value);
+            }}
+          >
+            <option value="default">預設</option>
+            {systemSettingNames.map((name) => (
+              <option key={name} value={name}>
+                {name.split('_')[1] || name}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
+
       {children}
       <Loading isVisible={isLoading} />
     </div>

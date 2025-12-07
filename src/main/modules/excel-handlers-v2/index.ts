@@ -261,12 +261,20 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
     });
 
     const currentPath = currentSelectedFilePathV2.get();
+    logger.debug('[Excel V2] Current file path', { currentPath });
+
     if (!currentPath) {
       logger.warn('[Excel V2] No file selected');
       return { data: { unMappingData: [] }, isError: true };
     }
 
+    logger.debug('[Excel V2] Calling findUnMappingData...');
     const unMappingData = findUnMappingData(currentPath);
+    logger.debug('[Excel V2] findUnMappingData result', {
+      count: unMappingData.length,
+      firstItem: unMappingData[0],
+    });
+
     const resultData = input.aiClassify
       ? await classifyData(unMappingData)
       : unMappingData;

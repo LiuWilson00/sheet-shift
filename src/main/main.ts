@@ -12,14 +12,10 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { createMainWindow } from './modules/window-manager';
-import { setupExcelHandlers } from './modules/excel-hanlders';
-import { setupSaveSettingsHandlers } from './modules/save-settings-handlers';
-import { setupAppStatusHandlers } from './modules/app-status-handlers';
 import { IPC_CHANNELS } from '../constants/ipc-channels';
-import { setupAuthHandlers } from './modules/auth-handlers';
 
 // ============================================
-// 新系統導入（Logger + V2 Handlers）
+// IPC Handlers（類型安全）
 // ============================================
 import { setupLoggerHandlers } from './modules/logger-handlers';
 import { logger } from './utils/logger.tool';
@@ -98,24 +94,14 @@ const createWindow = async () => {
   mainWindow = createMainWindow();
 
   // ============================================
-  // 第 2 步：注册原有 Handlers（保持不变）
+  // 第 2 步：註冊 IPC Handlers
   // ============================================
   logger.info('Registering IPC handlers...');
-  setupExcelHandlers(mainWindow);
-  setupSaveSettingsHandlers(mainWindow);
-  setupAppStatusHandlers();
-  setupAuthHandlers();
-  logger.info('Original handlers registered [OK]');
-
-  // ============================================
-  // 第 3 步：註冊新的 V2 Handlers（試點）
-  // 與舊系統並行運行，使用不同的 channel 名稱
-  // ============================================
   setupSettingsHandlersV2(mainWindow);
   setupAppStatusHandlersV2();
   setupAuthHandlersV2();
   setupExcelHandlersV2(mainWindow);
-  logger.info('V2 handlers registered [OK]');
+  logger.info('IPC handlers registered [OK]');
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

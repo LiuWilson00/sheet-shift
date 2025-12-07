@@ -15,11 +15,23 @@ const Input: React.FC<InputProps> = ({
   searchHandler,
   optionClickHandler,
   onChange, // Destructuring the original onChange from props
+  value: externalValue, // 外部傳入的 value
+  defaultValue,
   ...restProps
 }) => {
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [isClicked, setIsClicked] = useState<boolean>(false); // 是否點擊過選項
-  const [value, setValue] = useState<string>('');
+  // 初始值優先使用外部 value，其次使用 defaultValue
+  const [value, setValue] = useState<string>(
+    (externalValue as string) ?? (defaultValue as string) ?? '',
+  );
+
+  // 當外部 value 變更時，同步更新內部 state
+  useEffect(() => {
+    if (externalValue !== undefined) {
+      setValue(externalValue as string);
+    }
+  }, [externalValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsClicked(false);

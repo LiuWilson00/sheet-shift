@@ -10,6 +10,7 @@ import Input from '../../components/input';
 import { Settings } from '../../../main/utils/setting.tool';
 import NumberRange from '../../components/number-range';
 import { useDialog } from '../dialog.context';
+import ipcApi from '../../api/ipc-api';
 
 interface SettingsContextType {
   isSettingsVisible: boolean;
@@ -66,8 +67,8 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
       return;
     }
     console.log('settings', settings);
-    window.electron.settingBridge
-      .sendSetting(settings, settingName)
+    ipcApi.settingsV2
+      .save({ data: settings, settingName })
       .then((result) => {
         if (result) {
           showDialog({
@@ -100,7 +101,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
   };
   useEffect(() => {
     if (!isSettingsVisible) return;
-    window.electron.settingBridge.getSetting(settingName).then((result) => {
+    ipcApi.settingsV2.get({ settingName }).then((result) => {
       if (result) {
         setSettings(result);
       }
@@ -121,16 +122,16 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
     >
       {isSettingsVisible ? (
         <Dialog
-          title="System Settings"
+          title="系統設定"
           showMask={true}
-          width="80%"
-          height="80%"
+          variant="settings"
           showCancel={true}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           contentRender={() => {
             return !isAuth ? (
               <div className="settings-auth">
+                <h3>🔒 需要驗證</h3>
                 <Input
                   label="請輸入驗證碼"
                   name="AUTH_CODE"
@@ -142,137 +143,164 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
               </div>
             ) : (
               <div className="settings">
-                <Input
-                  label="轉換成KCP的單位數量上限"
-                  name="SYSTEM_SETTING--UNIT_TRANSLATE_LIMIT"
-                  value={settings.SYSTEM_SETTING.UNIT_TRANSLATE_LIMIT.toString()}
-                  validationFn={validateNumber}
-                  type="number"
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      SYSTEM_SETTING: {
-                        ...settings.SYSTEM_SETTING,
-                        UNIT_TRANSLATE_LIMIT: parseInt(e.target.value, 10),
-                      },
-                    });
-                  }}
-                />
-                <Input
-                  label="KCP的單位數量"
-                  name="SYSTEM_SETTING--KPC_NUMBER"
-                  value={settings.SYSTEM_SETTING.KPC_NUMBER.toString()}
-                  validationFn={validateNumber}
-                  type="number"
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      SYSTEM_SETTING: {
-                        ...settings.SYSTEM_SETTING,
-                        KPC_NUMBER: parseInt(e.target.value, 10),
-                      },
-                    });
-                  }}
-                />
-                <Input
-                  label="淨重每次要扣除的值"
-                  name="SYSTEM_SETTING--NET_WEIGHT_INTERVAL"
-                  value={settings.SYSTEM_SETTING.NET_WEIGHT_INTERVAL.toString()}
-                  validationFn={validateNumber}
-                  onChange={(e) => {
-                    updateSettings({
-                      ...settings,
-                      SYSTEM_SETTING: {
-                        ...settings.SYSTEM_SETTING,
-                        NET_WEIGHT_INTERVAL: e.target.value,
-                      },
-                    });
-                  }}
-                />
-                <h2 style={{ marginTop: 20 }}>單件物品的價格</h2>
-                <NumberRange
-                  label="一件"
-                  value={settings.DEFAULT_PRICE_SETTING.OPE_PIECE}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        OPE_PIECE: value,
-                      },
-                    });
-                  }}
-                />
-                <NumberRange
-                  label="兩件"
-                  value={settings.DEFAULT_PRICE_SETTING.TWO_PIECE}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        TWO_PIECE: value,
-                      },
-                    });
-                  }}
-                />
-                <NumberRange
-                  label="三件以上"
-                  value={settings.DEFAULT_PRICE_SETTING.THREE_OR_MORE_PIECES}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        THREE_OR_MORE_PIECES: value,
-                      },
-                    });
-                  }}
-                />
+                {/* 系統設定區塊 */}
+                <div className="settings-section">
+                  <div className="settings-section__title">
+                    <span className="settings-section__title-icon">⚙️</span>
+                    <span>系統設定</span>
+                  </div>
+                  <div className="settings-section__content">
+                    <Input
+                      label="轉換成 KCP 的單位數量上限"
+                      name="SYSTEM_SETTING--UNIT_TRANSLATE_LIMIT"
+                      value={settings.SYSTEM_SETTING.UNIT_TRANSLATE_LIMIT.toString()}
+                      validationFn={validateNumber}
+                      type="number"
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          SYSTEM_SETTING: {
+                            ...settings.SYSTEM_SETTING,
+                            UNIT_TRANSLATE_LIMIT: parseInt(e.target.value, 10),
+                          },
+                        });
+                      }}
+                    />
+                    <Input
+                      label="KCP 的單位數量"
+                      name="SYSTEM_SETTING--KPC_NUMBER"
+                      value={settings.SYSTEM_SETTING.KPC_NUMBER.toString()}
+                      validationFn={validateNumber}
+                      type="number"
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          SYSTEM_SETTING: {
+                            ...settings.SYSTEM_SETTING,
+                            KPC_NUMBER: parseInt(e.target.value, 10),
+                          },
+                        });
+                      }}
+                    />
+                    <Input
+                      label="淨重每次要扣除的值"
+                      name="SYSTEM_SETTING--NET_WEIGHT_INTERVAL"
+                      value={settings.SYSTEM_SETTING.NET_WEIGHT_INTERVAL.toString()}
+                      validationFn={validateNumber}
+                      onChange={(e) => {
+                        updateSettings({
+                          ...settings,
+                          SYSTEM_SETTING: {
+                            ...settings.SYSTEM_SETTING,
+                            NET_WEIGHT_INTERVAL: e.target.value,
+                          },
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
 
-                <NumberRange
-                  label="調整倍率"
-                  value={settings.DEFAULT_PRICE_SETTING.ADJUSTMENT_RATE}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        ADJUSTMENT_RATE: value,
-                      },
-                    });
-                  }}
-                  needParseFloat={true}
-                />
-                <NumberRange
-                  label="天馬一件"
-                  value={settings.DEFAULT_PRICE_SETTING.PEGASUS_OPE_PIECE}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        PEGASUS_OPE_PIECE: value,
-                      },
-                    });
-                  }}
-                />
-                <NumberRange
-                  label="天馬兩件以上"
-                  value={settings.DEFAULT_PRICE_SETTING.PEGASUS_TWO_PIECE}
-                  onChange={(value) => {
-                    updateSettings({
-                      ...settings,
-                      DEFAULT_PRICE_SETTING: {
-                        ...settings.DEFAULT_PRICE_SETTING,
-                        PEGASUS_TWO_PIECE: value,
-                      },
-                    });
-                  }}
-                />
-                <span style={{ color: 'gray', fontSize: 12 }}>
-                  調整倍率會確保每個物品總金額欄位有一點偏差，乘上一個隨機的倍率
-                </span>
+                {/* 價格設定區塊 */}
+                <div className="settings-section">
+                  <div className="settings-section__title">
+                    <span className="settings-section__title-icon">💰</span>
+                    <span>預設價格設定</span>
+                  </div>
+                  <div className="settings-section__content">
+                    <NumberRange
+                      label="一件"
+                      value={settings.DEFAULT_PRICE_SETTING.OPE_PIECE}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            OPE_PIECE: value,
+                          },
+                        });
+                      }}
+                    />
+                    <NumberRange
+                      label="兩件"
+                      value={settings.DEFAULT_PRICE_SETTING.TWO_PIECE}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            TWO_PIECE: value,
+                          },
+                        });
+                      }}
+                    />
+                    <NumberRange
+                      label="三件以上"
+                      value={settings.DEFAULT_PRICE_SETTING.THREE_OR_MORE_PIECES}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            THREE_OR_MORE_PIECES: value,
+                          },
+                        });
+                      }}
+                    />
+                    <NumberRange
+                      label="調整倍率"
+                      value={settings.DEFAULT_PRICE_SETTING.ADJUSTMENT_RATE}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            ADJUSTMENT_RATE: value,
+                          },
+                        });
+                      }}
+                      needParseFloat={true}
+                    />
+                    <p className="settings-hint">
+                      調整倍率會確保每個物品總金額欄位有一點偏差，乘上一個隨機的倍率
+                    </p>
+                  </div>
+                </div>
+
+                {/* 天馬價格設定區塊 */}
+                <div className="settings-section">
+                  <div className="settings-section__title">
+                    <span className="settings-section__title-icon">🐴</span>
+                    <span>天馬價格設定</span>
+                  </div>
+                  <div className="settings-section__content">
+                    <NumberRange
+                      label="天馬一件"
+                      value={settings.DEFAULT_PRICE_SETTING.PEGASUS_OPE_PIECE}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            PEGASUS_OPE_PIECE: value,
+                          },
+                        });
+                      }}
+                    />
+                    <NumberRange
+                      label="天馬兩件以上"
+                      value={settings.DEFAULT_PRICE_SETTING.PEGASUS_TWO_PIECE}
+                      onChange={(value) => {
+                        updateSettings({
+                          ...settings,
+                          DEFAULT_PRICE_SETTING: {
+                            ...settings.DEFAULT_PRICE_SETTING,
+                            PEGASUS_TWO_PIECE: value,
+                          },
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             );
           }}

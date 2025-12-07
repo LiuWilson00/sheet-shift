@@ -11,6 +11,11 @@ import Input from '../../../../components/input';
 import './style.css';
 import { useDialog } from '../../../../contexts/dialog.context';
 import { useLoading } from '../../../../contexts/loading.context';
+import ipcApi from '../../../../api/ipc-api';
+import { logger } from '../../../../utils/logger.tool';
+
+// 建立 DataDebuggingDialog 專用的 logger
+const dialogLogger = logger.createChildLogger('DataDebuggingDialog');
 
 interface DataDebuggingDialogProps {
   show: boolean;
@@ -38,10 +43,9 @@ function DebugItem({
   const [tariffCode, setTariffCode] = useState<string>('');
   const tryToClassify = async () => {
     if (!isNeedAI) return;
-    const classifyData =
-      await window.electron.excelBridge.sendGetClassifyPrdouctName(
-        data[ExcelColumnKeys.ProductName] as string,
-      );
+    const classifyData = await ipcApi.excel.classifyProductName({
+      productName: data[ExcelColumnKeys.ProductName] as string,
+    });
     if (classifyData.isError) return;
     setCorrectProductName(classifyData.data?.realProductName || '');
     setTariffCode(classifyData.data?.tariffcode || '');
@@ -147,19 +151,34 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
   );
 
   useEffect(() => {
-    window.electron.excelBridge
-      .sendGetProductMap()
+    dialogLogger.info('Dialog show 狀態變更', { show, wrongDataLength: wrongData.length });
+
+    if (!show) return;
+
+    dialogLogger.debug('開始載入 ProductMap');
+    ipcApi.excel
+      .getProductMap()
       .then((result) => {
-        if (result.isError) return;
-        console.log(result);
+        if (result.isError) {
+          dialogLogger.warn('getProductMap 回傳錯誤');
+          return;
+        }
+        dialogLogger.info('ProductMap 載入成功', {
+          count: result.data?.length ?? 0,
+        });
         setProductNameMap(result.data);
       })
       .catch((err) => {
-        console.log(err);
+        dialogLogger.error('getProductMap 發生錯誤', err);
       });
-  }, [show]);
+  }, [show, wrongData.length]);
 
   const debuggingContentRender = useCallback(() => {
+    dialogLogger.debug('debuggingContentRender 被呼叫', {
+      wrongDataLength: wrongData.length,
+      productNameMapLength: productNameMap.length,
+    });
+
     return (
       <div className="data-debugging-items">
         <div className="data-debugging-items__title">
@@ -175,6 +194,11 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
             </div>
           </div>
         </div>
+        {wrongData.length === 0 && (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+            沒有需要處理的資料
+          </div>
+        )}
         {wrongData.map((data, index) => (
           <DebugItem
             onChange={(correctDataMap) => {
@@ -194,7 +218,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
         ))}
       </div>
     );
-  }, [wrongData, correctDataMaps]);
+  }, [wrongData, correctDataMaps, productNameMap, isNeedAI]);
   useEffect(() => {
     if (show) setCorrectDataMaps([]);
   }, [show]);
@@ -208,10 +232,9 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
           contentRender={debuggingContentRender}
           onConfirm={async () => {
             showLoading();
-            const result =
-              await window.electron.excelBridge.sendAddNewProductMap(
-                correctDataMaps,
-              );
+            const result = await ipcApi.excel.addProductMap({
+              mappings: correctDataMaps,
+            });
             hideLoading();
             if (result.isError) {
               showDialog({

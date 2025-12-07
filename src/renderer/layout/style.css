@@ -1,30 +1,176 @@
+/* ============================================
+   Layout Header 樣式
+   ============================================ */
+
 .layout-header {
-  padding: 10px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  height: 56px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  z-index: 100;
 }
 
-.layout-header button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
+/* Logo / 品牌區域 */
+.layout-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.layout-header__logo {
+  font-size: 20px;
+}
+
+.layout-header__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 按鈕群組 */
+.layout-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout-header__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
   cursor: pointer;
-  transition: background-color 0.3s;
-  margin: 5px;
+  transition: all 0.2s ease;
+}
+
+.layout-header__btn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+  color: #333;
+}
+
+.layout-header__btn--primary {
+  background: linear-gradient(135deg, #7a2c9e, #9b4dca);
+  border-color: transparent;
+  color: white;
+}
+
+.layout-header__btn--primary:hover {
+  background: linear-gradient(135deg, #6a2590, #8a3db8);
+  box-shadow: 0 2px 8px rgba(122, 44, 158, 0.3);
+}
+
+.layout-header__btn-icon {
+  font-size: 14px;
+}
+
+/* 分隔線 */
+.layout-header__divider {
+  width: 1px;
+  height: 24px;
+  background: #e0e0e0;
+  margin: 0 4px;
+}
+
+/* 設定選擇區 */
+.layout-header__setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout-header__setting-label {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.layout-header__select {
+  padding: 6px 28px 6px 12px;
+  font-size: 13px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  appearance: none;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.layout-header__select:hover {
+  border-color: #ccc;
+}
+
+.layout-header__select:focus {
+  outline: none;
+  border-color: #7a2c9e;
+  box-shadow: 0 0 0 3px rgba(122, 44, 158, 0.1);
+}
+
+/* 連線狀態指示 */
+.layout-header__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-size: 12px;
+  font-weight: 500;
 }
 
-.layout-header button:first-child {
-  margin-right: 10px;
+.layout-header__status--connected {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
 }
 
-.layout-header button:last-child {
-  margin-right: 10px;
+.layout-header__status--disconnected {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
 }
-.layout-header button:hover {
-  opacity: 0.8;
+
+.layout-header__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .layout-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .layout-header__btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .layout-header__btn span:not(.layout-header__btn-icon) {
+    display: none;
+  }
+
+  .layout-header__setting-label {
+    display: none;
+  }
+
+  .layout-header__select {
+    min-width: 80px;
+  }
 }

@@ -1,6 +1,7 @@
 import { excelToJSON, jsonGroupBy } from '../../../utils';
 import { getProductNameMap } from '../../../utils/google-sheets.tool';
 import { runClassifier } from '../../../utils/model-run';
+import { logger } from '../../../utils/logger.tool';
 import {
   ExcelColumnKeys,
   ProductNameMappingColumnKeys,
@@ -14,11 +15,19 @@ import {
 } from './data-process.service';
 
 export function findUnMappingData(filePath: string) {
+  logger.debug('[findUnMappingData] 開始處理', { filePath });
+
   const productNameMap = getProductNameMap();
+  logger.debug('[findUnMappingData] productNameMap 數量', {
+    count: productNameMap.length,
+  });
 
   const originalData: SheetData[] = excelToJSON(filePath, {
     xlsxOpts: { range: 2 },
     resultProcess: sheetDataProcess,
+  });
+  logger.debug('[findUnMappingData] originalData 數量', {
+    count: originalData.length,
   });
 
   const dataWithIndex = dataAddIndex(originalData);
@@ -29,11 +38,18 @@ export function findUnMappingData(filePath: string) {
   const dtatDeleteNullProductName = deleteNullProductNameData(
     fillDownShopingOrderNumber,
   );
+  logger.debug('[findUnMappingData] 處理後資料數量', {
+    afterDeleteNull: dtatDeleteNullProductName.length,
+  });
+
   const dataGrouped = jsonGroupBy(
     dtatDeleteNullProductName,
     [ExcelColumnKeys.ProductName],
     (datas) => ({ ...datas[0] }),
   );
+  logger.debug('[findUnMappingData] 分組後資料數量', {
+    grouped: dataGrouped.length,
+  });
 
   const unMappingData = dataGrouped.filter((entry) => {
     const productName = entry[ExcelColumnKeys.ProductName];
@@ -41,6 +57,11 @@ export function findUnMappingData(filePath: string) {
       (map) =>
         map[ProductNameMappingColumnKeys.OriginalProductName] === productName,
     );
+  });
+
+  logger.info('[findUnMappingData] 找到未對應資料', {
+    unMappingCount: unMappingData.length,
+    totalGrouped: dataGrouped.length,
   });
 
   return unMappingData;
