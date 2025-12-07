@@ -18,6 +18,13 @@ import { setupAppStatusHandlers } from './modules/app-status-handlers';
 import { IPC_CHANNELS } from '../constants/ipc-channels';
 import { setupAuthHandlers } from './modules/auth-handlers';
 
+// ============================================
+// 🆕 新系统导入（Logger + Settings V2）
+// ============================================
+import { setupLoggerHandlers } from './modules/logger-handlers';
+import { logger } from './utils/logger.tool';
+import { setupSettingsHandlersV2 } from './modules/settings-handlers-v2';
+
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
 
@@ -41,10 +48,10 @@ ipcMain.on(IPC_CHANNELS.DEBUG_MESSAGE, (event, message) => {
   mainWindow!.webContents.send(IPC_CHANNELS.DEBUG_MESSAGE, message);
 });
 
-setupExcelHandlers(mainWindow!);
-setupSaveSettingsHandlers(mainWindow!);
-setupAppStatusHandlers();
-setupAuthHandlers();
+// ============================================
+// 🆕 注意：移除了过早的 handlers 注册
+// handlers 将在 createWindow() 中正确注册
+// ============================================
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -72,14 +79,44 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
+  // ============================================
+  // 第 1 步：首先注册 Logger Handlers
+  // ============================================
+  setupLoggerHandlers();
+  logger.info('============================================================');
+  logger.info('Application starting...');
+  logger.info('Node Environment:', process.env.NODE_ENV);
+  logger.info('============================================================');
+
   if (isDebug) {
     await installExtensions();
   }
 
   mainWindow = createMainWindow();
+
+  // ============================================
+  // 第 2 步：注册原有 Handlers（保持不变）
+  // ============================================
+  logger.info('Registering IPC handlers...');
+  setupExcelHandlers(mainWindow);
+  setupSaveSettingsHandlers(mainWindow);
+  setupAppStatusHandlers();
+  setupAuthHandlers();
+  logger.info('Original handlers registered [OK]');
+
+  // ============================================
+  // 第 3 步：注册新的 Settings V2 Handlers（试点）
+  // 与旧系统并行运行，使用不同的 channel 名称
+  // ============================================
+  setupSettingsHandlersV2();
+  logger.info('Settings V2 handlers registered [OK]');
+
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
+
+  logger.info('Application started successfully [OK]');
+  logger.info('============================================================');
 };
 
 /**

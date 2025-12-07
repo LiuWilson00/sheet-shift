@@ -135,3 +135,80 @@ All IPC channels defined in `src/constants/ipc-channels.ts`:
 - Excel file paths must be absolute (Windows paths with backslashes on Windows)
 - DataStore instances cache Google Sheets data - update cache when sheets change
 - IPC handlers setup happens before window creation in `main.ts` (line 44-47)
+
+## 類型安全 IPC 架構（新系統）
+
+專案包含一個類型安全的 IPC 通訊架構，與舊的 bridge 系統並存運作。
+
+### 架構概覽
+
+```
+src/
+├── shared/
+│   └── ipc-contracts.ts          # IPC 契約定義（類型安全）
+├── main/
+│   ├── utils/
+│   │   ├── logger.tool.ts        # Logger 系統（Main Process）
+│   │   └── typed-ipc-handler.ts  # Handler 工具
+│   ├── modules/
+│   │   ├── logger-handlers/      # Logger IPC Handlers
+│   │   └── settings-handlers-v2/ # Settings V2 Handlers（新）
+│   └── preload.ts                # Context Bridge（含 invoke 方法）
+└── renderer/
+    ├── utils/
+    │   ├── logger.tool.ts        # Logger 系統（Renderer Process）
+    │   └── typed-ipc-client.ts   # Client 工具
+    └── api/
+        └── ipc-api.ts            # 統一 API 入口
+```
+
+### 使用方式
+
+**Renderer 端（前端）**：
+```typescript
+import ipcApi from '../api/ipc-api';
+
+// 類型安全的調用
+const settings = await ipcApi.settingsV2.get({ settingName: undefined });
+```
+
+**Main 端（後端）**：
+```typescript
+import { createHandler } from '../../utils/typed-ipc-handler';
+import { ipcContracts } from '../../../shared/ipc-contracts';
+
+createHandler(ipcContracts.settingsV2.get, async (input) => {
+  const settings = getSystemSetting(input.settingName);
+  return settings;
+});
+```
+
+### Logger 系統
+
+提供統一的日誌記錄功能：
+- 開發環境：輸出到控制台 + 寫入本地檔案
+- 生產環境：只記錄 ERROR 級別到檔案
+- 自動日誌輪轉（10MB 上限）
+- 自動清理舊日誌（保留 7 天）
+
+日誌檔案位置：`%APPDATA%\Electron\logs\`
+
+```typescript
+import { logger } from '@/utils/logger.tool';
+
+logger.debug('除錯訊息', { data: 'something' });
+logger.info('資訊訊息');
+logger.warn('警告訊息');
+logger.error('錯誤訊息', error);
+```
+
+### 新舊系統共存
+
+新的 IPC 系統使用不同的 channel 名稱，避免與舊系統衝突：
+- 舊系統：`save-settings`, `get-settings`
+- 新系統：`settings-v2/save`, `settings-v2/get`
+
+## 專案語言規範
+
+- 所有新增的程式碼註解請使用**繁體中文**
+- 維護現有程式碼時保持原有語言風格
