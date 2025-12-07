@@ -17,11 +17,21 @@ interface ExcelDataResult<T = unknown> extends BaseResult {
   data: Array<T>;
 }
 
-export const onceExcelData = (func: (data: ExcelDataResult) => void) => {
-  ipcRenderer.once(IPC_CHANNELS.EXCEL_DATA, (_event, data: ExcelDataResult) =>
-    func(data),
-  );
-};
+/**
+ * @deprecated 死代碼 - 此函數未被使用
+ *
+ * 評估結果（2025-12-07）：
+ * - Renderer 端無任何地方調用此函數
+ * - Main 端也沒有任何地方發送 EXCEL_DATA 事件
+ * - 可能是早期設計的遺留代碼，從未實際使用
+ *
+ * 建議：在確認無影響後可安全移除
+ */
+// export const onceExcelData = (func: (data: ExcelDataResult) => void) => {
+//   ipcRenderer.once(IPC_CHANNELS.EXCEL_DATA, (_event, data: ExcelDataResult) =>
+//     func(data),
+//   );
+// };
 
 export function sendSelectExcelFile() {
   ipcRenderer.send(IPC_CHANNELS.SELECT_EXCEL_FILE);
@@ -175,7 +185,7 @@ export function sendGetClassifyPrdouctName(productName: string) {
 }
 
 export default {
-  onceExcelData,
+  // onceExcelData, // @deprecated 死代碼，已註解
   sendSelectExcelFile,
   sendExportDefaultSheet,
   sendExportDefaultSheetWithWeightProcess,
