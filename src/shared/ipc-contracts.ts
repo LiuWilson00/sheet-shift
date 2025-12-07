@@ -10,7 +10,11 @@
  */
 
 import type { Settings } from '../main/utils/setting.tool';
-import type { GoogleSheetConnectionSetting } from '../main/utils/google-sheets.tool';
+import type {
+  GoogleSheetConnectionSetting,
+  GoogleSheetConnectionResult,
+} from '../main/utils/google-sheets.tool';
+import type { UsersSheet } from '../main/utils/google-sheets.tool/index.interface';
 
 /**
  * IPC 契約介面
@@ -74,6 +78,58 @@ export const ipcContracts = {
     saveSheet: {
       channel: 'settings-v2/save-sheet',
     } as IpcContract<GoogleSheetConnectionSetting, boolean>,
+
+    /**
+     * 匯入設置檔案（開啟檔案對話框選擇 JSON 檔案）
+     */
+    importSheet: {
+      channel: 'settings-v2/import-sheet',
+    } as IpcContract<void, boolean>,
+
+    /**
+     * 取得系統設置表單名稱列表
+     */
+    getSheetNames: {
+      channel: 'settings-v2/get-sheet-names',
+    } as IpcContract<void, string[]>,
+  },
+
+  /**
+   * 應用程式狀態相關 API
+   */
+  app: {
+    /**
+     * 應用程式初始化（連接 Google Sheets）
+     */
+    init: {
+      channel: 'app-v2/init',
+    } as IpcContract<void, GoogleSheetConnectionResult>,
+
+    /**
+     * 檢查資料是否已初始化
+     */
+    isInitialized: {
+      channel: 'app-v2/is-initialized',
+    } as IpcContract<void, boolean>,
+  },
+
+  /**
+   * 認證相關 API
+   */
+  auth: {
+    /**
+     * 登入
+     */
+    login: {
+      channel: 'auth-v2/login',
+    } as IpcContract<{ account: string; password: string }, UsersSheet | false>,
+
+    /**
+     * 登出
+     */
+    logout: {
+      channel: 'auth-v2/logout',
+    } as IpcContract<void, boolean>,
   },
 } as const;
 

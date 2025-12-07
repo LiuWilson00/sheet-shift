@@ -19,11 +19,13 @@ import { IPC_CHANNELS } from '../constants/ipc-channels';
 import { setupAuthHandlers } from './modules/auth-handlers';
 
 // ============================================
-// 🆕 新系统导入（Logger + Settings V2）
+// 新系統導入（Logger + V2 Handlers）
 // ============================================
 import { setupLoggerHandlers } from './modules/logger-handlers';
 import { logger } from './utils/logger.tool';
 import { setupSettingsHandlersV2 } from './modules/settings-handlers-v2';
+import { setupAppStatusHandlersV2 } from './modules/app-status-handlers-v2';
+import { setupAuthHandlersV2 } from './modules/auth-handlers-v2';
 
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
@@ -105,11 +107,13 @@ const createWindow = async () => {
   logger.info('Original handlers registered [OK]');
 
   // ============================================
-  // 第 3 步：注册新的 Settings V2 Handlers（试点）
-  // 与旧系统并行运行，使用不同的 channel 名称
+  // 第 3 步：註冊新的 V2 Handlers（試點）
+  // 與舊系統並行運行，使用不同的 channel 名稱
   // ============================================
-  setupSettingsHandlersV2();
-  logger.info('Settings V2 handlers registered [OK]');
+  setupSettingsHandlersV2(mainWindow);
+  setupAppStatusHandlersV2();
+  setupAuthHandlersV2();
+  logger.info('V2 handlers registered [OK]');
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

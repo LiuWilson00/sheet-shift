@@ -11,6 +11,9 @@
  * - 新：'settings-v2/save', 'settings-v2/get'
  */
 
+import { BrowserWindow, dialog } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createHandler, IpcError } from '../../utils/typed-ipc-handler';
 import { ipcContracts } from '../../../shared/ipc-contracts';
 import { getSystemSetting, Settings } from '../../utils/setting.tool';
@@ -18,10 +21,14 @@ import {
   getGoogleSheetConnectionSetting,
   saveGoogleSheetConnectionSetting,
   systemSettingMap,
+  systemSettingSheetNames,
   updateSheetData,
 } from '../../utils/google-sheets.tool';
 import { SheetRangeName } from '../../utils/google-sheets.tool/index.const';
 import { logger } from '../../utils/logger.tool';
+import { ENV_PATH } from '../save-settings-handlers';
+
+const SETTINGS_SHEET_PATH = path.join(ENV_PATH, 'settings.sheet.json');
 
 /**
  * 設置 Settings V2 相關的所有 IPC Handlers
@@ -44,7 +51,7 @@ import { logger } from '../../utils/logger.tool';
  * });
  * ```
  */
-export function setupSettingsHandlersV2() {
+export function setupSettingsHandlersV2(mainWindow: BrowserWindow) {
   logger.info('[Settings V2] Setting up handlers...');
 
   // ==========================================
@@ -139,7 +146,60 @@ export function setupSettingsHandlersV2() {
     return true;
   });
 
+  // ==========================================
+  // 匯入設置檔案（開啟對話框選擇 JSON）
+  // ==========================================
+  createHandler(ipcContracts.settingsV2.importSheet, async () => {
+    logger.debug('[Settings V2] Opening file dialog for import');
+
+    const filePath = await selectJsonFile(mainWindow);
+
+    if (!filePath) {
+      logger.debug('[Settings V2] Import cancelled by user');
+      return false;
+    }
+
+    try {
+      const settingsData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      fs.writeFileSync(
+        SETTINGS_SHEET_PATH,
+        JSON.stringify(settingsData, null, 2).replace(/\\\\/g, '\\'),
+      );
+
+      logger.info('[Settings V2] Settings imported successfully', { filePath });
+      return true;
+    } catch (error) {
+      logger.error('[Settings V2] Failed to import settings', error as Error);
+      throw new IpcError('Failed to import settings file', 'IMPORT_FAILED');
+    }
+  });
+
+  // ==========================================
+  // 取得系統設置表單名稱列表
+  // ==========================================
+  createHandler(ipcContracts.settingsV2.getSheetNames, async () => {
+    logger.debug('[Settings V2] Getting sheet names');
+
+    const names = systemSettingSheetNames.get();
+    logger.debug('[Settings V2] Sheet names retrieved', { count: names?.length || 0 });
+
+    return names || [];
+  });
+
   logger.info('[Settings V2] All handlers registered successfully [OK]');
+}
+
+/**
+ * 開啟檔案對話框選擇 JSON 檔案
+ */
+async function selectJsonFile(mainWindow: BrowserWindow): Promise<string | undefined> {
+  const options = {
+    title: '選擇 JSON 設定檔',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  };
+
+  const filePath = dialog.showOpenDialogSync(mainWindow, options);
+  return filePath ? filePath[0] : undefined;
 }
 
 /**

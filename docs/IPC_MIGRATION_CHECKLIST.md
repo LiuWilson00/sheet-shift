@@ -15,18 +15,19 @@
 
 | 模組 | 總計 | 已完成 | 進度 |
 |------|------|--------|------|
-| Settings | 6 | 4 | 67% |
+| Settings | 6 | 6 | 100% |
+| App Status | 2 | 2 | 100% |
+| Auth | 2 | 2 | 100% |
 | Excel | 11 | 0 | 0% |
-| App Status | 3 | 0 | 0% |
-| Auth | 2 | 0 | 0% |
 | Debug | 2 | 0 | 0% |
-| **總計** | **24** | **4** | **17%** |
+| **總計** | **23** | **10** | **43%** |
 
 ---
 
-## Settings 模組
+## Settings 模組 ✅ 完成
 
 來源檔案：`src/main/context-bridge/setting.bridge.ts`
+Handler 檔案：`src/main/modules/settings-handlers-v2/index.ts`
 
 | # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
 |---|-------------|------------|--------|------|
@@ -34,12 +35,38 @@
 | 2 | `sendSetting()` | `SAVE_SETTINGS` | `ipcApi.settingsV2.save()` | ✅ 完成 |
 | 3 | `getSettingSheet()` | `GET_SETTINGS_SHEET` | `ipcApi.settingsV2.getSheet()` | ✅ 完成 |
 | 4 | `sendSettingSheet()` | `SAVE_SETTINGS_SHEET` | `ipcApi.settingsV2.saveSheet()` | ✅ 完成 |
-| 5 | `importSettingSheet()` | `IMPORT_SETTINGS_SHEET` | `ipcApi.settingsV2.importSheet()` | ⬜ 待實作 |
-| 6 | `getSystemSettingSheetNames()` | `GET_SYSTEM_SETTINGS_SHEET_NAMES` | `ipcApi.settingsV2.getSheetNames()` | ⬜ 待實作 |
+| 5 | `importSettingSheet()` | `IMPORT_SETTINGS_SHEET` | `ipcApi.settingsV2.importSheet()` | ✅ 完成 |
+| 6 | `getSystemSettingSheetNames()` | `GET_SYSTEM_SETTINGS_SHEET_NAMES` | `ipcApi.settingsV2.getSheetNames()` | ✅ 完成 |
 
 ---
 
-## Excel 模組
+## App Status 模組 ✅ 完成
+
+來源檔案：`src/main/context-bridge/app-status.bridge.ts`
+Handler 檔案：`src/main/modules/app-status-handlers-v2/index.ts`
+
+| # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
+|---|-------------|------------|--------|------|
+| 1 | `appStartInit()` | `APP_START_INIT` | `ipcApi.app.init()` | ✅ 完成 |
+| 2 | `getDataInitialized()` | `GET_DATA_INITIALIZED` | `ipcApi.app.isInitialized()` | ✅ 完成 |
+
+> 注意：`onDataInitialized()` 是事件監聽，暫不遷移
+
+---
+
+## Auth 模組 ✅ 完成
+
+來源檔案：`src/main/context-bridge/auth.bridge.ts`
+Handler 檔案：`src/main/modules/auth-handlers-v2/index.ts`
+
+| # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
+|---|-------------|------------|--------|------|
+| 1 | `sendLogin()` | `LOGIN` | `ipcApi.auth.login()` | ✅ 完成 |
+| 2 | `sendLogout()` | `LOGOUT` | `ipcApi.auth.logout()` | ✅ 完成 |
+
+---
+
+## Excel 模組 ⬜ 待實作
 
 來源檔案：`src/main/context-bridge/excel.bridge.ts`
 
@@ -59,55 +86,32 @@
 
 ---
 
-## App Status 模組
-
-來源檔案：`src/main/context-bridge/app-status.bridge.ts`
-
-| # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
-|---|-------------|------------|--------|------|
-| 1 | `appStartInit()` | `APP_START_INIT` | `ipcApi.app.init()` | ⬜ 待實作 |
-| 2 | `getDataInitialized()` | `GET_DATA_INITIALIZED` | `ipcApi.app.isInitialized()` | ⬜ 待實作 |
-| 3 | `onDataInitialized()` | `DATA_INITIALIZED` | （事件監聽，需評估是否遷移） | ⬜ 待評估 |
-
----
-
-## Auth 模組
-
-來源檔案：`src/main/context-bridge/auth.bridge.ts`
-
-| # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
-|---|-------------|------------|--------|------|
-| 1 | `sendLogin()` | `LOGIN` | `ipcApi.auth.login()` | ⬜ 待實作 |
-| 2 | `sendLogout()` | `LOGOUT` | `ipcApi.auth.logout()` | ⬜ 待實作 |
-
----
-
-## Debug 模組
+## Debug 模組 ⬜ 待評估
 
 來源檔案：`src/main/context-bridge/debug.bridge.ts`
 
 | # | Bridge 函數 | 舊 Channel | 新 API | 狀態 |
 |---|-------------|------------|--------|------|
-| 1 | `listenForDebugMessages()` | `DEBUG_MESSAGE` | （事件監聽，需評估是否遷移） | ⬜ 待評估 |
+| 1 | `listenForDebugMessages()` | `DEBUG_MESSAGE` | （事件監聽，可能不需遷移） | ⬜ 待評估 |
 | 2 | `getDebugMessages()` | （本地函數） | （可能不需要遷移） | ⬜ 待評估 |
 
 ---
 
 ## 實作順序建議
 
-### 第一階段：Settings 模組（已完成 4/6）
+### 第一階段：Settings 模組 ✅ 完成
 - [x] `getSetting` / `sendSetting`
 - [x] `getSettingSheet` / `sendSettingSheet`
-- [ ] `importSettingSheet`
-- [ ] `getSystemSettingSheetNames`
+- [x] `importSettingSheet`
+- [x] `getSystemSettingSheetNames`
 
-### 第二階段：App Status 模組
-- [ ] `appStartInit`
-- [ ] `getDataInitialized`
+### 第二階段：App Status 模組 ✅ 完成
+- [x] `appStartInit`
+- [x] `getDataInitialized`
 
-### 第三階段：Auth 模組
-- [ ] `sendLogin`
-- [ ] `sendLogout`
+### 第三階段：Auth 模組 ✅ 完成
+- [x] `sendLogin`
+- [x] `sendLogout`
 
 ### 第四階段：Excel 核心功能
 - [ ] `sendSelectExcelFile`
@@ -137,4 +141,4 @@
 | 日期 | 更新內容 |
 |------|----------|
 | 2025-12-07 | 建立遷移清單，完成 Settings 模組 4 個 API |
-
+| 2025-12-07 | 完成 Settings、App Status、Auth 模組（共 10 個 API，進度 43%） |
