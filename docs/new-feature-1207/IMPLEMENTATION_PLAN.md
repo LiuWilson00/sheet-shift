@@ -1,7 +1,7 @@
 # 海運表單系統修改 - 實作計畫
 
-**版本**: 1.1
-**日期**: 2025-12-07
+**版本**: 1.2
+**日期**: 2026-02-04
 **策略**: UI First - 先建立完整的 UI Demo，後整合商業邏輯
 
 ---
@@ -218,7 +218,7 @@ const exportOptions = [
   {
     id: 'kaohsiung-chaofeng',
     title: '高雄超峰格式',
-    description: '自動均攤毛重、調整金額',
+    description: '自動均攤毛重、帶入地址',
     icon: <IconTruck />,
     badge: 'NEW',
     onClick: exportKaohsiungChaofeng,
@@ -730,7 +730,7 @@ const BlacklistEditor: React.FC<BlacklistEditorProps> = ({
 interface ManifestApplyDialogProps {
   show: boolean;
   onClose: () => void;
-  onApply: (numbers: string[]) => void;
+  onApply: (numbers: string[], transactionCode?: string) => void;
   configs: ManifestNumberConfig[];
   requiredCount: number;  // 需要的編號數量
 }
@@ -744,6 +744,7 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
 }) => {
   const [selectedConfig, setSelectedConfig] = useState<string>('');
   const [startNumber, setStartNumber] = useState('');
+  const [transactionCode, setTransactionCode] = useState('');  // 交易代碼
   const [previewResult, setPreviewResult] = useState<{
     numbers: string[];
     endAt: string;
@@ -798,21 +799,37 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
 
         {/* 起始編號 */}
         {selectedConfig && (
-          <div className="form-group">
-            <label>起始編號</label>
-            <input
-              type="text"
-              value={startNumber}
-              onChange={(e) => setStartNumber(e.target.value.toUpperCase())}
-              placeholder="留空則從第一個開始"
-            />
-            <span className="form-hint">
-              留空則從第一個開始
-            </span>
-            {validationError && (
-              <span className="form-error">{validationError}</span>
-            )}
-          </div>
+          <>
+            <div className="form-group">
+              <label>起始編號</label>
+              <input
+                type="text"
+                value={startNumber}
+                onChange={(e) => setStartNumber(e.target.value.toUpperCase())}
+                placeholder="留空則從第一個開始"
+              />
+              <span className="form-hint">
+                留空則從第一個開始
+              </span>
+              {validationError && (
+                <span className="form-error">{validationError}</span>
+              )}
+            </div>
+
+            {/* 交易代碼 */}
+            <div className="form-group">
+              <label>交易代碼</label>
+              <input
+                type="text"
+                value={transactionCode}
+                onChange={(e) => setTransactionCode(e.target.value)}
+                placeholder="選填，將帶入到 AG 欄位"
+              />
+              <span className="form-hint">
+                將帶入到 AG 欄位（可選）
+              </span>
+            </div>
+          </>
         )}
 
         {/* 使用資訊 */}
@@ -855,7 +872,7 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
           </button>
           <button
             className="btn-primary"
-            onClick={() => onApply(previewResult?.numbers || [])}
+            onClick={() => onApply(previewResult?.numbers || [], transactionCode)}
             disabled={!selectedConfig}
           >
             帶入編號

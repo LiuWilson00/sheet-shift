@@ -212,3 +212,48 @@ logger.error('錯誤訊息', error);
 
 - 所有新增的程式碼註解請使用**繁體中文**
 - 維護現有程式碼時保持原有語言風格
+
+## 規格驅動開發流程
+
+本專案採用規格驅動開發 (Spec-Driven Development)，所有功能開發必須遵循以下步驟：
+
+```
+STEP 1: SPEC    →  STEP 2: DEV    →  STEP 3: TEST  →  STEP 4: UPDATE
+撰寫規格              開發              測試             更新 Checklist
+```
+
+### 必要文件
+
+每個功能開發前需建立以下文件（位於 `docs/<feature-name>/`）：
+
+| 文件 | 說明 |
+|------|------|
+| `FEATURE_SPEC.md` | 功能規格書：需求、資料結構、API 設計、測試案例 |
+| `IMPLEMENTATION_PLAN.md` | 實作計畫：開發階段、代碼範例、檔案清單 |
+| `DEVELOPMENT_CHECKLIST.md` | 開發進度清單：任務追蹤、狀態標記、更新記錄 |
+
+### 狀態符號
+
+```
+⬜ 待開發/待測試
+🔄 開發中/測試中
+✅ 已完成
+⚠️ 有問題/需修改
+❌ 已取消/不需要
+```
+
+### 開發順序
+
+1. **型別定義** - `src/shared/*.types.ts`
+2. **UI 組件** - 先建立 UI Demo (假資料)
+3. **IPC 契約** - `src/shared/ipc-contracts.ts`
+4. **IPC Handlers** - `src/main/modules/*-handlers/`
+5. **Renderer API** - `src/renderer/api/ipc-api.ts`
+6. **商業邏輯** - `src/main/modules/*/services/`
+7. **UI 整合** - 連接 UI 到真實 API
+
+### 參考範例
+
+- 功能開發範例：`docs/new-feature-1207/`
+- IPC 遷移範例：`docs/IPC_FULL_MIGRATION_CHECKLIST.md`
+- 開發流程詳細說明：`.claude/skills/spec-driven-development.md`

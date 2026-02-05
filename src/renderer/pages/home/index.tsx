@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import './style.css';
 import { useLoading } from '../../contexts/loading.context';
 import { useDialog } from '../../contexts/dialog.context';
@@ -9,11 +9,11 @@ import { useAuthDialog } from '../../contexts/auth-dialog-context';
 import { useSetting } from '../../contexts/settings-dialog-context/indext';
 import ipcApi from '../../api/ipc-api';
 import ExportCard from '../../components/export-card';
-import { ManifestConfigDialog } from '../../components/manifest-number-dialog';
 import {
-  ManifestNumberConfig,
-  DEFAULT_CONFIG,
-} from '../../types/manifest-number';
+  ManifestConfigDialog,
+  ManifestApplyDialog,
+} from '../../components/manifest-number-dialog';
+import { ManifestNumberConfig } from '../../types/manifest-number';
 import { logger } from '../../utils/logger.tool';
 
 // 建立 Home 頁面專用的 logger
@@ -33,21 +33,21 @@ function Home() {
 
   // 艙單編號相關狀態
   const [showManifestConfig, setShowManifestConfig] = useState(false);
+  const [showManifestApply, setShowManifestApply] = useState(false);
   const [enableManifestNumber, setEnableManifestNumber] = useState(false);
-  const [selectedManifestConfig, setSelectedManifestConfig] =
-    useState<string>('預設格式');
+  const [selectedManifestConfig, setSelectedManifestConfig] = useState('');
   const [manifestConfigs, setManifestConfigs] = useState<
     ManifestNumberConfig[]
-  >([
-    // Demo 用預設設定
-    {
-      settingName: '預設格式',
-      format: DEFAULT_CONFIG.format,
-      blacklist: DEFAULT_CONFIG.blacklist,
-      currentNumber: 'AAA00',
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  >([]);
+
+  // 匯出函式暫存（用於艙單編號帶入後繼續匯出）
+  const pendingExportRef = useRef<
+    | ((options: {
+        settingName: string;
+        transactionCode?: string;
+      }) => Promise<{ isError: boolean; path: string }>)
+    | null
+  >(null);
 
   useEffect(() => {
     const storedIsNeedAI = window.localStorage.getItem('isNeedAI');
@@ -57,6 +57,26 @@ function Home() {
       window.localStorage.getItem('batchAIClassify');
     setIsNeedBatchAIClassify(storedBatchAIClassify === 'true');
   }, []);
+
+  // 從 API 載入艙單編號設定
+  const loadManifestConfigs = useCallback(async () => {
+    try {
+      const configs = await ipcApi.manifestNumber.getConfigs();
+      setManifestConfigs(configs);
+      if (configs.length > 0 && !selectedManifestConfig) {
+        setSelectedManifestConfig(configs[0].settingName);
+      }
+    } catch (err) {
+      homeLogger.warn('載入艙單編號設定失敗', { error: err });
+    }
+  }, [selectedManifestConfig]);
+
+  // 初始化時載入設定
+  useEffect(() => {
+    if (isAuth) {
+      loadManifestConfigs();
+    }
+  }, [isAuth, loadManifestConfigs]);
 
   const fetchData = useCallback(async () => {
     showLoading();
@@ -76,13 +96,17 @@ function Home() {
 
   const handleExport = useCallback(
     async (
-      exportFn: (options: { settingName: string }) => Promise<{
+      exportFn: (options: {
+        settingName: string;
+        transactionCode?: string;
+      }) => Promise<{
         isError: boolean;
         path: string;
       }>,
+      transactionCode?: string,
     ) => {
       showLoading();
-      const result = await exportFn({ settingName });
+      const result = await exportFn({ settingName, transactionCode });
       hideLoading();
       if (result.isError) {
         showDialog({
@@ -94,34 +118,54 @@ function Home() {
         return;
       }
 
-      // Demo: 如果啟用艙單編號，顯示會處理的提示
-      let message = `檔案已匯出，檔案路徑：${result.path}`;
-      if (enableManifestNumber) {
-        const config = manifestConfigs.find(
-          (c) => c.settingName === selectedManifestConfig,
-        );
-        if (config) {
-          message += `\n\n已套用艙單編號設定：${selectedManifestConfig}（Demo 模式）`;
-        }
-      }
-
       showDialog({
-        content: message,
+        content: `檔案已匯出，檔案路徑：${result.path}`,
         onConfirm: () => {
           hideDialog();
         },
       });
     },
-    [
-      settingName,
-      showLoading,
-      hideLoading,
-      showDialog,
-      hideDialog,
-      enableManifestNumber,
-      manifestConfigs,
-      selectedManifestConfig,
-    ],
+    [settingName, showLoading, hideLoading, showDialog, hideDialog],
+  );
+
+  // 點擊匯出按鈕：如果啟用艙單編號則先開啟帶入 Dialog，否則直接匯出
+  const handleExportClick = useCallback(
+    (
+      exportFn: (options: {
+        settingName: string;
+        transactionCode?: string;
+      }) => Promise<{ isError: boolean; path: string }>,
+    ) => {
+      if (enableManifestNumber && manifestConfigs.length > 0) {
+        pendingExportRef.current = exportFn;
+        setShowManifestApply(true);
+      } else {
+        handleExport(exportFn);
+      }
+    },
+    [enableManifestNumber, manifestConfigs, handleExport],
+  );
+
+  // 艙單編號帶入完成的回調
+  const handleManifestApply = useCallback(
+    (numbers: string[], endNumber: string, transactionCode?: string) => {
+      homeLogger.info('艙單編號帶入完成', {
+        count: numbers.length,
+        endNumber,
+        hasTransactionCode: !!transactionCode,
+      });
+
+      // 重新載入設定以更新 currentNumber
+      loadManifestConfigs();
+
+      // 使用交易代碼執行匯出
+      const exportFn = pendingExportRef.current;
+      if (exportFn) {
+        pendingExportRef.current = null;
+        handleExport(exportFn, transactionCode);
+      }
+    },
+    [handleExport, loadManifestConfigs],
   );
 
   const originalDataDebugging = useCallback(async () => {
@@ -165,28 +209,31 @@ function Home() {
     [],
   );
 
+  // 儲存艙單編號設定到 API
   const handleSaveManifestConfig = useCallback(
-    (config: ManifestNumberConfig) => {
-      setManifestConfigs((prev) => {
-        const existingIndex = prev.findIndex(
-          (c) => c.settingName === config.settingName,
-        );
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = config;
-          return updated;
-        }
-        return [...prev, config];
-      });
-
-      showDialog({
-        content: `設定「${config.settingName}」已儲存（Demo 模式）`,
-        onConfirm: () => {
-          hideDialog();
-        },
-      });
+    async (config: ManifestNumberConfig) => {
+      try {
+        await ipcApi.manifestNumber.saveConfig(config);
+        // 重新載入設定
+        await loadManifestConfigs();
+        showDialog({
+          content: `設定「${config.settingName}」已儲存`,
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
+      } catch (err) {
+        showDialog({
+          content: `儲存設定失敗：${
+            err instanceof Error ? err.message : '未知錯誤'
+          }`,
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
+      }
     },
-    [showDialog, hideDialog],
+    [showDialog, hideDialog, loadManifestConfigs],
   );
 
   const hasFile =
@@ -209,6 +256,18 @@ function Home() {
         isOpen={showManifestConfig}
         onClose={() => setShowManifestConfig(false)}
         onSave={handleSaveManifestConfig}
+      />
+
+      {/* 艙單編號帶入 Dialog */}
+      <ManifestApplyDialog
+        isOpen={showManifestApply}
+        onClose={() => {
+          setShowManifestApply(false);
+          pendingExportRef.current = null;
+        }}
+        onApply={handleManifestApply}
+        configs={manifestConfigs}
+        rowCount={0}
       />
 
       {/* 歡迎區塊 */}
@@ -349,22 +408,24 @@ function Home() {
           <h2 className="export-section__title">選擇匯出格式</h2>
           <div className="export-section__grid">
             <ExportCard
-              title="預設格式"
+              title="台北港格式"
               description="標準輸出"
-              icon="📋"
-              onClick={() => handleExport(ipcApi.excel.exportDefault)}
+              icon="🏢"
+              onClick={() => handleExportClick(ipcApi.excel.exportTaipeiBay)}
             />
             <ExportCard
-              title="預設格式"
-              description="含重量處理"
-              icon="⚖️"
-              onClick={() => handleExport(ipcApi.excel.exportDefaultWithWeight)}
+              title="高雄超峰格式"
+              description="蝦皮新版基礎"
+              icon="🚚"
+              onClick={() =>
+                handleExportClick(ipcApi.excel.exportKaohsiungChaofeng)
+              }
             />
             <ExportCard
               title="蝦皮格式"
               description="Shopee"
               icon="🛒"
-              onClick={() => handleExport(ipcApi.excel.exportShopee)}
+              onClick={() => handleExportClick(ipcApi.excel.exportShopee)}
             />
             <ExportCard
               title="蝦皮格式"
@@ -372,31 +433,13 @@ function Home() {
               icon="🛍️"
               badge="NEW"
               badgeType="success"
-              onClick={() => handleExport(ipcApi.excel.exportShopeeNew)}
+              onClick={() => handleExportClick(ipcApi.excel.exportShopeeNew)}
             />
             <ExportCard
               title="天馬格式"
               description="Pegasus"
               icon="🐴"
-              onClick={() => handleExport(ipcApi.excel.exportPegasus)}
-            />
-            <ExportCard
-              title="台北灣"
-              description="即將推出"
-              icon="🏢"
-              badge="SOON"
-              badgeType="warning"
-              disabled
-              onClick={() => {}}
-            />
-            <ExportCard
-              title="高雄超峰"
-              description="即將推出"
-              icon="🚚"
-              badge="SOON"
-              badgeType="warning"
-              disabled
-              onClick={() => {}}
+              onClick={() => handleExportClick(ipcApi.excel.exportPegasus)}
             />
           </div>
         </div>

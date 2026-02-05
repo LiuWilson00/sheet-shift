@@ -1,13 +1,18 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ManifestNumberConfig,
   generatePreview,
 } from '../../../types/manifest-number';
+import ipcApi from '../../../api/ipc-api';
 
 interface ManifestApplyDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (numbers: string[], endNumber: string) => void;
+  onApply: (
+    numbers: string[],
+    endNumber: string,
+    transactionCode?: string,
+  ) => void;
   configs: ManifestNumberConfig[];
   rowCount: number;
 }
@@ -23,6 +28,12 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     configs.length > 0 ? configs[0].settingName : '',
   );
   const [count, setCount] = useState(rowCount || 1);
+  /** 交易代碼（帶入 AG 欄位） */
+  const [transactionCode, setTransactionCode] = useState('');
+  /** 載入狀態 */
+  const [isGenerating, setIsGenerating] = useState(false);
+  /** 錯誤訊息 */
+  const [error, setError] = useState('');
 
   const selectedConfig = useMemo(() => {
     return configs.find((c) => c.settingName === selectedConfigName);
@@ -33,40 +44,52 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     return generatePreview(selectedConfig.format.segments);
   }, [selectedConfig]);
 
-  // 模擬產生編號預覽（UI Demo 用）
-  const generateDemoNumbers = useCallback((): string[] => {
-    if (!selectedConfig || !preview) return [];
+  // 當設定變更時重置錯誤
+  useEffect(() => {
+    setError('');
+  }, [selectedConfigName]);
 
-    const startNumber = selectedConfig.currentNumber || preview.first;
-    const numbers: string[] = [];
+  // 當 configs 變更且目前選擇的不在列表中時，選擇第一個
+  useEffect(() => {
+    if (
+      configs.length > 0 &&
+      !configs.find((c) => c.settingName === selectedConfigName)
+    ) {
+      setSelectedConfigName(configs[0].settingName);
+    }
+  }, [configs, selectedConfigName]);
 
-    // 簡單演示：只顯示起始編號
-    const maxItems = Math.min(count, 5);
-    Array.from({ length: maxItems }).forEach((_, i) => {
-      if (i === 0) {
-        numbers.push(startNumber);
-      } else {
-        // 模擬下一個編號（簡化版）
-        numbers.push(`${startNumber.slice(0, -1)}${i}`);
-      }
-    });
-
-    return numbers;
-  }, [selectedConfig, preview, count]);
-
-  const demoNumbers = useMemo(
-    () => generateDemoNumbers(),
-    [generateDemoNumbers],
-  );
-
-  const handleApply = useCallback(() => {
+  const handleApply = useCallback(async () => {
     if (!selectedConfig) return;
 
-    // UI Demo: 只傳遞模擬資料
-    const endNumber = demoNumbers[demoNumbers.length - 1] || '';
-    onApply(demoNumbers, endNumber);
-    onClose();
-  }, [selectedConfig, demoNumbers, onApply, onClose]);
+    setIsGenerating(true);
+    setError('');
+
+    try {
+      // 呼叫 API 產生艙單編號
+      const result = await ipcApi.manifestNumber.generate({
+        configName: selectedConfig.settingName,
+        count,
+        startFrom: selectedConfig.currentNumber || undefined,
+        transactionCode: transactionCode || undefined,
+      });
+
+      // 更新 Google Sheets 上的當前編號
+      await ipcApi.manifestNumber.updateCurrentNumber({
+        settingName: selectedConfig.settingName,
+        currentNumber: result.endAt,
+      });
+
+      // 傳遞編號和交易代碼
+      onApply(result.numbers, result.endAt, transactionCode || undefined);
+      onClose();
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : '產生編號失敗';
+      setError(errMsg);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [selectedConfig, count, transactionCode, onApply, onClose]);
 
   const handleCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
@@ -182,37 +205,30 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                     </span>
                   </div>
 
-                  {/* 預覽結果 */}
-                  <div className="apply-dialog__preview">
-                    <h4 className="apply-dialog__preview-title">
-                      預覽產生的編號
-                    </h4>
-                    <div className="apply-dialog__preview-numbers">
-                      {demoNumbers.slice(0, 3).map((num, index) => (
-                        <span
-                          key={index}
-                          className={`apply-dialog__preview-number ${
-                            index === 0
-                              ? 'apply-dialog__preview-number--highlight'
-                              : ''
-                          }`}
-                        >
-                          {index + 1}. {num}
-                        </span>
-                      ))}
-                      {count > 3 && (
-                        <>
-                          <span className="apply-dialog__preview-ellipsis">
-                            ⋮
-                          </span>
-                          <span className="apply-dialog__preview-number apply-dialog__preview-number--highlight">
-                            {count}.{' '}
-                            {demoNumbers[demoNumbers.length - 1] || '---'}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                  {/* 交易代碼輸入 */}
+                  <div className="apply-dialog__transaction-code">
+                    <label className="manifest-dialog__label">
+                      交易代碼
+                      <span className="manifest-dialog__hint">
+                        （選填，帶入 AG 欄位）
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      className="manifest-dialog__input"
+                      value={transactionCode}
+                      onChange={(e) => setTransactionCode(e.target.value)}
+                      placeholder="例如：B2C、C2C"
+                      maxLength={20}
+                    />
                   </div>
+
+                  {/* 錯誤訊息 */}
+                  {error && (
+                    <div className="apply-dialog__error">
+                      <span>{error}</span>
+                    </div>
+                  )}
                 </>
               )}
             </>
@@ -231,9 +247,9 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
             type="button"
             className="manifest-dialog__btn manifest-dialog__btn--primary"
             onClick={handleApply}
-            disabled={configs.length === 0 || !selectedConfig}
+            disabled={configs.length === 0 || !selectedConfig || isGenerating}
           >
-            確認帶入
+            {isGenerating ? '產生中...' : '確認帶入'}
           </button>
         </div>
       </div>

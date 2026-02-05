@@ -14,6 +14,12 @@ export enum SheetRangeName {
   template = 'Template',
   SystemProductMap = 'system_product_map',
   Users = '用戶資訊',
+  /** 收貨人資訊表 */
+  RecipientInfo = '收貨人資訊',
+  /** 問題件表 */
+  ProblemItems = '問題件',
+  /** 艙單編號設定表 */
+  ManifestNumberConfig = '艙單編號設定',
 }
 
 export const SHEET_RANGES = [
@@ -23,4 +29,7 @@ export const SHEET_RANGES = [
   SheetRangeName.template,
   SheetRangeName.SystemProductMap,
   SheetRangeName.Users,
+  SheetRangeName.RecipientInfo,
+  SheetRangeName.ProblemItems,
+  SheetRangeName.ManifestNumberConfig,
 ];

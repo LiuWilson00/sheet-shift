@@ -22,6 +22,8 @@ import {
   processExcelData,
   processExcelDataShopee,
   processExcelDataShopeeNew,
+  processExcelDataTaipeiBay,
+  processExcelDataKaohsiungChaofeng,
 } from '../excel-hanlders/services/data-controller.service';
 import {
   classifyData,
@@ -87,7 +89,14 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
       }
 
       const completedData = await processExcelData(currentPath);
-      const newFilePath = await saveProcessedData(completedData, currentPath);
+      const newFilePath = await saveProcessedData(
+        completedData,
+        currentPath,
+        false,
+        {
+          templateOptions: { transactionCode: input.transactionCode },
+        },
+      );
 
       logger.info('[Excel V2] Default sheet exported', {
         newPath: newFilePath,
@@ -122,7 +131,14 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
       const completedData = await processExcelData(currentPath, {
         sheetPricesVersion: 'v3',
       });
-      const newFilePath = await saveProcessedData(completedData, currentPath);
+      const newFilePath = await saveProcessedData(
+        completedData,
+        currentPath,
+        false,
+        {
+          templateOptions: { transactionCode: input.transactionCode },
+        },
+      );
 
       logger.info('[Excel V2] Default sheet with weight exported', {
         newPath: newFilePath,
@@ -159,6 +175,7 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
         completedData,
         currentPath,
         true,
+        { templateOptions: { transactionCode: input.transactionCode } },
       );
 
       logger.info('[Excel V2] Shopee sheet exported', { newPath: newFilePath });
@@ -198,6 +215,7 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
           templateOptions: {
             highlightTotalBoxes: false,
             highlightTotalAmount2000: true,
+            transactionCode: input.transactionCode,
           },
         },
       );
@@ -237,7 +255,14 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
         calculateTotalAmountByBoxesDisableThreeOrMore: true,
         usePegasusSetting: true,
       });
-      const newFilePath = await saveProcessedData(completedData, currentPath);
+      const newFilePath = await saveProcessedData(
+        completedData,
+        currentPath,
+        false,
+        {
+          templateOptions: { transactionCode: input.transactionCode },
+        },
+      );
 
       logger.info('[Excel V2] Pegasus sheet exported', {
         newPath: newFilePath,
@@ -246,6 +271,96 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
     } catch (error) {
       const err = error as Error;
       logger.error('[Excel V2] Pegasus sheet export failed', {
+        error: err.message,
+      });
+      return { path: '', data: [], isError: true, message: err.message };
+    }
+  });
+
+  // ==========================================
+  // 匯出台北港格式工作表
+  // ==========================================
+  createHandler(ipcContracts.excel.exportTaipeiBay, async (input) => {
+    logger.debug('[Excel V2] Exporting Taipei Bay sheet', {
+      settingName: input.settingName,
+    });
+
+    try {
+      setSystemSettingName(input.settingName);
+      const currentPath = currentSelectedFilePathV2.get();
+
+      if (!currentPath) {
+        logger.warn('[Excel V2] No file selected for export');
+        return { path: '', data: [], isError: true, message: '未選擇檔案' };
+      }
+
+      const { data: completedData, rowStyles } =
+        await processExcelDataTaipeiBay(currentPath);
+      const newFilePath = await saveProcessedData(
+        completedData,
+        currentPath,
+        false,
+        {
+          templateOptions: {
+            rowStyles,
+            transactionCode: input.transactionCode,
+          },
+        },
+      );
+
+      logger.info('[Excel V2] Taipei Bay sheet exported', {
+        newPath: newFilePath,
+      });
+      return { path: newFilePath, data: completedData, isError: false };
+    } catch (error) {
+      const err = error as Error;
+      logger.error('[Excel V2] Taipei Bay sheet export failed', {
+        error: err.message,
+      });
+      return { path: '', data: [], isError: true, message: err.message };
+    }
+  });
+
+  // ==========================================
+  // 匯出高雄超峰格式工作表
+  // ==========================================
+  createHandler(ipcContracts.excel.exportKaohsiungChaofeng, async (input) => {
+    logger.debug('[Excel V2] Exporting Kaohsiung Chaofeng sheet', {
+      settingName: input.settingName,
+    });
+
+    try {
+      setSystemSettingName(input.settingName);
+      const currentPath = currentSelectedFilePathV2.get();
+
+      if (!currentPath) {
+        logger.warn('[Excel V2] No file selected for export');
+        return { path: '', data: [], isError: true, message: '未選擇檔案' };
+      }
+
+      const { data: completedData, rowStyles } =
+        await processExcelDataKaohsiungChaofeng(currentPath);
+      const newFilePath = await saveProcessedData(
+        completedData,
+        currentPath,
+        true,
+        {
+          templateOptions: {
+            highlightTotalBoxes: false,
+            highlightTotalAmount2000: true,
+            rowStyles,
+            transactionCode: input.transactionCode,
+          },
+        },
+      );
+
+      logger.info('[Excel V2] Kaohsiung Chaofeng sheet exported', {
+        newPath: newFilePath,
+      });
+      return { path: newFilePath, data: completedData, isError: false };
+    } catch (error) {
+      const err = error as Error;
+      logger.error('[Excel V2] Kaohsiung Chaofeng sheet export failed', {
         error: err.message,
       });
       return { path: '', data: [], isError: true, message: err.message };

@@ -1,7 +1,7 @@
-import { getCpuArch, Arch } from '../../utils';
 import path from 'path';
 
 import { app } from 'electron';
+import { getCpuArch, Arch } from '../../utils';
 import { ExcelColumnKeys } from './index.interface';
 
 export const CPU_ARCH = getCpuArch();
@@ -169,6 +169,68 @@ export const defaultColumnOrder = [
   //   columnIndex: 31,
   // },
 ];
+
+// ==========================================
+// 背景色優先級系統
+// ==========================================
+
+/** 行樣式資訊 */
+export interface RowStyleInfo {
+  /** ARGB 顏色字串（例如 'FFFF0000' 表示紅色） */
+  backgroundColor: string;
+  /** 優先級數字，越小越高 */
+  priority: number;
+}
+
+/** 行樣式映射 - key 是 jsonData 的索引 */
+export type RowStyleMap = Map<number, RowStyleInfo[]>;
+
+/** 背景色優先級常數 */
+export const STYLE_PRIORITY = {
+  /** 海關註記 - 最高優先 */
+  CUSTOMS_NOTE: 1,
+  /** 問題件 - 最高優先 */
+  PROBLEM_ITEM: 1,
+  /** 台北港特殊條件（毛重≥40 & 件數=1） */
+  TAIPEI_BAY_SPECIAL: 2,
+  /** 箱數高亮 */
+  HIGHLIGHT_BOXES: 3,
+  /** 金額高亮 */
+  HIGHLIGHT_AMOUNT: 3,
+};
+
+/** 背景色常數 */
+export const STYLE_COLORS = {
+  /** 紅色 - 海關註記/問題件 */
+  RED: 'FFFF0000',
+  /** 黃色 - 特殊條件/高亮 */
+  YELLOW: 'FFFFFF00',
+};
+
+/**
+ * 合併多個 RowStyleMap
+ */
+export function mergeRowStyleMaps(...maps: RowStyleMap[]): RowStyleMap {
+  const result: RowStyleMap = new Map();
+  maps.forEach((map) => {
+    map.forEach((styles, index) => {
+      const existing = result.get(index) || [];
+      existing.push(...styles);
+      result.set(index, existing);
+    });
+  });
+  return result;
+}
+
+/**
+ * 取得行的最高優先級樣式（數字最小）
+ */
+export function getBestStyle(styles: RowStyleInfo[]): RowStyleInfo | undefined {
+  if (!styles || styles.length === 0) return undefined;
+  return styles.reduce((best, current) =>
+    current.priority < best.priority ? current : best,
+  );
+}
 
 export const shopeeColumnOrder = [
   {

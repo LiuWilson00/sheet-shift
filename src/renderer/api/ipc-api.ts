@@ -51,10 +51,51 @@ export const ipcApi = {
     exportShopee: createClient(ipcContracts.excel.exportShopee),
     exportShopeeNew: createClient(ipcContracts.excel.exportShopeeNew),
     exportPegasus: createClient(ipcContracts.excel.exportPegasus),
+    exportTaipeiBay: createClient(ipcContracts.excel.exportTaipeiBay),
+    exportKaohsiungChaofeng: createClient(
+      ipcContracts.excel.exportKaohsiungChaofeng,
+    ),
     getWrongData: createClient(ipcContracts.excel.getWrongData),
     addProductMap: createClient(ipcContracts.excel.addProductMap),
     getProductMap: createVoidClient(ipcContracts.excel.getProductMap),
     classifyProductName: createClient(ipcContracts.excel.classifyProductName),
+  },
+
+  /**
+   * 收貨人資訊 API
+   */
+  recipientInfo: {
+    getAll: createVoidClient(ipcContracts.recipientInfo.getAll),
+    lookup: createClient(ipcContracts.recipientInfo.lookup),
+    add: createClient(ipcContracts.recipientInfo.add),
+    addBatch: createClient(ipcContracts.recipientInfo.addBatch),
+    reload: createVoidClient(ipcContracts.recipientInfo.reload),
+  },
+
+  /**
+   * 問題件 API
+   */
+  problemItems: {
+    getAll: createVoidClient(ipcContracts.problemItems.getAll),
+    check: createClient(ipcContracts.problemItems.check),
+    checkBatch: createClient(ipcContracts.problemItems.checkBatch),
+    reload: createVoidClient(ipcContracts.problemItems.reload),
+  },
+
+  /**
+   * 艙單編號 API
+   */
+  manifestNumber: {
+    getConfigs: createVoidClient(ipcContracts.manifestNumber.getConfigs),
+    getConfig: createClient(ipcContracts.manifestNumber.getConfig),
+    saveConfig: createClient(ipcContracts.manifestNumber.saveConfig),
+    deleteConfig: createClient(ipcContracts.manifestNumber.deleteConfig),
+    generate: createClient(ipcContracts.manifestNumber.generate),
+    validate: createClient(ipcContracts.manifestNumber.validate),
+    updateCurrentNumber: createClient(
+      ipcContracts.manifestNumber.updateCurrentNumber,
+    ),
+    reload: createVoidClient(ipcContracts.manifestNumber.reload),
   },
 };
 

@@ -10,6 +10,9 @@ import {
   AddressSheet,
   SystemSettingSheets,
   UsersSheet,
+  RecipientInfoSheet,
+  ProblemItemSheet,
+  ManifestNumberConfigSheet,
 } from './index.interface';
 import { DataStore } from '../data-store.tool';
 import { GaxiosResponse } from 'gaxios';
@@ -55,6 +58,17 @@ export const systemSettingMap: {
 // export const systemSettingSheets = new DataStore<SystemSettingSheets[]>([]);
 
 export const usersSheet = new DataStore<UsersSheet[]>([]);
+
+/** 收貨人資訊表 DataStore */
+export const recipientInfoSheet = new DataStore<RecipientInfoSheet[]>([]);
+
+/** 問題件表 DataStore */
+export const problemItemsSheet = new DataStore<ProblemItemSheet[]>([]);
+
+/** 艙單編號設定表 DataStore */
+export const manifestNumberConfigSheet = new DataStore<
+  ManifestNumberConfigSheet[]
+>([]);
 
 export function getGoogleSheetAPISetting():
   | GoogleSheetConnectionSetting
@@ -166,13 +180,23 @@ function getDataByRangeName<T>(
   data: GaxiosResponse<sheets_v4.Schema$BatchGetValuesResponse>,
   rangeName: string,
   systemSettingSheetNames: string[] = [],
+  requestedRanges?: string[],
 ): T[] {
-  const nameIndex = [...SHEET_RANGES, ...systemSettingSheetNames].findIndex(
-    (name) => name === rangeName,
-  );
-  let dataArray = data?.data?.valueRanges?.[nameIndex]?.values ?? [];
+  // 使用傳入的 requestedRanges 或回退到 SHEET_RANGES
+  const rangeList = requestedRanges || [
+    ...SHEET_RANGES,
+    ...systemSettingSheetNames,
+  ];
+  const nameIndex = rangeList.findIndex((name) => name === rangeName);
 
-  if (!dataArray) {
+  if (nameIndex === -1) {
+    // 工作表不在請求列表中
+    return [];
+  }
+
+  const dataArray = data?.data?.valueRanges?.[nameIndex]?.values ?? [];
+
+  if (!dataArray || dataArray.length === 0) {
     console.log('No data found.');
     return [];
   }
@@ -201,42 +225,68 @@ export async function initGoogleSheetData(cl: JWT) {
     const sheetSetting = googleSheetConnectionSetting.get();
     const gsapi = google.sheets({ version: 'v4', auth: cl });
     const sheetNames = await getSheetNames(cl);
+
+    // 過濾出實際存在的工作表
+    const existingSheetNames = new Set(sheetNames || []);
+
     const _systemSettingSheetNames = sheetNames?.filter(
       (name) =>
         name?.startsWith(SheetRangeName.SystemSetting) &&
         name !== SheetRangeName.SystemSetting,
     ) as string[];
     systemSettingSheetNames.set(_systemSettingSheetNames);
+
+    // 只請求實際存在的工作表
+    const existingRanges = SHEET_RANGES.filter((range) =>
+      existingSheetNames.has(range),
+    );
+
     const opt = {
       spreadsheetId: sheetSetting.spreadsheet_id,
-      ranges: [...SHEET_RANGES, ..._systemSettingSheetNames],
+      ranges: [...existingRanges, ..._systemSettingSheetNames],
     };
 
-    let data = await gsapi.spreadsheets.values.batchGet(opt);
+    const data = await gsapi.spreadsheets.values.batchGet(opt);
+
+    // 實際請求的範圍列表（用於正確計算索引）
+    const requestedRanges = [...existingRanges, ..._systemSettingSheetNames];
+
+    // 輔助函數：安全地取得資料（如果工作表存在）
+    const safeGetData = <T>(rangeName: string): T[] => {
+      if (!existingSheetNames.has(rangeName)) {
+        return [];
+      }
+      return getDataByRangeName<T>(
+        data,
+        rangeName,
+        _systemSettingSheetNames,
+        requestedRanges,
+      );
+    };
 
     tariffCodeSheet.set(
-      getDataByRangeName<ProductNameMapping>(
-        data,
-        SheetRangeName.TariffCodeSheet,
-      ),
+      safeGetData<ProductNameMapping>(SheetRangeName.TariffCodeSheet),
     );
-    addressSheet.set(
-      getDataByRangeName<AddressSheet>(data, SheetRangeName.Address),
-    );
+    addressSheet.set(safeGetData<AddressSheet>(SheetRangeName.Address));
     systemSettingMap?.default.set(
-      getDataByRangeName<SystemSettingSheets>(
-        data,
-        SheetRangeName.SystemSetting,
-      ),
+      safeGetData<SystemSettingSheets>(SheetRangeName.SystemSetting),
     );
 
     systemTariffCodeSheet.set(
-      getDataByRangeName<ProductNameMapping>(
-        data,
-        SheetRangeName.SystemProductMap,
-      ),
+      safeGetData<ProductNameMapping>(SheetRangeName.SystemProductMap),
     );
-    usersSheet.set(getDataByRangeName<UsersSheet>(data, SheetRangeName.Users));
+    usersSheet.set(safeGetData<UsersSheet>(SheetRangeName.Users));
+
+    // 新增的三個資料表（可選，如果不存在則為空陣列）
+    recipientInfoSheet.set(
+      safeGetData<RecipientInfoSheet>(SheetRangeName.RecipientInfo),
+    );
+    problemItemsSheet.set(
+      safeGetData<ProblemItemSheet>(SheetRangeName.ProblemItems),
+    );
+    manifestNumberConfigSheet.set(
+      safeGetData<ManifestNumberConfigSheet>(SheetRangeName.ManifestNumberConfig),
+    );
 
     _systemSettingSheetNames?.forEach(async (name) => {
       const _name = name as string;
@@ -248,6 +298,7 @@ export async function initGoogleSheetData(cl: JWT) {
           data,
           _name,
           _systemSettingSheetNames,
+          requestedRanges,
         ),
       );
     });

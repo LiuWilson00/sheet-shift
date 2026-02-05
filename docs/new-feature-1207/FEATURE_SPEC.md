@@ -1,7 +1,7 @@
 # 海運表單系統修改 - 功能規格書
 
-**版本**: 1.0
-**日期**: 2025-12-07
+**版本**: 1.1
+**日期**: 2026-02-04
 **狀態**: 待開發
 
 ---
@@ -304,9 +304,6 @@ const problemItemsSheet = new DataStore<ProblemItem[]>();
 2. 新增以下處理：
    a. 地址自動帶入到「收貨人英文地址」欄位（參考預設格式的地址處理）
    b. 毛重均攤：同一「貨物編號」的項目平均分配毛重
-   c. 金額調整：
-      - 總金額 < 100 → 隨機調整為 100-180
-      - 總金額 > 5000 → 隨機調整為 2001-2500
 3. 套用收貨人資訊帶入（功能二）
 4. 套用問題件標記（功能三）
 5. 匯出 Excel
@@ -342,14 +339,6 @@ function distributeGrossWeight(data: SheetData[]): SheetData[] {
 原始資料：訂單A 有 5 個項目，總毛重 5kg
 處理後：每個項目毛重 = 5kg / 5 = 1kg
 ```
-
-### 7.4 金額調整規則
-
-| 條件 | 處理 |
-|------|------|
-| 總金額 < 100 | random(100, 180) |
-| 總金額 > 5000 | random(2001, 2500) |
-| 100 ≤ 總金額 ≤ 5000 | 保持不變 |
 
 ---
 
@@ -461,6 +450,9 @@ singles: ["A123", "B456", "C789"]
 │  起始編號: [AAA00_____]                                      │
 │  ⚠️ 留空則從第一個開始                                       │
 │                                                              │
+│  交易代碼: [___________________]                             │
+│  ⚠️ 將帶入到 AG 欄位（可選）                                 │
+│                                                              │
 │  ── 本次使用資訊 ──────────────────────────────────────────  │
 │  需要編號數量: 150 個                                        │
 │  起始: AAA00                                                 │
@@ -507,6 +499,14 @@ interface ManifestNumberConfig {
   currentNumber?: string;  // 上次使用的最後編號
   createdAt?: string;
   updatedAt?: string;
+}
+
+// 帶入艙單編號的輸入參數
+interface ApplyManifestNumberInput {
+  configName: string;
+  count: number;
+  startFrom?: string;
+  transactionCode?: string;  // 交易代碼（帶入 AG 欄位）
 }
 ```
 
@@ -577,7 +577,32 @@ class ManifestNumberGenerator {
 }
 ```
 
-### 8.7 IPC API 設計
+### 8.7 交易代碼設定
+
+#### 8.7.1 需求描述
+
+在帶入艙單編號時，可以同時設定「交易代碼」並自動帶入到 AG 欄位。
+
+#### 8.7.2 UI 設計
+
+在「帶入艙單編號 Dialog」中新增交易代碼輸入欄位：
+
+```
+│  交易代碼: [___________________]                                │
+│  ⚠️ 將帶入到 AG 欄位                                            │
+```
+
+#### 8.7.3 處理邏輯
+
+```
+1. 用戶輸入交易代碼（可選）
+2. 帶入艙單編號時，同時將交易代碼寫入 AG 欄位
+3. 每一筆資料的 AG 欄位都填入相同的交易代碼
+```
+
+---
+
+### 8.8 IPC API 設計
 
 ```typescript
 // ipc-contracts.ts 新增
@@ -605,6 +630,7 @@ export const ipcContracts = {
       configName: string;
       count: number;
       startFrom?: string;
+      transactionCode?: string;  // 交易代碼（帶入 AG 欄位）
     }, {
       numbers: string[];
       endAt: string;
@@ -910,3 +936,19 @@ function compareNumbers(a: string, b: string): number {
 | 正常遞增 | AAA00 | AAA00 | 3 | AAA00, AAA01, AAA02 |
 | 跨區段 | AAA00 | AAA98 | 3 | AAA98, AAA99, AAB00 |
 | 跳過黑名單 | AAA00 | AAA04 | 3 | AAA04, AAA07, AAA08 (跳過A005-A006) |
+
+### B.5 交易代碼測試
+
+| 案例 | 輸入 | 預期結果 |
+|------|------|---------|
+| 有交易代碼 | transactionCode = "ABC123" | AG 欄位填入 "ABC123" |
+| 無交易代碼 | transactionCode = "" | AG 欄位保持空白 |
+
+---
+
+## 附錄 C：版本歷史
+
+| 版本 | 日期 | 變更內容 |
+|------|------|---------|
+| 1.0 | 2025-12-07 | 初版 |
+| 1.1 | 2026-02-04 | 根據合約內容更新：<br>- 移除功能五（高雄超峰）的金額調整規則（總金額 < 100 及 > 5000 的處理）<br>- 新增功能六的「交易代碼」設定（帶入 AG 欄位）|

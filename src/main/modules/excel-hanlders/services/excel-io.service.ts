@@ -3,13 +3,18 @@ import {
   BrowserWindow as electronBrowserWindow,
 } from 'electron';
 import path from 'path';
-import { ExcelColumnKeys, SheetData } from '../index.interface';
 import { Cell, Row, Workbook, Worksheet } from 'exceljs';
+import { ExcelColumnKeys, SheetData } from '../index.interface';
 import {
   ORIGINAL_DATA_TEMPLATE_PATH,
   SHOPEE_DATA_TEMPLATE_PATH,
   defaultColumnOrder,
   shopeeColumnOrder,
+  RowStyleMap,
+  RowStyleInfo,
+  STYLE_COLORS,
+  STYLE_PRIORITY,
+  getBestStyle,
 } from '../index.const';
 
 let FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
@@ -68,6 +73,10 @@ type JsonToExcelOptions = {
   columnOrder?: typeof defaultColumnOrder;
   highlightTotalBoxes?: boolean;
   highlightTotalAmount2000?: boolean;
+  /** 外部傳入的行樣式映射（收貨人海關註記、問題件、台北港特殊條件等） */
+  rowStyles?: RowStyleMap;
+  /** 交易代碼（帶入 AG 欄位，column 33） */
+  transactionCode?: string;
 };
 async function addJsonToExcelTemplate(
   jsonData: SheetData[],
@@ -79,6 +88,8 @@ async function addJsonToExcelTemplate(
     columnOrder: defaultColumnOrder,
     highlightTotalBoxes: true,
     highlightTotalAmount2000: false,
+    rowStyles: undefined as RowStyleMap | undefined,
+    transactionCode: undefined as string | undefined,
   };
   const {
     startRow,
@@ -86,6 +97,8 @@ async function addJsonToExcelTemplate(
     columnOrder,
     highlightTotalBoxes,
     highlightTotalAmount2000,
+    rowStyles,
+    transactionCode,
   } = {
     ...defaultOptions,
     ...options,
@@ -116,6 +129,18 @@ async function addJsonToExcelTemplate(
       cell.value = row[key as keyof SheetData];
     });
 
+    // 收集此行的所有樣式候選
+    const styleCandidates: RowStyleInfo[] = [];
+
+    // 外部傳入的樣式（收貨人海關註記、問題件、台北港特殊條件等）
+    if (rowStyles) {
+      const externalStyles = rowStyles.get(index);
+      if (externalStyles) {
+        styleCandidates.push(...externalStyles);
+      }
+    }
+
+    // 現有的黃色高亮規則
     if (currentJsonData[ExcelColumnKeys.TotalBoxes] !== '') {
       previousBoxnumber = currentJsonData[ExcelColumnKeys.TotalBoxes];
     }
@@ -125,8 +150,10 @@ async function addJsonToExcelTemplate(
     }
 
     if (FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW) {
-      const row = worksheet.getRow(currentRow + 1);
-      rowFillYellow(row);
+      styleCandidates.push({
+        backgroundColor: STYLE_COLORS.YELLOW,
+        priority: STYLE_PRIORITY.HIGHLIGHT_AMOUNT,
+      });
     }
 
     if (
@@ -134,8 +161,10 @@ async function addJsonToExcelTemplate(
       previousBoxnumber !== '' &&
       previousBoxnumber > 1
     ) {
-      const row = worksheet.getRow(currentRow + 1);
-      rowFillYellow(row);
+      styleCandidates.push({
+        backgroundColor: STYLE_COLORS.YELLOW,
+        priority: STYLE_PRIORITY.HIGHLIGHT_BOXES,
+      });
     }
 
     if (
@@ -144,19 +173,35 @@ async function addJsonToExcelTemplate(
       currentJsonData[ExcelColumnKeys.ProcessedAmount] > 2000
     ) {
       FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = true;
-      const row = worksheet.getRow(currentRow + 1);
-      rowFillYellow(row);
+      styleCandidates.push({
+        backgroundColor: STYLE_COLORS.YELLOW,
+        priority: STYLE_PRIORITY.HIGHLIGHT_AMOUNT,
+      });
+    }
+
+    // 套用最高優先級的樣式
+    const bestStyle = getBestStyle(styleCandidates);
+    if (bestStyle) {
+      const worksheetRow = worksheet.getRow(currentRow + 1);
+      rowFillColor(worksheetRow, bestStyle.backgroundColor);
+    }
+
+    // 寫入交易代碼到 AG 欄位（column 33）
+    if (transactionCode) {
+      const agCell: Cell = worksheet.getCell(currentRow + 1, 33);
+      agCell.value = transactionCode;
     }
   });
 
   return workbook;
 }
 
-function rowFillYellow(row: Row) {
+/** 以指定的 ARGB 顏色填充整行 */
+function rowFillColor(row: Row, argbColor: string) {
   row.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FFFFFF00' }, // ARGB for yellow
+    fgColor: { argb: argbColor },
   };
   row.border = {
     top: { style: 'thin' },
