@@ -390,31 +390,51 @@ export function setupManifestNumberHandlersV2() {
 
     const config = toManifestNumberConfig(configSheet);
 
-    // 決定起始編號
-    const startNumber =
-      input.startFrom ||
-      config.currentNumber ||
-      generateFirstNumber(config.format);
-
     const numbers: string[] = [];
     const allSkipped: string[] = [];
-    let current = startNumber;
+    let current: string;
 
-    // 第一個編號
-    if (!isBlacklisted(current, config.blacklist)) {
-      numbers.push(current);
-    } else {
-      allSkipped.push(current);
-      const next = getNextValidNumber(current, config.format, config.blacklist);
-      if (!next) {
+    // 決定起始編號
+    const lastUsedNumber = input.startFrom || config.currentNumber;
+
+    if (lastUsedNumber) {
+      // 有上次使用的編號：從下一個有效編號開始（避免重複）
+      const first = getNextValidNumber(
+        lastUsedNumber,
+        config.format,
+        config.blacklist,
+      );
+      if (!first) {
         throw new IpcError(
           'Cannot generate numbers: reached maximum',
           'GENERATION_FAILED',
         );
       }
-      current = next.number;
-      allSkipped.push(...next.skipped);
+      current = first.number;
+      allSkipped.push(...first.skipped);
       numbers.push(current);
+    } else {
+      // 首次產生：使用初始編號
+      current = generateFirstNumber(config.format);
+      if (!isBlacklisted(current, config.blacklist)) {
+        numbers.push(current);
+      } else {
+        allSkipped.push(current);
+        const next = getNextValidNumber(
+          current,
+          config.format,
+          config.blacklist,
+        );
+        if (!next) {
+          throw new IpcError(
+            'Cannot generate numbers: reached maximum',
+            'GENERATION_FAILED',
+          );
+        }
+        current = next.number;
+        allSkipped.push(...next.skipped);
+        numbers.push(current);
+      }
     }
 
     // 產生剩餘編號

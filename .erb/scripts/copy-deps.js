@@ -23,8 +23,14 @@ exports.default = async function copyDeps(context) {
   const platform = process.platform; // 或者您可以自定義，如 'darwin'
   const arch = process.arch; // 或者您可以自定義，如 'arm64'
   //   console.log(context);
-  // 定義原始檔案和目標路徑
-  const sourceFolder = `node_modules/onnxruntime-node/bin/napi-v3/${platform}/${arch}`;
+  // 自動偵測 napi 版本（支援 napi-v3、napi-v6 等）
+  const onnxBinDir = 'node_modules/onnxruntime-node/bin';
+  const napiDirs = fs.readdirSync(onnxBinDir).filter((d) => d.startsWith('napi-'));
+  if (napiDirs.length === 0) {
+    throw new Error(`找不到 napi 目錄: ${onnxBinDir}`);
+  }
+  const napiVersion = napiDirs[napiDirs.length - 1]; // 取最新版本
+  const sourceFolder = `${onnxBinDir}/${napiVersion}/${platform}/${arch}`;
 
   let buildFolder = '';
 

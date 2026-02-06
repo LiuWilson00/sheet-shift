@@ -19,6 +19,7 @@ import {
 } from '../../../utils/google-sheets.tool/index.interface';
 import { SheetRangeName } from '../../../utils/google-sheets.tool/index.const';
 import { RowStyleMap, STYLE_COLORS, STYLE_PRIORITY } from '../index.const';
+import { logger } from '../../../utils/logger.tool';
 
 /** 收貨人資訊處理結果 */
 export interface RecipientInfoProcessResult {
@@ -148,7 +149,8 @@ export async function addNewRecipientsToSheet(
     }
 
     return success;
-  } catch {
+  } catch (error) {
+    logger.error('[RecipientInfo] 新增收貨人至 Google Sheets 失敗', error);
     return false;
   }
 }

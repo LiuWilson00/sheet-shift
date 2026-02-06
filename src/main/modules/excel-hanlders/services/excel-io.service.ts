@@ -15,6 +15,7 @@ import {
   STYLE_COLORS,
   STYLE_PRIORITY,
   getBestStyle,
+  TRANSACTION_CODE_COLUMN_INDEX,
 } from '../index.const';
 
 let FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
@@ -75,7 +76,7 @@ type JsonToExcelOptions = {
   highlightTotalAmount2000?: boolean;
   /** 外部傳入的行樣式映射（收貨人海關註記、問題件、台北港特殊條件等） */
   rowStyles?: RowStyleMap;
-  /** 交易代碼（帶入 AG 欄位，column 33） */
+  /** 交易代碼（帶入 AG 欄位） */
   transactionCode?: string;
 };
 async function addJsonToExcelTemplate(
@@ -186,9 +187,12 @@ async function addJsonToExcelTemplate(
       rowFillColor(worksheetRow, bestStyle.backgroundColor);
     }
 
-    // 寫入交易代碼到 AG 欄位（column 33）
+    // 寫入交易代碼到 AG 欄位
     if (transactionCode) {
-      const agCell: Cell = worksheet.getCell(currentRow + 1, 33);
+      const agCell: Cell = worksheet.getCell(
+        currentRow + 1,
+        TRANSACTION_CODE_COLUMN_INDEX,
+      );
       agCell.value = transactionCode;
     }
   });

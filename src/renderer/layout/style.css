@@ -150,6 +150,18 @@
   background: currentColor;
 }
 
+/* 版本號 */
+.layout-version {
+  position: fixed;
+  right: 12px;
+  bottom: 8px;
+  font-size: 11px;
+  color: #aaa;
+  pointer-events: none;
+  user-select: none;
+  z-index: 50;
+}
+
 /* 響應式設計 */
 @media (max-width: 768px) {
   .layout-header {

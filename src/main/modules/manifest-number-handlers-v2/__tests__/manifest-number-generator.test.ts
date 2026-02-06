@@ -308,4 +308,193 @@ describe('艙單編號產生器', () => {
       expect(result).toBeNull();
     });
   });
+
+  // ============================================
+  // 模擬 generate handler 連續呼叫的重複編號測試
+  // ============================================
+  describe('連續產生編號不應重複 (CR-001)', () => {
+    const format: ManifestNumberFormat = {
+      segments: [
+        { type: 'alpha', length: 2 },
+        { type: 'numeric', length: 4 },
+      ],
+    };
+    const emptyBlacklist: BlacklistRule = { ranges: [], singles: [] };
+
+    /**
+     * 模擬 generate handler 的核心邏輯（修正前版本）
+     * 用於驗證 bug 是否存在
+     */
+    function simulateGenerateOld(
+      startFrom: string | undefined,
+      currentNumber: string | undefined,
+      count: number,
+    ): { numbers: string[]; endAt: string } {
+      const startNumber =
+        startFrom || currentNumber || generateFirstNumber(format);
+
+      const numbers: string[] = [];
+      let current = startNumber;
+
+      // 舊邏輯：直接 push startNumber 本身
+      if (!isBlacklisted(current, emptyBlacklist)) {
+        numbers.push(current);
+      } else {
+        const next = getNextValidNumber(current, format, emptyBlacklist);
+        if (!next) throw new Error('reached maximum');
+        current = next.number;
+        numbers.push(current);
+      }
+
+      for (let i = 1; i < count; i++) {
+        const next = getNextValidNumber(current, format, emptyBlacklist);
+        if (!next) throw new Error('reached maximum');
+        current = next.number;
+        numbers.push(current);
+      }
+
+      return { numbers, endAt: current };
+    }
+
+    it('舊邏輯應產生重複編號（驗證 bug 存在）', () => {
+      // 第一次呼叫：無 currentNumber
+      const first = simulateGenerateOld(undefined, undefined, 3);
+      expect(first.numbers).toEqual(['AA0000', 'AA0001', 'AA0002']);
+      expect(first.endAt).toBe('AA0002');
+
+      // 第二次呼叫：currentNumber = 上次的 endAt
+      const second = simulateGenerateOld(first.endAt, first.endAt, 3);
+      // 舊邏輯會把 AA0002 又 push 一次 → 重複！
+      expect(second.numbers[0]).toBe('AA0002'); // 這裡是 bug：AA0002 已經在第一次結果中
+
+      // 檢查兩次結果有交集
+      const firstSet = new Set(first.numbers);
+      const hasDuplicate = second.numbers.some((n) => firstSet.has(n));
+      expect(hasDuplicate).toBe(true); // 確認有重複
+    });
+
+    it('修正後邏輯不應產生重複編號', () => {
+      // 模擬修正後的 generate 邏輯：有 startFrom 時先 increment
+      function simulateGenerateFixed(
+        startFrom: string | undefined,
+        currentNumber: string | undefined,
+        count: number,
+      ): { numbers: string[]; endAt: string } {
+        const numbers: string[] = [];
+        let current: string;
+
+        if (startFrom || currentNumber) {
+          // 有起始編號：從下一個開始
+          const base = (startFrom || currentNumber)!;
+          const first = getNextValidNumber(base, format, emptyBlacklist);
+          if (!first) throw new Error('reached maximum');
+          current = first.number;
+          numbers.push(current);
+        } else {
+          // 首次產生：使用初始編號
+          current = generateFirstNumber(format);
+          if (!isBlacklisted(current, emptyBlacklist)) {
+            numbers.push(current);
+          } else {
+            const next = getNextValidNumber(current, format, emptyBlacklist);
+            if (!next) throw new Error('reached maximum');
+            current = next.number;
+            numbers.push(current);
+          }
+        }
+
+        for (let i = 1; i < count; i++) {
+          const next = getNextValidNumber(current, format, emptyBlacklist);
+          if (!next) throw new Error('reached maximum');
+          current = next.number;
+          numbers.push(current);
+        }
+
+        return { numbers, endAt: current };
+      }
+
+      // 第一次呼叫：無 currentNumber
+      const first = simulateGenerateFixed(undefined, undefined, 3);
+      expect(first.numbers).toEqual(['AA0000', 'AA0001', 'AA0002']);
+      expect(first.endAt).toBe('AA0002');
+
+      // 第二次呼叫：currentNumber = 上次的 endAt
+      const second = simulateGenerateFixed(first.endAt, first.endAt, 3);
+      expect(second.numbers).toEqual(['AA0003', 'AA0004', 'AA0005']);
+      expect(second.endAt).toBe('AA0005');
+
+      // 檢查兩次結果無交集
+      const firstSet = new Set(first.numbers);
+      const hasDuplicate = second.numbers.some((n) => firstSet.has(n));
+      expect(hasDuplicate).toBe(false); // 無重複
+
+      // 第三次呼叫
+      const third = simulateGenerateFixed(second.endAt, second.endAt, 2);
+      expect(third.numbers).toEqual(['AA0006', 'AA0007']);
+
+      // 檢查三次結果都無交集
+      const allNumbers = [
+        ...first.numbers,
+        ...second.numbers,
+        ...third.numbers,
+      ];
+      const uniqueSet = new Set(allNumbers);
+      expect(uniqueSet.size).toBe(allNumbers.length);
+    });
+
+    it('修正後邏輯：首次呼叫含黑名單時應跳過', () => {
+      function simulateGenerateFixed(
+        startFrom: string | undefined,
+        currentNumber: string | undefined,
+        count: number,
+        bl: BlacklistRule,
+      ): { numbers: string[]; endAt: string } {
+        const numbers: string[] = [];
+        let current: string;
+
+        if (startFrom || currentNumber) {
+          const base = (startFrom || currentNumber)!;
+          const first = getNextValidNumber(base, format, bl);
+          if (!first) throw new Error('reached maximum');
+          current = first.number;
+          numbers.push(current);
+        } else {
+          current = generateFirstNumber(format);
+          if (!isBlacklisted(current, bl)) {
+            numbers.push(current);
+          } else {
+            const next = getNextValidNumber(current, format, bl);
+            if (!next) throw new Error('reached maximum');
+            current = next.number;
+            numbers.push(current);
+          }
+        }
+
+        for (let i = 1; i < count; i++) {
+          const next = getNextValidNumber(current, format, bl);
+          if (!next) throw new Error('reached maximum');
+          current = next.number;
+          numbers.push(current);
+        }
+
+        return { numbers, endAt: current };
+      }
+
+      // 首次呼叫，初始編號 AA0000 在黑名單中
+      const bl: BlacklistRule = {
+        ranges: [],
+        singles: ['AA0000'],
+      };
+      const first = simulateGenerateFixed(undefined, undefined, 3, bl);
+      expect(first.numbers).toEqual(['AA0001', 'AA0002', 'AA0003']);
+
+      // 第二次呼叫，AA0004 在黑名單中
+      const bl2: BlacklistRule = {
+        ranges: [],
+        singles: ['AA0000', 'AA0004'],
+      };
+      const second = simulateGenerateFixed(first.endAt, first.endAt, 3, bl2);
+      expect(second.numbers).toEqual(['AA0005', 'AA0006', 'AA0007']);
+    });
+  });
 });

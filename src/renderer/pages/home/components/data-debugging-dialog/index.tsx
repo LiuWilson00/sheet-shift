@@ -233,7 +233,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
           onConfirm={async () => {
             showLoading();
             const result = await ipcApi.excel.addProductMap({
-              mappings: correctDataMaps,
+              data: correctDataMaps,
             });
             hideLoading();
             if (result.isError) {

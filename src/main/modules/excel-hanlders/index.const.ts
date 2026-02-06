@@ -170,6 +170,9 @@ export const defaultColumnOrder = [
   // },
 ];
 
+/** 交易代碼欄位（AG 欄，column 33） */
+export const TRANSACTION_CODE_COLUMN_INDEX = 33;
+
 // ==========================================
 // 背景色優先級系統
 // ==========================================

@@ -27,7 +27,8 @@
       "Bash(npx jest:*)",
       "Bash(tasklist:*)",
       "Bash(test:*)",
-      "Bash(node scripts/setup-google-sheets.mjs:*)"
+      "Bash(node scripts/setup-google-sheets.mjs:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

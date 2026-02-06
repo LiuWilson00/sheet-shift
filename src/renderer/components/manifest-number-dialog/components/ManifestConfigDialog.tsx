@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ManifestNumberConfig,
   FormatSegment,
@@ -35,6 +35,19 @@ const ManifestConfigDialog: React.FC<ManifestConfigDialogProps> = ({
     existingConfig?.currentNumber || '',
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 當 dialog 開啟時，同步表單狀態（重置或帶入 existingConfig）
+  useEffect(() => {
+    if (isOpen) {
+      setSettingName(existingConfig?.settingName || '');
+      setSegments(
+        existingConfig?.format.segments || DEFAULT_CONFIG.format.segments,
+      );
+      setBlacklist(existingConfig?.blacklist || DEFAULT_CONFIG.blacklist);
+      setCurrentNumber(existingConfig?.currentNumber || '');
+      setErrors({});
+    }
+  }, [isOpen, existingConfig]);
 
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
