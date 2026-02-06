@@ -9,7 +9,9 @@
  * - 新：'excel-v2/*'
  */
 
+import path from 'path';
 import { BrowserWindow } from 'electron';
+import { Workbook, Worksheet } from 'exceljs';
 import { createHandler } from '../../utils/typed-ipc-handler';
 import { ipcContracts } from '../../../shared/ipc-contracts';
 import { logger } from '../../utils/logger.tool';
@@ -42,6 +44,137 @@ import { runClassifier } from '../../utils/model-run';
 
 // 當前選擇的檔案路徑（與舊系統共用狀態）
 const currentSelectedFilePathV2 = new DataStore<string>('');
+
+/**
+ * 動態搜尋欄位位置
+ *
+ * 根據表頭名稱找到對應的欄位索引
+ */
+function findColumnByHeader(
+  worksheet: Worksheet,
+  headerNames: string[],
+  headerRowIndex: number = 2,
+): number | null {
+  const headerRow = worksheet.getRow(headerRowIndex);
+  let columnIndex: number | null = null;
+
+  headerRow.eachCell((cell, colNumber) => {
+    const cellValue = cell.value?.toString().trim();
+    if (cellValue && headerNames.some((name) => cellValue.includes(name))) {
+      columnIndex = colNumber;
+    }
+  });
+
+  return columnIndex;
+}
+
+/**
+ * 僅帶入艙單編號到 Excel 檔案（不做資料轉換）
+ *
+ * 處理邏輯：
+ * 1. 讀取用戶選擇的已處理過的 Excel 檔案
+ * 2. 動態搜尋目標欄位位置（艙單、分艙）
+ * 3. 帶入艙單編號到找到的欄位
+ * 4. 輸出新檔案
+ */
+async function applyManifestNumberToExcel(
+  filePath: string,
+  transactionCode?: string,
+): Promise<{
+  path: string;
+  rowCount: number;
+  isError: boolean;
+  message?: string;
+}> {
+  if (!transactionCode) {
+    return {
+      path: '',
+      rowCount: 0,
+      isError: true,
+      message: '未提供交易代碼',
+    };
+  }
+
+  // 讀取 Excel 檔案
+  const workbook = new Workbook();
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = workbook.worksheets[0];
+
+  if (!worksheet) {
+    return {
+      path: '',
+      rowCount: 0,
+      isError: true,
+      message: '無法讀取工作表',
+    };
+  }
+
+  // 動態搜尋目標欄位位置（嘗試多種表頭名稱）
+  let targetColumn = findColumnByHeader(worksheet, [
+    '艙單',
+    '分艙',
+    '交易代碼',
+  ]);
+
+  // 如果找不到，使用預設欄位（AG 欄 = column 33）
+  if (targetColumn === null) {
+    targetColumn = 33;
+    logger.warn('[Excel V2] 未找到艙單欄位，使用預設欄位 AG (column 33)');
+  } else {
+    logger.info('[Excel V2] 找到艙單欄位', { columnIndex: targetColumn });
+  }
+
+  // 計算資料行數（從第 3 行開始，跳過表頭）
+  let rowCount = 0;
+  const startRow = 3;
+
+  // eslint-disable-next-line no-plusplus
+  for (let rowIndex = startRow; rowIndex <= worksheet.rowCount; rowIndex++) {
+    const row = worksheet.getRow(rowIndex);
+
+    // 檢查是否為空行（第一個 cell 是否有值）
+    const firstCellValue = row.getCell(1).value;
+    if (
+      firstCellValue === null ||
+      firstCellValue === undefined ||
+      firstCellValue === ''
+    ) {
+      // 跳過空行
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    // 帶入交易代碼
+    const targetCell = row.getCell(targetColumn);
+    targetCell.value = transactionCode;
+    // eslint-disable-next-line no-plusplus
+    rowCount++;
+  }
+
+  if (rowCount === 0) {
+    return {
+      path: '',
+      rowCount: 0,
+      isError: true,
+      message: '檔案中沒有資料行',
+    };
+  }
+
+  // 產生新檔案名稱
+  const originalFilename = path.basename(filePath, path.extname(filePath));
+  const timestamp = Date.now();
+  const newFileName = `${originalFilename}-manifest-${timestamp}.xlsx`;
+  const newFilePath = path.join(path.dirname(filePath), newFileName);
+
+  // 寫入新檔案
+  await workbook.xlsx.writeFile(newFilePath);
+
+  return {
+    path: newFilePath,
+    rowCount,
+    isError: false,
+  };
+}
 
 /**
  * 設置 Excel V2 相關的所有 IPC Handlers
@@ -251,7 +384,7 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
       }
 
       const completedData = await processExcelData(currentPath, {
-        disableRandomAddress: true,
+        disableRandomAddress: false, // 啟用雲端地址
         calculateTotalAmountByBoxesDisableThreeOrMore: true,
         usePegasusSetting: true,
       });
@@ -486,6 +619,49 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
       },
       isError: false,
     };
+  });
+
+  // ==========================================
+  // 僅帶入艙單編號（不做資料轉換）
+  // ==========================================
+  createHandler(ipcContracts.excel.applyManifestNumberOnly, async (input) => {
+    logger.debug('[Excel V2] Applying manifest number only', {
+      configName: input.configName,
+      hasTransactionCode: !!input.transactionCode,
+    });
+
+    try {
+      const currentPath = currentSelectedFilePathV2.get();
+
+      if (!currentPath) {
+        logger.warn('[Excel V2] No file selected for manifest number');
+        return { path: '', rowCount: 0, isError: true, message: '未選擇檔案' };
+      }
+
+      const result = await applyManifestNumberToExcel(
+        currentPath,
+        input.transactionCode,
+      );
+
+      if (result.isError) {
+        logger.error('[Excel V2] Apply manifest number failed', {
+          error: result.message,
+        });
+        return result;
+      }
+
+      logger.info('[Excel V2] Manifest number applied', {
+        newPath: result.path,
+        rowCount: result.rowCount,
+      });
+      return result;
+    } catch (error) {
+      const err = error as Error;
+      logger.error('[Excel V2] Apply manifest number failed', {
+        error: err.message,
+      });
+      return { path: '', rowCount: 0, isError: true, message: err.message };
+    }
   });
 
   logger.info('[Excel V2] All handlers registered successfully [OK]');

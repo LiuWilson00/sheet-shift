@@ -278,6 +278,18 @@ export const ipcContracts = {
         isError: boolean;
       }
     >,
+
+    /**
+     * 僅帶入艙單編號（不做資料轉換）
+     *
+     * 用於已處理過的檔案，只需要帶入分艙編號
+     */
+    applyManifestNumberOnly: {
+      channel: 'excel-v2/apply-manifest-number-only',
+    } as IpcContract<
+      { configName: string; transactionCode?: string },
+      { path: string; isError: boolean; rowCount: number; message?: string }
+    >,
   },
 
   /**

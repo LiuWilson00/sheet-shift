@@ -183,6 +183,8 @@ export interface RowStyleInfo {
   backgroundColor: string;
   /** 優先級數字，越小越高 */
   priority: number;
+  /** 可選：指定只標記特定欄位的索引（不指定則標記整行） */
+  columnIndex?: number;
 }
 
 /** 行樣式映射 - key 是 jsonData 的索引 */

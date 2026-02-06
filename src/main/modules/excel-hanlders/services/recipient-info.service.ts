@@ -86,6 +86,7 @@ export function processRecipientInfo(
         styles.push({
           backgroundColor: STYLE_COLORS.RED,
           priority: STYLE_PRIORITY.CUSTOMS_NOTE,
+          columnIndex: 26, // 只標記「收貨人英文名稱」欄位
         });
         rowStyles.set(index, styles);
       }

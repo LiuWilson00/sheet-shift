@@ -257,21 +257,57 @@ export async function processExcelDataTaipeiBay(
  * 台北港特殊條件處理
  *
  * 條件：毛重 ≥ 40kg 且 總件數 = 1
- * 處理：金額調整為 2000-2100、整個訂單標記黃色背景
+ * 處理：
+ * 1. 總金額加總調整為 2000-2100
+ * 2. 將總金額平分回單價欄位（單價 = 總金額加總 / 數量）
+ * 3. 更新總金額 = 單價 × 數量
+ * 4. 整個訂單標記黃色背景
  *
- * 注意：此函式會直接修改 data 中的 ProcessedAmount
+ * 注意：此函式會直接修改 data 中的 ProcessedAmount、UnitPrice、TotalAmount
  */
 function applyTaipeiBaySpecialRules(data: SheetData[]): RowStyleMap {
   const rowStyles: RowStyleMap = new Map();
 
   let currentOrderIsSpecial = false;
+  let currentOrderStartIndex = -1;
+  let currentProcessedAmount = 0;
 
   // eslint-disable-next-line no-plusplus
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i <= data.length; i++) {
+    const isNewOrder =
+      i < data.length && data[i][ExcelColumnKeys.ShippingOrderNumber] !== '';
+    const isEnd = i === data.length;
+
+    // 處理前一個特殊訂單：平分金額回單價
+    if (
+      (isNewOrder || isEnd) &&
+      currentOrderIsSpecial &&
+      currentOrderStartIndex >= 0
+    ) {
+      // 計算訂單內每個項目的單價和總金額
+      // eslint-disable-next-line no-plusplus
+      for (let j = currentOrderStartIndex; j < i; j++) {
+        const quantity = Number(data[j][ExcelColumnKeys.Quantity]) || 1;
+        // 單價 = 總金額加總 / 數量，無條件進位
+        const newUnitPrice = Math.ceil(currentProcessedAmount / quantity);
+        // 總金額 = 單價 × 數量
+        const newTotalAmount = newUnitPrice * quantity;
+
+        // eslint-disable-next-line no-param-reassign
+        data[j] = {
+          ...data[j],
+          [ExcelColumnKeys.UnitPrice]: newUnitPrice,
+          [ExcelColumnKeys.TotalAmount]: newTotalAmount,
+        };
+      }
+    }
+
+    if (i >= data.length) break;
+
     const row = data[i];
 
     // 新訂單開始（ShippingOrderNumber 不為空）
-    if (row[ExcelColumnKeys.ShippingOrderNumber] !== '') {
+    if (isNewOrder) {
       const grossWeight = Number(row[ExcelColumnKeys.GrossWeight]);
       const totalBoxes = Number(row[ExcelColumnKeys.TotalBoxes]);
 
@@ -281,11 +317,15 @@ function applyTaipeiBaySpecialRules(data: SheetData[]): RowStyleMap {
         grossWeight >= 40 &&
         totalBoxes === 1;
 
+      currentOrderStartIndex = i;
+
       if (currentOrderIsSpecial) {
         // 金額調整為隨機值 2000-2100
+        currentProcessedAmount = getRandomIntBetween(2000, 2100);
+        // eslint-disable-next-line no-param-reassign
         data[i] = {
           ...data[i],
-          [ExcelColumnKeys.ProcessedAmount]: getRandomIntBetween(2000, 2100),
+          [ExcelColumnKeys.ProcessedAmount]: currentProcessedAmount,
         };
       }
     }
@@ -374,11 +414,20 @@ export async function processExcelDataKaohsiungChaofeng(
   // 毛重均攤
   const dataWithDistributedWeight = distributeGrossWeight(dataWithAddress);
 
+  // 淨重計算：淨重 = 毛重 - 0.01（保留兩位小數，最小值為 0）
+  const dataWithNetWeight = dataWithDistributedWeight.map((row) => {
+    const grossWeight = Number(row[ExcelColumnKeys.GrossWeight]) || 0;
+    return {
+      ...row,
+      [ExcelColumnKeys.NetWeight]: Math.max(
+        0,
+        +(grossWeight - 0.01).toFixed(2),
+      ),
+    };
+  });
+
   // 產品名稱映射
-  const finalData = mappingRealProductName(
-    dataWithDistributedWeight,
-    productNameMap,
-  );
+  const finalData = mappingRealProductName(dataWithNetWeight, productNameMap);
 
   // 收貨人資訊處理
   const recipientResult = processRecipientInfo(finalData);

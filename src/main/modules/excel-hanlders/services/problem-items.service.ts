@@ -46,6 +46,7 @@ export function checkProblemItems(
       styles.push({
         backgroundColor: STYLE_COLORS.RED,
         priority: STYLE_PRIORITY.PROBLEM_ITEM,
+        columnIndex: 4, // 只標記「貨物名稱」欄位
       });
       rowStyles.set(index, styles);
     }

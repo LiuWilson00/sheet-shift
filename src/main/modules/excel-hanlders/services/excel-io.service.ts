@@ -180,11 +180,29 @@ async function addJsonToExcelTemplate(
       });
     }
 
-    // 套用最高優先級的樣式
-    const bestStyle = getBestStyle(styleCandidates);
-    if (bestStyle) {
+    // 分離 cell-level 和 row-level 樣式
+    const cellLevelStyles = styleCandidates.filter(
+      (s) => s.columnIndex !== undefined,
+    );
+    const rowLevelStyles = styleCandidates.filter(
+      (s) => s.columnIndex === undefined,
+    );
+
+    // 套用 cell-level 樣式（問題件、海關註記等）
+    cellLevelStyles.forEach((style) => {
+      const cell: Cell = worksheet.getCell(currentRow + 1, style.columnIndex!);
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: style.backgroundColor },
+      };
+    });
+
+    // 套用最高優先級的 row-level 樣式（箱數高亮、金額高亮、台北港特殊條件等）
+    const bestRowStyle = getBestStyle(rowLevelStyles);
+    if (bestRowStyle) {
       const worksheetRow = worksheet.getRow(currentRow + 1);
-      rowFillColor(worksheetRow, bestStyle.backgroundColor);
+      rowFillColor(worksheetRow, bestRowStyle.backgroundColor);
     }
 
     // 寫入交易代碼到 AG 欄位

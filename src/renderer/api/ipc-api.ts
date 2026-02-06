@@ -59,6 +59,9 @@ export const ipcApi = {
     addProductMap: createClient(ipcContracts.excel.addProductMap),
     getProductMap: createVoidClient(ipcContracts.excel.getProductMap),
     classifyProductName: createClient(ipcContracts.excel.classifyProductName),
+    applyManifestNumberOnly: createClient(
+      ipcContracts.excel.applyManifestNumberOnly,
+    ),
   },
 
   /**

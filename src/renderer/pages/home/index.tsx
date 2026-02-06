@@ -148,7 +148,7 @@ function Home() {
 
   // 艙單編號帶入完成的回調
   const handleManifestApply = useCallback(
-    (numbers: string[], endNumber: string, transactionCode?: string) => {
+    async (numbers: string[], endNumber: string, transactionCode?: string) => {
       homeLogger.info('艙單編號帶入完成', {
         count: numbers.length,
         endNumber,
@@ -158,14 +158,48 @@ function Home() {
       // 重新載入設定以更新 currentNumber
       loadManifestConfigs();
 
-      // 使用交易代碼執行匯出
+      // 檢查是否有待執行的匯出函式
       const exportFn = pendingExportRef.current;
       if (exportFn) {
+        // 一般匯出流程：使用交易代碼執行匯出
         pendingExportRef.current = null;
         handleExport(exportFn, transactionCode);
+      } else {
+        // 分艙編號專用流程：僅帶入艙單號，不做資料轉換
+        showLoading();
+        const result = await ipcApi.excel.applyManifestNumberOnly({
+          configName: selectedManifestConfig,
+          transactionCode,
+        });
+        hideLoading();
+
+        if (result.isError) {
+          showDialog({
+            content: `分艙編號失敗：${result.message || '未知錯誤'}`,
+            onConfirm: () => {
+              hideDialog();
+            },
+          });
+          return;
+        }
+
+        showDialog({
+          content: `分艙編號完成，共處理 ${result.rowCount} 行資料。\n檔案路徑：${result.path}`,
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
       }
     },
-    [handleExport, loadManifestConfigs],
+    [
+      handleExport,
+      loadManifestConfigs,
+      selectedManifestConfig,
+      showLoading,
+      hideLoading,
+      showDialog,
+      hideDialog,
+    ],
   );
 
   const originalDataDebugging = useCallback(async () => {
@@ -428,8 +462,8 @@ function Home() {
               onClick={() => handleExportClick(ipcApi.excel.exportShopee)}
             />
             <ExportCard
-              title="蝦皮格式"
-              description="新版"
+              title="沛寶.速派格式"
+              description="ShopeeNew"
               icon="🛍️"
               badge="NEW"
               badgeType="success"
@@ -440,6 +474,25 @@ function Home() {
               description="Pegasus"
               icon="🐴"
               onClick={() => handleExportClick(ipcApi.excel.exportPegasus)}
+            />
+            <ExportCard
+              title="分艙編號"
+              description="僅帶入艙單號"
+              icon="🔢"
+              onClick={() => {
+                if (manifestConfigs.length > 0) {
+                  pendingExportRef.current = null; // 清除之前的匯出函式
+                  setShowManifestApply(true);
+                } else {
+                  showDialog({
+                    content: '請先設定艙單編號',
+                    onConfirm: () => {
+                      hideDialog();
+                      setShowManifestConfig(true);
+                    },
+                  });
+                }
+              }}
             />
           </div>
         </div>
