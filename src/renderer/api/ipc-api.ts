@@ -62,6 +62,7 @@ export const ipcApi = {
     applyManifestNumberOnly: createClient(
       ipcContracts.excel.applyManifestNumberOnly,
     ),
+    countFileGroups: createVoidClient(ipcContracts.excel.countFileGroups),
   },
 
   /**

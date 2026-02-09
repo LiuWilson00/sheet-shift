@@ -18,6 +18,35 @@ import {
   TRANSACTION_CODE_COLUMN_INDEX,
 } from '../index.const';
 
+/**
+ * 動態搜尋交易代碼欄位位置
+ *
+ * 在模板表頭中搜尋「申報繳納稅款註記」欄位的位置
+ * 如果找不到，使用預設的 TRANSACTION_CODE_COLUMN_INDEX
+ */
+function findTransactionCodeColumn(worksheet: Worksheet): number {
+  // 搜尋 row 3（表頭行）和 row 2
+  const rowsToSearch = [3, 2];
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const rowIndex of rowsToSearch) {
+    const headerRow = worksheet.getRow(rowIndex);
+    let found = 0;
+
+    headerRow.eachCell((cell, colNumber) => {
+      const value = cell.value?.toString().trim();
+      if (value && value.includes('申報繳納稅款註記')) {
+        found = colNumber;
+      }
+    });
+
+    if (found > 0) return found;
+  }
+
+  // 未找到時使用預設值
+  return TRANSACTION_CODE_COLUMN_INDEX;
+}
+
 let FILL_YELLOW_TO_NEXT_ORDER_NOT_NULL_ROW = false;
 
 function init() {
@@ -112,6 +141,11 @@ async function addJsonToExcelTemplate(
   // 2. 獲取第一個工作表
   const worksheet: Worksheet = workbook.worksheets[0];
 
+  // 動態搜尋交易代碼欄位位置（搜尋表頭「申報繳納稅款註記」）
+  const transactionCodeColumn = transactionCode
+    ? findTransactionCodeColumn(worksheet)
+    : 0;
+
   let previousBoxnumber: number | '' = '';
   // 3. 將 JSON 數據添加到工作表中
   jsonData.forEach((row, index) => {
@@ -205,11 +239,11 @@ async function addJsonToExcelTemplate(
       rowFillColor(worksheetRow, bestRowStyle.backgroundColor);
     }
 
-    // 寫入交易代碼到 AG 欄位
-    if (transactionCode) {
+    // 寫入交易代碼到「申報繳納稅款註記」欄位（動態搜尋位置）
+    if (transactionCode && transactionCodeColumn > 0) {
       const agCell: Cell = worksheet.getCell(
         currentRow + 1,
-        TRANSACTION_CODE_COLUMN_INDEX,
+        transactionCodeColumn,
       );
       agCell.value = transactionCode;
     }

@@ -28,7 +28,9 @@
       "Bash(tasklist:*)",
       "Bash(test:*)",
       "Bash(node scripts/setup-google-sheets.mjs:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run build:main:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

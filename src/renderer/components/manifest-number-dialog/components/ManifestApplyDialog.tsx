@@ -28,6 +28,12 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     configs.length > 0 ? configs[0].settingName : '',
   );
   const [count, setCount] = useState(rowCount || 1);
+  // 當 rowCount 從外部更新時，同步更新 count
+  useEffect(() => {
+    if (rowCount > 0) {
+      setCount(rowCount);
+    }
+  }, [rowCount]);
   /** 交易代碼（帶入 AG 欄位） */
   const [transactionCode, setTransactionCode] = useState('');
   /** 載入狀態 */

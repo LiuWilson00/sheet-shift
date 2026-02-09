@@ -284,20 +284,25 @@ function applyTaipeiBaySpecialRules(data: SheetData[]): RowStyleMap {
       currentOrderIsSpecial &&
       currentOrderStartIndex >= 0
     ) {
-      // 計算訂單內每個項目的單價和總金額
+      // 計算訂單內所有項目的總數量
+      let totalQuantity = 0;
+      // eslint-disable-next-line no-plusplus
+      for (let j = currentOrderStartIndex; j < i; j++) {
+        totalQuantity += Number(data[j][ExcelColumnKeys.Quantity]) || 1;
+      }
+
+      // 統一單價 = 總金額加總 / 訂單總數量，無條件進位
+      const newUnitPrice = Math.ceil(currentProcessedAmount / totalQuantity);
+
+      // 更新所有項目的單價和總金額
       // eslint-disable-next-line no-plusplus
       for (let j = currentOrderStartIndex; j < i; j++) {
         const quantity = Number(data[j][ExcelColumnKeys.Quantity]) || 1;
-        // 單價 = 總金額加總 / 數量，無條件進位
-        const newUnitPrice = Math.ceil(currentProcessedAmount / quantity);
-        // 總金額 = 單價 × 數量
-        const newTotalAmount = newUnitPrice * quantity;
-
         // eslint-disable-next-line no-param-reassign
         data[j] = {
           ...data[j],
           [ExcelColumnKeys.UnitPrice]: newUnitPrice,
-          [ExcelColumnKeys.TotalAmount]: newTotalAmount,
+          [ExcelColumnKeys.TotalAmount]: newUnitPrice * quantity,
         };
       }
     }
@@ -411,12 +416,11 @@ export async function processExcelDataKaohsiungChaofeng(
         }))
       : dataProcessIDNumber;
 
-  // 毛重均攤
-  const dataWithDistributedWeight = distributeGrossWeight(dataWithAddress);
-
-  // 淨重計算：淨重 = 毛重 - 0.01（保留兩位小數，最小值為 0）
-  const dataWithNetWeight = dataWithDistributedWeight.map((row) => {
+  // 毛重保持原始值（不均攤），只在有毛重的行計算淨重
+  const dataWithNetWeight = dataWithAddress.map((row) => {
     const grossWeight = Number(row[ExcelColumnKeys.GrossWeight]) || 0;
+    // 無毛重值的行不處理淨重
+    if (grossWeight === 0) return row;
     return {
       ...row,
       [ExcelColumnKeys.NetWeight]: Math.max(
@@ -444,46 +448,4 @@ export async function processExcelDataKaohsiungChaofeng(
   }
 
   return { data: recipientResult.data, rowStyles: allStyles };
-}
-
-/**
- * 毛重均攤：同一訂單的項目平均分配毛重
- *
- * 邏輯：
- * - ShippingOrderNumber 不為空表示新訂單開始
- * - 取第一行的毛重值（已匯總的總毛重）
- * - 平均分配到同一訂單的所有項目
- */
-function distributeGrossWeight(data: SheetData[]): SheetData[] {
-  const result = data.map((row) => ({ ...row }));
-
-  let orderStartIndex = -1;
-  let currentGrossWeight = 0;
-
-  // eslint-disable-next-line no-plusplus
-  for (let i = 0; i <= result.length; i++) {
-    const isNewOrder =
-      i < result.length &&
-      result[i][ExcelColumnKeys.ShippingOrderNumber] !== '';
-    const isEnd = i === result.length;
-
-    // 處理前一個訂單的均攤
-    if ((isNewOrder || isEnd) && orderStartIndex >= 0) {
-      const itemCount = i - orderStartIndex;
-      if (itemCount > 0 && currentGrossWeight > 0) {
-        const weightPerItem = currentGrossWeight / itemCount;
-        // eslint-disable-next-line no-plusplus
-        for (let j = orderStartIndex; j < i; j++) {
-          result[j][ExcelColumnKeys.GrossWeight] = weightPerItem;
-        }
-      }
-    }
-
-    if (isNewOrder) {
-      orderStartIndex = i;
-      currentGrossWeight = Number(result[i][ExcelColumnKeys.GrossWeight]) || 0;
-    }
-  }
-
-  return result;
 }

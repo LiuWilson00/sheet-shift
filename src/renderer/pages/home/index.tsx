@@ -39,6 +39,7 @@ function Home() {
   const [manifestConfigs, setManifestConfigs] = useState<
     ManifestNumberConfig[]
   >([]);
+  const [fileGroupCount, setFileGroupCount] = useState(0);
 
   // 匯出函式暫存（用於艙單編號帶入後繼續匯出）
   const pendingExportRef = useRef<
@@ -128,6 +129,15 @@ function Home() {
     [settingName, showLoading, hideLoading, showDialog, hideDialog],
   );
 
+  // 開啟艙單編號 Dialog 前先計算檔案群組數量
+  const openManifestApplyDialog = useCallback(async () => {
+    const result = await ipcApi.excel.countFileGroups();
+    if (!result.isError) {
+      setFileGroupCount(result.groupCount);
+    }
+    setShowManifestApply(true);
+  }, []);
+
   // 點擊匯出按鈕：如果啟用艙單編號則先開啟帶入 Dialog，否則直接匯出
   const handleExportClick = useCallback(
     (
@@ -138,12 +148,17 @@ function Home() {
     ) => {
       if (enableManifestNumber && manifestConfigs.length > 0) {
         pendingExportRef.current = exportFn;
-        setShowManifestApply(true);
+        openManifestApplyDialog();
       } else {
         handleExport(exportFn);
       }
     },
-    [enableManifestNumber, manifestConfigs, handleExport],
+    [
+      enableManifestNumber,
+      manifestConfigs,
+      handleExport,
+      openManifestApplyDialog,
+    ],
   );
 
   // 艙單編號帶入完成的回調
@@ -170,6 +185,7 @@ function Home() {
         const result = await ipcApi.excel.applyManifestNumberOnly({
           configName: selectedManifestConfig,
           transactionCode,
+          numbers,
         });
         hideLoading();
 
@@ -301,7 +317,7 @@ function Home() {
         }}
         onApply={handleManifestApply}
         configs={manifestConfigs}
-        rowCount={0}
+        rowCount={fileGroupCount}
       />
 
       {/* 歡迎區塊 */}
@@ -482,7 +498,7 @@ function Home() {
               onClick={() => {
                 if (manifestConfigs.length > 0) {
                   pendingExportRef.current = null; // 清除之前的匯出函式
-                  setShowManifestApply(true);
+                  openManifestApplyDialog();
                 } else {
                   showDialog({
                     content: '請先設定艙單編號',

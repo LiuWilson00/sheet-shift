@@ -49,11 +49,12 @@ const currentSelectedFilePathV2 = new DataStore<string>('');
  * 動態搜尋欄位位置
  *
  * 根據表頭名稱找到對應的欄位索引
+ * 只搜尋 Row 3（真正的表頭行），避免 Row 2 元數據行誤匹配
  */
 function findColumnByHeader(
   worksheet: Worksheet,
   headerNames: string[],
-  headerRowIndex: number = 2,
+  headerRowIndex: number = 3,
 ): number | null {
   const headerRow = worksheet.getRow(headerRowIndex);
   let columnIndex: number | null = null;
@@ -69,32 +70,45 @@ function findColumnByHeader(
 }
 
 /**
+ * 找到 Row 3 最後一個有值的欄位 + 1（用於交易代碼欄位）
+ *
+ * 用戶檔案的交易代碼放在表頭範圍外的第一個空白欄
+ */
+function findLastHeaderColumnPlusOne(worksheet: Worksheet): number {
+  const headerRow = worksheet.getRow(3);
+  let lastCol = 0;
+
+  headerRow.eachCell((cell, colNumber) => {
+    const cellValue = cell.value?.toString().trim();
+    if (cellValue) {
+      lastCol = colNumber;
+    }
+  });
+
+  // 最後表頭 + 1 = 交易代碼欄位
+  return lastCol + 1;
+}
+
+/**
  * 僅帶入艙單編號到 Excel 檔案（不做資料轉換）
  *
  * 處理邏輯：
  * 1. 讀取用戶選擇的已處理過的 Excel 檔案
- * 2. 動態搜尋目標欄位位置（艙單、分艙）
- * 3. 帶入艙單編號到找到的欄位
- * 4. 輸出新檔案
+ * 2. 動態搜尋艙單號碼欄位（Row 3 含「艙單號碼」）
+ * 3. 找交易代碼欄位（Row 3 最後有值欄位 + 1）
+ * 4. 寫入艙單號碼（每組第一行）和交易代碼（每行）
+ * 5. 輸出新檔案
  */
 async function applyManifestNumberToExcel(
   filePath: string,
   transactionCode?: string,
+  numbers?: string[],
 ): Promise<{
   path: string;
   rowCount: number;
   isError: boolean;
   message?: string;
 }> {
-  if (!transactionCode) {
-    return {
-      path: '',
-      rowCount: 0,
-      isError: true,
-      message: '未提供交易代碼',
-    };
-  }
-
   // 讀取 Excel 檔案
   const workbook = new Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -109,47 +123,80 @@ async function applyManifestNumberToExcel(
     };
   }
 
-  // 動態搜尋目標欄位位置（嘗試多種表頭名稱）
-  let targetColumn = findColumnByHeader(worksheet, [
-    '艙單',
-    '分艙',
-    '交易代碼',
-  ]);
-
-  // 如果找不到，使用預設欄位（AG 欄 = column 33）
-  if (targetColumn === null) {
-    targetColumn = 33;
-    logger.warn('[Excel V2] 未找到艙單欄位，使用預設欄位 AG (column 33)');
+  // 動態搜尋艙單號碼欄位（Row 3 含「艙單號碼」）
+  const manifestColumn = findColumnByHeader(worksheet, ['艙單號碼']);
+  if (manifestColumn !== null) {
+    logger.info('[Excel V2] 找到艙單號碼欄位', { columnIndex: manifestColumn });
   } else {
-    logger.info('[Excel V2] 找到艙單欄位', { columnIndex: targetColumn });
+    logger.warn('[Excel V2] 未找到艙單號碼欄位');
   }
 
-  // 計算資料行數（從第 3 行開始，跳過表頭）
+  // 找交易代碼欄位：Row 3 最後有值欄位 + 1
+  const transactionCodeColumn = findLastHeaderColumnPlusOne(worksheet);
+  logger.info('[Excel V2] 交易代碼欄位', {
+    columnIndex: transactionCodeColumn,
+  });
+
+  // 診斷日誌：記錄傳入的 numbers 陣列資訊
+  logger.info('[Excel V2] applyManifestNumber 參數', {
+    hasNumbers: !!numbers,
+    numbersLength: numbers?.length ?? 0,
+    firstThreeNumbers: numbers?.slice(0, 3),
+    transactionCode: transactionCode ?? '(none)',
+    totalRows: worksheet.rowCount,
+  });
+
+  // 從第 4 行開始（Row 1-2 元數據，Row 3 表頭）
   let rowCount = 0;
-  const startRow = 3;
+  let manifestIndex = 0;
+  const startRow = 4;
 
   // eslint-disable-next-line no-plusplus
   for (let rowIndex = startRow; rowIndex <= worksheet.rowCount; rowIndex++) {
     const row = worksheet.getRow(rowIndex);
 
-    // 檢查是否為空行（第一個 cell 是否有值）
-    const firstCellValue = row.getCell(1).value;
-    if (
-      firstCellValue === null ||
-      firstCellValue === undefined ||
-      firstCellValue === ''
-    ) {
-      // 跳過空行
+    // 用 Col 2 判斷是否為資料行（Col 1 只有群組首行有值，續行為空但仍有資料）
+    const col2Value = row.getCell(2).value;
+    if (col2Value === null || col2Value === undefined || col2Value === '') {
+      // 真正的空行，跳過
       // eslint-disable-next-line no-continue
       continue;
     }
 
-    // 帶入交易代碼
-    const targetCell = row.getCell(targetColumn);
-    targetCell.value = transactionCode;
+    // Col 1 有值 = 群組首行（新訂單）→ 寫入艙單號碼
+    const firstCellValue = row.getCell(1).value;
+    const isGroupStart =
+      firstCellValue !== null &&
+      firstCellValue !== undefined &&
+      firstCellValue !== '';
+
+    if (
+      isGroupStart &&
+      numbers &&
+      numbers.length > 0 &&
+      manifestColumn !== null &&
+      manifestIndex < numbers.length
+    ) {
+      row.getCell(manifestColumn).value = numbers[manifestIndex];
+      // eslint-disable-next-line no-plusplus
+      manifestIndex++;
+    }
+
+    // 寫入交易代碼到每一行（包含群組首行和續行）
+    if (transactionCode) {
+      row.getCell(transactionCodeColumn).value = transactionCode;
+    }
+
     // eslint-disable-next-line no-plusplus
     rowCount++;
   }
+
+  // 診斷日誌：記錄寫入結果
+  logger.info('[Excel V2] applyManifestNumber 完成', {
+    totalDataRows: rowCount,
+    manifestNumbersWritten: manifestIndex,
+    numbersProvided: numbers?.length ?? 0,
+  });
 
   if (rowCount === 0) {
     return {
@@ -628,6 +675,7 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
     logger.debug('[Excel V2] Applying manifest number only', {
       configName: input.configName,
       hasTransactionCode: !!input.transactionCode,
+      numbersCount: input.numbers?.length ?? 0,
     });
 
     try {
@@ -641,6 +689,7 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
       const result = await applyManifestNumberToExcel(
         currentPath,
         input.transactionCode,
+        input.numbers,
       );
 
       if (result.isError) {
@@ -661,6 +710,48 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
         error: err.message,
       });
       return { path: '', rowCount: 0, isError: true, message: err.message };
+    }
+  });
+
+  // ==========================================
+  // 計算已選取檔案的群組數量
+  // ==========================================
+  createHandler(ipcContracts.excel.countFileGroups, async () => {
+    try {
+      const currentPath = currentSelectedFilePathV2.get();
+
+      if (!currentPath) {
+        return { groupCount: 0, isError: true };
+      }
+
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(currentPath);
+      const worksheet = workbook.worksheets[0];
+
+      if (!worksheet) {
+        return { groupCount: 0, isError: true };
+      }
+
+      // 計算群組數量：Col 1 有值的資料行數
+      let groupCount = 0;
+      // eslint-disable-next-line no-plusplus
+      for (let rowIndex = 4; rowIndex <= worksheet.rowCount; rowIndex++) {
+        const row = worksheet.getRow(rowIndex);
+        const col1 = row.getCell(1).value;
+        if (col1 !== null && col1 !== undefined && col1 !== '') {
+          // eslint-disable-next-line no-plusplus
+          groupCount++;
+        }
+      }
+
+      logger.info('[Excel V2] 檔案群組數量', { groupCount });
+      return { groupCount, isError: false };
+    } catch (error) {
+      const err = error as Error;
+      logger.error('[Excel V2] Count file groups failed', {
+        error: err.message,
+      });
+      return { groupCount: 0, isError: true };
     }
   });
 

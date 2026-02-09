@@ -287,9 +287,16 @@ export const ipcContracts = {
     applyManifestNumberOnly: {
       channel: 'excel-v2/apply-manifest-number-only',
     } as IpcContract<
-      { configName: string; transactionCode?: string },
+      { configName: string; transactionCode?: string; numbers?: string[] },
       { path: string; isError: boolean; rowCount: number; message?: string }
     >,
+
+    /**
+     * 計算已選取檔案的群組數量（用於分艙編號預設數量）
+     */
+    countFileGroups: {
+      channel: 'excel-v2/count-file-groups',
+    } as IpcContract<void, { groupCount: number; isError: boolean }>,
   },
 
   /**
