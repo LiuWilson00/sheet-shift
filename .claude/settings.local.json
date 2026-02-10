@@ -30,7 +30,8 @@
       "Bash(node scripts/setup-google-sheets.mjs:*)",
       "Bash(node:*)",
       "Bash(npm run build:main:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm run build:renderer:*)"
     ],
     "deny": [],
     "ask": []

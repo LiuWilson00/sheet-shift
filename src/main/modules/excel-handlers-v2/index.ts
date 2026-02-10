@@ -93,9 +93,9 @@ function findLastHeaderColumnPlusOne(worksheet: Worksheet): number {
  * 僅帶入艙單編號到 Excel 檔案（不做資料轉換）
  *
  * 處理邏輯：
- * 1. 讀取用戶選擇的已處理過的 Excel 檔案
- * 2. 動態搜尋艙單號碼欄位（Row 3 含「艙單號碼」）
- * 3. 找交易代碼欄位（Row 3 最後有值欄位 + 1）
+ * 1. 讀取用戶檔案的第一個 worksheet
+ * 2. 複製到全新的 workbook（避免 ExcelJS 重寫複雜檔案導致 XML 損壞）
+ * 3. 動態搜尋艙單號碼欄位 + 交易代碼欄位
  * 4. 寫入艙單號碼（每組第一行）和交易代碼（每行）
  * 5. 輸出新檔案
  */
@@ -109,12 +109,12 @@ async function applyManifestNumberToExcel(
   isError: boolean;
   message?: string;
 }> {
-  // 讀取 Excel 檔案
-  const workbook = new Workbook();
-  await workbook.xlsx.readFile(filePath);
-  const worksheet = workbook.worksheets[0];
+  // 讀取用戶 Excel 檔案
+  const sourceWorkbook = new Workbook();
+  await sourceWorkbook.xlsx.readFile(filePath);
+  const sourceWorksheet = sourceWorkbook.worksheets[0];
 
-  if (!worksheet) {
+  if (!sourceWorksheet) {
     return {
       path: '',
       rowCount: 0,
@@ -123,8 +123,36 @@ async function applyManifestNumberToExcel(
     };
   }
 
+  // 複製所有工作表到全新 workbook，避免重寫複雜用戶檔案導致 XML 損壞
+  const newWorkbook = new Workbook();
+  sourceWorkbook.worksheets.forEach((srcSheet) => {
+    const destSheet = newWorkbook.addWorksheet(srcSheet.name);
+
+    // 複製列寬
+    srcSheet.columns.forEach((col, idx) => {
+      if (col.width) {
+        destSheet.getColumn(idx + 1).width = col.width;
+      }
+    });
+
+    // 複製所有行和儲存格
+    srcSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+      const newRow = destSheet.getRow(rowNumber);
+      newRow.height = row.height;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const newCell = newRow.getCell(colNumber);
+        newCell.value = cell.value;
+        newCell.style = { ...cell.style };
+      });
+      newRow.commit();
+    });
+  });
+
+  // 操作第一個工作表
+  const newWorksheet = newWorkbook.worksheets[0];
+
   // 動態搜尋艙單號碼欄位（Row 3 含「艙單號碼」）
-  const manifestColumn = findColumnByHeader(worksheet, ['艙單號碼']);
+  const manifestColumn = findColumnByHeader(newWorksheet, ['艙單號碼']);
   if (manifestColumn !== null) {
     logger.info('[Excel V2] 找到艙單號碼欄位', { columnIndex: manifestColumn });
   } else {
@@ -132,18 +160,18 @@ async function applyManifestNumberToExcel(
   }
 
   // 找交易代碼欄位：Row 3 最後有值欄位 + 1
-  const transactionCodeColumn = findLastHeaderColumnPlusOne(worksheet);
+  const transactionCodeColumn = findLastHeaderColumnPlusOne(newWorksheet);
   logger.info('[Excel V2] 交易代碼欄位', {
     columnIndex: transactionCodeColumn,
   });
 
-  // 診斷日誌：記錄傳入的 numbers 陣列資訊
+  // 診斷日誌
   logger.info('[Excel V2] applyManifestNumber 參數', {
     hasNumbers: !!numbers,
     numbersLength: numbers?.length ?? 0,
     firstThreeNumbers: numbers?.slice(0, 3),
     transactionCode: transactionCode ?? '(none)',
-    totalRows: worksheet.rowCount,
+    totalRows: newWorksheet.rowCount,
   });
 
   // 從第 4 行開始（Row 1-2 元數據，Row 3 表頭）
@@ -152,13 +180,12 @@ async function applyManifestNumberToExcel(
   const startRow = 4;
 
   // eslint-disable-next-line no-plusplus
-  for (let rowIndex = startRow; rowIndex <= worksheet.rowCount; rowIndex++) {
-    const row = worksheet.getRow(rowIndex);
+  for (let rowIndex = startRow; rowIndex <= newWorksheet.rowCount; rowIndex++) {
+    const row = newWorksheet.getRow(rowIndex);
 
     // 用 Col 2 判斷是否為資料行（Col 1 只有群組首行有值，續行為空但仍有資料）
     const col2Value = row.getCell(2).value;
     if (col2Value === null || col2Value === undefined || col2Value === '') {
-      // 真正的空行，跳過
       // eslint-disable-next-line no-continue
       continue;
     }
@@ -191,7 +218,7 @@ async function applyManifestNumberToExcel(
     rowCount++;
   }
 
-  // 診斷日誌：記錄寫入結果
+  // 診斷日誌
   logger.info('[Excel V2] applyManifestNumber 完成', {
     totalDataRows: rowCount,
     manifestNumbersWritten: manifestIndex,
@@ -213,8 +240,8 @@ async function applyManifestNumberToExcel(
   const newFileName = `${originalFilename}-manifest-${timestamp}.xlsx`;
   const newFilePath = path.join(path.dirname(filePath), newFileName);
 
-  // 寫入新檔案
-  await workbook.xlsx.writeFile(newFilePath);
+  // 寫入全新的 workbook（包含所有工作表，避免 XML 損壞）
+  await newWorkbook.xlsx.writeFile(newFilePath);
 
   return {
     path: newFilePath,

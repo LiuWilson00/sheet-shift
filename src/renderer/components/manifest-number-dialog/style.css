@@ -613,6 +613,41 @@
   box-shadow: 0 0 0 3px rgba(122, 44, 158, 0.15);
 }
 
+/* 自訂起始編號 */
+.apply-dialog__custom-start {
+  margin-bottom: var(--spacing-lg, 20px);
+}
+
+.apply-dialog__custom-start .manifest-dialog__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs, 6px);
+}
+
+.apply-dialog__custom-start .manifest-dialog__hint {
+  display: inline;
+  margin-top: 0;
+}
+
+.apply-dialog__custom-start .manifest-dialog__input {
+  margin-top: var(--spacing-xs, 6px);
+}
+
+.manifest-dialog__input--error {
+  border-color: var(--color-danger, #dc3545) !important;
+}
+
+.manifest-dialog__input--error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+}
+
+.apply-dialog__field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-danger, #dc3545);
+}
+
 /* 交易代碼輸入區塊 */
 .apply-dialog__transaction-code {
   margin-bottom: var(--spacing-lg, 20px);
@@ -668,6 +703,27 @@
   font-size: var(--font-size-sm, 14px);
   color: var(--text-secondary, #666);
   text-align: center;
+}
+
+/* 忽略尾數 0 checkbox */
+.apply-dialog__skip-zero {
+  margin-bottom: var(--spacing-lg, 20px);
+}
+
+.apply-dialog__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 10px);
+  font-size: var(--font-size-md, 15px);
+  color: var(--text-primary, #1a1a1a);
+  cursor: pointer;
+}
+
+.apply-dialog__checkbox-label input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary, #7a2c9e);
 }
 
 /* 錯誤訊息 */

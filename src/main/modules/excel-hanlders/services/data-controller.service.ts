@@ -291,18 +291,28 @@ function applyTaipeiBaySpecialRules(data: SheetData[]): RowStyleMap {
         totalQuantity += Number(data[j][ExcelColumnKeys.Quantity]) || 1;
       }
 
-      // 統一單價 = 總金額加總 / 訂單總數量，無條件進位
-      const newUnitPrice = Math.ceil(currentProcessedAmount / totalQuantity);
+      // 餘數分配法：確保各品項 TotalAmount 加總精確等於 ProcessedAmount
+      const baseUnitPrice = Math.floor(currentProcessedAmount / totalQuantity);
+      const remainder = currentProcessedAmount - baseUnitPrice * totalQuantity;
 
-      // 更新所有項目的單價和總金額
+      // 前 remainder 個數量單位的單價 +1，確保加總精確
+      let distributed = 0;
       // eslint-disable-next-line no-plusplus
       for (let j = currentOrderStartIndex; j < i; j++) {
         const quantity = Number(data[j][ExcelColumnKeys.Quantity]) || 1;
+        let itemTotal = 0;
+        // eslint-disable-next-line no-plusplus
+        for (let q = 0; q < quantity; q++) {
+          itemTotal +=
+            distributed < remainder ? baseUnitPrice + 1 : baseUnitPrice;
+          // eslint-disable-next-line no-plusplus
+          distributed++;
+        }
         // eslint-disable-next-line no-param-reassign
         data[j] = {
           ...data[j],
-          [ExcelColumnKeys.UnitPrice]: newUnitPrice,
-          [ExcelColumnKeys.TotalAmount]: newUnitPrice * quantity,
+          [ExcelColumnKeys.UnitPrice]: Math.ceil(itemTotal / quantity),
+          [ExcelColumnKeys.TotalAmount]: itemTotal,
         };
       }
     }
@@ -416,19 +426,43 @@ export async function processExcelDataKaohsiungChaofeng(
         }))
       : dataProcessIDNumber;
 
-  // 毛重保持原始值（不均攤），只在有毛重的行計算淨重
-  const dataWithNetWeight = dataWithAddress.map((row) => {
-    const grossWeight = Number(row[ExcelColumnKeys.GrossWeight]) || 0;
-    // 無毛重值的行不處理淨重
-    if (grossWeight === 0) return row;
-    return {
-      ...row,
-      [ExcelColumnKeys.NetWeight]: Math.max(
-        0,
-        +(grossWeight - 0.01).toFixed(2),
-      ),
-    };
-  });
+  // 以群組為單位均攤淨重：群組總毛重 / 品項數 - 0.01
+  const dataWithNetWeight = [...dataWithAddress];
+  {
+    let groupStartIdx = -1;
+    // eslint-disable-next-line no-plusplus
+    for (let i = 0; i <= dataWithNetWeight.length; i++) {
+      const isNewGroup =
+        i < dataWithNetWeight.length &&
+        dataWithNetWeight[i][ExcelColumnKeys.ShippingOrderNumber] !== '';
+      const isEnd = i === dataWithNetWeight.length;
+
+      // 處理前一個群組的淨重均攤
+      if ((isNewGroup || isEnd) && groupStartIdx >= 0) {
+        const groupGrossWeight =
+          Number(
+            dataWithNetWeight[groupStartIdx][ExcelColumnKeys.GrossWeight],
+          ) || 0;
+        const itemCount = i - groupStartIdx;
+
+        if (groupGrossWeight > 0 && itemCount > 0) {
+          const perItemWeight = groupGrossWeight / itemCount;
+          // eslint-disable-next-line no-plusplus
+          for (let j = groupStartIdx; j < i; j++) {
+            dataWithNetWeight[j] = {
+              ...dataWithNetWeight[j],
+              [ExcelColumnKeys.NetWeight]: Math.max(
+                0,
+                +(perItemWeight - 0.01).toFixed(3),
+              ),
+            };
+          }
+        }
+      }
+
+      if (isNewGroup) groupStartIdx = i;
+    }
+  }
 
   // 產品名稱映射
   const finalData = mappingRealProductName(dataWithNetWeight, productNameMap);

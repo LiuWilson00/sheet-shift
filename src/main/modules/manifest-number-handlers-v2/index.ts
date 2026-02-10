@@ -170,7 +170,10 @@ export function incrementNumber(
 /**
  * 檢查編號是否在黑名單中
  */
-export function isBlacklisted(number: string, blacklist: BlacklistRule): boolean {
+export function isBlacklisted(
+  number: string,
+  blacklist: BlacklistRule,
+): boolean {
   // 檢查單個排除
   if (blacklist.singles.includes(number)) {
     return true;
@@ -183,12 +186,52 @@ export function isBlacklisted(number: string, blacklist: BlacklistRule): boolean
 }
 
 /**
- * 產生下一個有效編號（跳過黑名單）
+ * 檢查編號的數字區段是否全為 0
+ *
+ * 例如格式 [alpha:2, numeric:2]：
+ * - AB00 → 數字部分 "00" = 0 → true
+ * - AA10 → 數字部分 "10" ≠ 0 → false
+ */
+function hasAllZeroNumericSegments(
+  number: string,
+  format: ManifestNumberFormat,
+): boolean {
+  let pos = 0;
+  // eslint-disable-next-line no-restricted-syntax
+  for (const seg of format.segments) {
+    const part = number.substring(pos, pos + seg.length);
+    pos += seg.length;
+    if (seg.type === 'numeric' && Number(part) !== 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * 檢查編號是否應被跳過（黑名單或數字區段為 0）
+ */
+export function shouldSkipNumber(
+  number: string,
+  blacklist: BlacklistRule,
+  skipZeroNumbers: boolean,
+  format?: ManifestNumberFormat,
+): boolean {
+  if (isBlacklisted(number, blacklist)) return true;
+  if (skipZeroNumbers && format && hasAllZeroNumericSegments(number, format)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * 產生下一個有效編號（跳過黑名單及尾數 0）
  */
 export function getNextValidNumber(
   current: string,
   format: ManifestNumberFormat,
   blacklist: BlacklistRule,
+  skipZeroNumbers: boolean = false,
 ): { number: string; skipped: string[] } | null {
   let next: string | null = current;
   const skipped: string[] = [];
@@ -203,7 +246,7 @@ export function getNextValidNumber(
       return null;
     }
 
-    if (!isBlacklisted(next, blacklist)) {
+    if (!shouldSkipNumber(next, blacklist, skipZeroNumbers, format)) {
       return { number: next, skipped };
     }
 
@@ -389,6 +432,40 @@ export function setupManifestNumberHandlersV2() {
     }
 
     const config = toManifestNumberConfig(configSheet);
+    const skipZero = input.skipZeroNumbers ?? false;
+
+    // 驗證 startFrom 格式（如有提供）
+    if (input.startFrom) {
+      const expectedLength = config.format.segments.reduce(
+        (sum, seg) => sum + seg.length,
+        0,
+      );
+      if (input.startFrom.length !== expectedLength) {
+        throw new IpcError(
+          `起始編號長度不符，預期 ${expectedLength} 位`,
+          'INVALID_START_NUMBER',
+        );
+      }
+      let pos = 0;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const seg of config.format.segments) {
+        const part = input.startFrom.substring(pos, pos + seg.length);
+        pos += seg.length;
+        const segStart = pos - seg.length + 1;
+        if (seg.type === 'alpha' && !/^[A-Z]+$/.test(part)) {
+          throw new IpcError(
+            `起始編號格式錯誤：位置 ${segStart}-${pos} 應為英文大寫`,
+            'INVALID_START_NUMBER',
+          );
+        }
+        if (seg.type === 'numeric' && !/^[0-9]+$/.test(part)) {
+          throw new IpcError(
+            `起始編號格式錯誤：位置 ${segStart}-${pos} 應為數字`,
+            'INVALID_START_NUMBER',
+          );
+        }
+      }
+    }
 
     const numbers: string[] = [];
     const allSkipped: string[] = [];
@@ -403,6 +480,7 @@ export function setupManifestNumberHandlersV2() {
         lastUsedNumber,
         config.format,
         config.blacklist,
+        skipZero,
       );
       if (!first) {
         throw new IpcError(
@@ -416,7 +494,13 @@ export function setupManifestNumberHandlersV2() {
     } else {
       // 首次產生：使用初始編號
       current = generateFirstNumber(config.format);
-      if (!isBlacklisted(current, config.blacklist)) {
+      const skipFirst = shouldSkipNumber(
+        current,
+        config.blacklist,
+        skipZero,
+        config.format,
+      );
+      if (!skipFirst) {
         numbers.push(current);
       } else {
         allSkipped.push(current);
@@ -424,6 +508,7 @@ export function setupManifestNumberHandlersV2() {
           current,
           config.format,
           config.blacklist,
+          skipZero,
         );
         if (!next) {
           throw new IpcError(
@@ -440,7 +525,12 @@ export function setupManifestNumberHandlersV2() {
     // 產生剩餘編號
     // eslint-disable-next-line no-plusplus
     for (let i = 1; i < input.count; i++) {
-      const next = getNextValidNumber(current, config.format, config.blacklist);
+      const next = getNextValidNumber(
+        current,
+        config.format,
+        config.blacklist,
+        skipZero,
+      );
       if (!next) {
         throw new IpcError(
           `Cannot generate ${input.count} numbers: reached maximum at ${i}`,

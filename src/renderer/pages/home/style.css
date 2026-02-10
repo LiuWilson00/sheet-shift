@@ -342,6 +342,36 @@ body {
   justify-items: center;
 }
 
+/* 分艙編號卡片 + 設定按鈕 wrapper */
+.export-card-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.export-card-wrapper .export-card {
+  width: 100%;
+}
+
+.export-card-wrapper__config-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 28px;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.export-card-wrapper__config-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
 /* ============================================
    工具區塊
    ============================================ */

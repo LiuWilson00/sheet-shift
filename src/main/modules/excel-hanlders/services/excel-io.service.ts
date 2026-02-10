@@ -222,7 +222,14 @@ async function addJsonToExcelTemplate(
       (s) => s.columnIndex === undefined,
     );
 
-    // 套用 cell-level 樣式（問題件、海關註記等）
+    // 先套用 row-level 樣式（整行背景色）
+    const bestRowStyle = getBestStyle(rowLevelStyles);
+    if (bestRowStyle) {
+      const worksheetRow = worksheet.getRow(currentRow + 1);
+      rowFillColor(worksheetRow, bestRowStyle.backgroundColor);
+    }
+
+    // 再套用 cell-level 樣式（問題件、海關註記等），覆蓋在 row-level 之上
     cellLevelStyles.forEach((style) => {
       const cell: Cell = worksheet.getCell(currentRow + 1, style.columnIndex!);
       cell.fill = {
@@ -231,13 +238,6 @@ async function addJsonToExcelTemplate(
         fgColor: { argb: style.backgroundColor },
       };
     });
-
-    // 套用最高優先級的 row-level 樣式（箱數高亮、金額高亮、台北港特殊條件等）
-    const bestRowStyle = getBestStyle(rowLevelStyles);
-    if (bestRowStyle) {
-      const worksheetRow = worksheet.getRow(currentRow + 1);
-      rowFillColor(worksheetRow, bestRowStyle.backgroundColor);
-    }
 
     // 寫入交易代碼到「申報繳納稅款註記」欄位（動態搜尋位置）
     if (transactionCode && transactionCodeColumn > 0) {

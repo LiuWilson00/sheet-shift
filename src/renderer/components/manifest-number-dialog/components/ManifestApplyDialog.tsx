@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ManifestNumberConfig,
   generatePreview,
+  validateNumber,
 } from '../../../types/manifest-number';
 import ipcApi from '../../../api/ipc-api';
 
@@ -36,6 +37,10 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
   }, [rowCount]);
   /** 交易代碼（帶入 AG 欄位） */
   const [transactionCode, setTransactionCode] = useState('');
+  /** 自訂起始編號（空字串表示使用設定的當前編號） */
+  const [customStartNumber, setCustomStartNumber] = useState('');
+  /** 跳過數字部分尾數為 0 的編號（預設開啟） */
+  const [skipZeroNumbers, setSkipZeroNumbers] = useState(true);
   /** 載入狀態 */
   const [isGenerating, setIsGenerating] = useState(false);
   /** 錯誤訊息 */
@@ -50,9 +55,26 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     return generatePreview(selectedConfig.format.segments);
   }, [selectedConfig]);
 
-  // 當設定變更時重置錯誤
+  // 自訂起始編號格式驗證
+  const customStartError = useMemo(() => {
+    if (!customStartNumber || !selectedConfig) return '';
+    const upper = customStartNumber.toUpperCase();
+    if (!validateNumber(upper, selectedConfig.format)) {
+      const desc = selectedConfig.format.segments
+        .map((seg) => {
+          const t = seg.type === 'alpha' ? '英文' : '數字';
+          return `${t}${seg.length}位`;
+        })
+        .join(' + ');
+      return `格式不符，預期格式：${desc}`;
+    }
+    return '';
+  }, [customStartNumber, selectedConfig]);
+
+  // 當設定變更時重置錯誤與自訂起始編號
   useEffect(() => {
     setError('');
+    setCustomStartNumber('');
   }, [selectedConfigName]);
 
   // 當 configs 變更且目前選擇的不在列表中時，選擇第一個
@@ -67,24 +89,35 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
 
   const handleApply = useCallback(async () => {
     if (!selectedConfig) return;
+    if (customStartNumber && customStartError) return;
 
     setIsGenerating(true);
     setError('');
 
+    const useCustomStart = customStartNumber.trim() !== '';
+
     try {
+      // 決定起始編號：自訂 > 設定的當前編號
+      const startFrom = useCustomStart
+        ? customStartNumber.toUpperCase()
+        : selectedConfig.currentNumber || undefined;
+
       // 呼叫 API 產生艙單編號
       const result = await ipcApi.manifestNumber.generate({
         configName: selectedConfig.settingName,
         count,
-        startFrom: selectedConfig.currentNumber || undefined,
+        startFrom,
         transactionCode: transactionCode || undefined,
+        skipZeroNumbers,
       });
 
-      // 更新 Google Sheets 上的當前編號
-      await ipcApi.manifestNumber.updateCurrentNumber({
-        settingName: selectedConfig.settingName,
-        currentNumber: result.endAt,
-      });
+      // 僅在非自訂起始時更新 Google Sheets 上的當前編號
+      if (!useCustomStart) {
+        await ipcApi.manifestNumber.updateCurrentNumber({
+          settingName: selectedConfig.settingName,
+          currentNumber: result.endAt,
+        });
+      }
 
       // 傳遞編號和交易代碼
       onApply(result.numbers, result.endAt, transactionCode || undefined);
@@ -95,7 +128,16 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedConfig, count, transactionCode, onApply, onClose]);
+  }, [
+    selectedConfig,
+    count,
+    transactionCode,
+    customStartNumber,
+    customStartError,
+    skipZeroNumbers,
+    onApply,
+    onClose,
+  ]);
 
   const handleCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
@@ -196,6 +238,36 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                     </div>
                   </div>
 
+                  {/* 自訂起始編號 */}
+                  <div className="apply-dialog__custom-start">
+                    <label className="manifest-dialog__label">
+                      自訂起始編號
+                      <span className="manifest-dialog__hint">
+                        （選填，留空則使用設定的當前編號）
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      className={[
+                        'manifest-dialog__input',
+                        customStartError && 'manifest-dialog__input--error',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      value={customStartNumber}
+                      onChange={(e) =>
+                        setCustomStartNumber(e.target.value.toUpperCase())
+                      }
+                      placeholder={`例如：${preview.first}`}
+                      maxLength={20}
+                    />
+                    {customStartError && (
+                      <span className="apply-dialog__field-error">
+                        {customStartError}
+                      </span>
+                    )}
+                  </div>
+
                   {/* 數量輸入 */}
                   <div className="apply-dialog__count-input">
                     <label>帶入數量:</label>
@@ -229,6 +301,21 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                     />
                   </div>
 
+                  {/* 忽略尾數 0 編號 */}
+                  <div className="apply-dialog__skip-zero">
+                    <label className="apply-dialog__checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={skipZeroNumbers}
+                        onChange={(e) => setSkipZeroNumbers(e.target.checked)}
+                      />
+                      <span>忽略數值為 0 的編號</span>
+                      <span className="manifest-dialog__hint">
+                        （如 AB00、AAA00，但 AA10 不受影響）
+                      </span>
+                    </label>
+                  </div>
+
                   {/* 錯誤訊息 */}
                   {error && (
                     <div className="apply-dialog__error">
@@ -253,7 +340,12 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
             type="button"
             className="manifest-dialog__btn manifest-dialog__btn--primary"
             onClick={handleApply}
-            disabled={configs.length === 0 || !selectedConfig || isGenerating}
+            disabled={
+              configs.length === 0 ||
+              !selectedConfig ||
+              isGenerating ||
+              !!customStartError
+            }
           >
             {isGenerating ? '產生中...' : '確認帶入'}
           </button>

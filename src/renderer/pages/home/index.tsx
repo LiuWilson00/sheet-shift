@@ -34,7 +34,6 @@ function Home() {
   // 艙單編號相關狀態
   const [showManifestConfig, setShowManifestConfig] = useState(false);
   const [showManifestApply, setShowManifestApply] = useState(false);
-  const [enableManifestNumber, setEnableManifestNumber] = useState(false);
   const [selectedManifestConfig, setSelectedManifestConfig] = useState('');
   const [manifestConfigs, setManifestConfigs] = useState<
     ManifestNumberConfig[]
@@ -138,7 +137,7 @@ function Home() {
     setShowManifestApply(true);
   }, []);
 
-  // 點擊匯出按鈕：如果啟用艙單編號則先開啟帶入 Dialog，否則直接匯出
+  // 點擊匯出按鈕：直接執行匯出
   const handleExportClick = useCallback(
     (
       exportFn: (options: {
@@ -146,19 +145,9 @@ function Home() {
         transactionCode?: string;
       }) => Promise<{ isError: boolean; path: string }>,
     ) => {
-      if (enableManifestNumber && manifestConfigs.length > 0) {
-        pendingExportRef.current = exportFn;
-        openManifestApplyDialog();
-      } else {
-        handleExport(exportFn);
-      }
+      handleExport(exportFn);
     },
-    [
-      enableManifestNumber,
-      manifestConfigs,
-      handleExport,
-      openManifestApplyDialog,
-    ],
+    [handleExport],
   );
 
   // 艙單編號帶入完成的回調
@@ -398,47 +387,6 @@ function Home() {
               </label>
             </div>
 
-            {/* 艙單編號選項 */}
-            <div className="file-info-card__manifest">
-              <div className="file-info-card__manifest-row">
-                <label className="file-info-card__option">
-                  <input
-                    type="checkbox"
-                    checked={enableManifestNumber}
-                    onChange={() =>
-                      setEnableManifestNumber(!enableManifestNumber)
-                    }
-                  />
-                  <span>自動帶入艙單編號</span>
-                </label>
-                <button
-                  type="button"
-                  className="file-info-card__manifest-config"
-                  onClick={() => setShowManifestConfig(true)}
-                >
-                  ⚙️ 設定
-                </button>
-              </div>
-              {enableManifestNumber && manifestConfigs.length > 0 && (
-                <div className="file-info-card__manifest-select">
-                  <span>使用設定:</span>
-                  <select
-                    value={selectedManifestConfig}
-                    onChange={(e) => setSelectedManifestConfig(e.target.value)}
-                  >
-                    {manifestConfigs.map((config) => (
-                      <option
-                        key={config.settingName}
-                        value={config.settingName}
-                      >
-                        {config.settingName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
             <div className="file-info-card__preprocess">
               <button
                 type="button"
@@ -491,25 +439,35 @@ function Home() {
               icon="🐴"
               onClick={() => handleExportClick(ipcApi.excel.exportPegasus)}
             />
-            <ExportCard
-              title="分艙編號"
-              description="僅帶入艙單號"
-              icon="🔢"
-              onClick={() => {
-                if (manifestConfigs.length > 0) {
-                  pendingExportRef.current = null; // 清除之前的匯出函式
-                  openManifestApplyDialog();
-                } else {
-                  showDialog({
-                    content: '請先設定艙單編號',
-                    onConfirm: () => {
-                      hideDialog();
-                      setShowManifestConfig(true);
-                    },
-                  });
-                }
-              }}
-            />
+            <div className="export-card-wrapper">
+              <ExportCard
+                title="分艙編號"
+                description="僅帶入艙單號"
+                icon="🔢"
+                onClick={() => {
+                  if (manifestConfigs.length > 0) {
+                    pendingExportRef.current = null;
+                    openManifestApplyDialog();
+                  } else {
+                    showDialog({
+                      content: '請先設定艙單編號',
+                      onConfirm: () => {
+                        hideDialog();
+                        setShowManifestConfig(true);
+                      },
+                    });
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="export-card-wrapper__config-btn"
+                onClick={() => setShowManifestConfig(true)}
+                title="艙單編號設定"
+              >
+                ⚙️
+              </button>
+            </div>
           </div>
         </div>
       )}

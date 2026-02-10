@@ -77,6 +77,8 @@ export interface ApplyManifestNumberInput {
   startFrom?: string;
   /** 交易代碼（帶入 AG 欄位） */
   transactionCode?: string;
+  /** 跳過數字部分尾數為 0 的編號（如 AA00, AA10, AAA00） */
+  skipZeroNumbers?: boolean;
 }
 
 /** 帶入艙單編號的輸出結果 */
