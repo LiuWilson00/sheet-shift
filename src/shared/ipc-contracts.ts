@@ -422,11 +422,14 @@ export const ipcContracts = {
     >,
 
     /**
-     * 更新當前編號
+     * 更新當前進度（群組索引 + 編號）
      */
     updateCurrentNumber: {
       channel: 'manifest-number-v2/update-current-number',
-    } as IpcContract<{ settingName: string; currentNumber: string }, boolean>,
+    } as IpcContract<
+      { settingName: string; groupIndex: number; currentNumber: string },
+      boolean
+    >,
 
     /**
      * 重新載入艙單編號設定

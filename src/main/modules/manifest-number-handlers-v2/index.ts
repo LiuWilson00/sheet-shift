@@ -5,7 +5,7 @@
  * - 取得所有設定
  * - 儲存設定
  * - 刪除設定
- * - 產生艙單編號
+ * - 產生艙單編號（支援多組格式循環）
  * - 驗證艙單編號格式
  */
 
@@ -27,6 +27,8 @@ import type {
   ManifestNumberConfig,
   ManifestNumberFormat,
   BlacklistRule,
+  FormatGroup,
+  CurrentProgress,
   ApplyManifestNumberOutput,
   ManifestNumberValidation,
 } from '../../../shared/manifest-number.types';
@@ -37,13 +39,15 @@ import type {
 function toManifestNumberConfig(
   sheet: ManifestNumberConfigSheet,
 ): ManifestNumberConfig {
-  let format: ManifestNumberFormat = { segments: [] };
-  let blacklist: BlacklistRule = { ranges: [], singles: [] };
+  let formats: ManifestNumberFormat[] = [];
+  let blacklists: BlacklistRule[] = [];
+  let currentProgress: CurrentProgress | undefined;
 
+  // 解析格式定義（陣列）
   try {
     const formatStr = sheet[ManifestNumberConfigColumnKeys.FormatDefinition];
     if (formatStr) {
-      format = JSON.parse(formatStr);
+      formats = JSON.parse(formatStr);
     }
   } catch (e) {
     logger.warn('[ManifestNumber V2] Failed to parse format definition', {
@@ -51,10 +55,11 @@ function toManifestNumberConfig(
     });
   }
 
+  // 解析黑名單規則（陣列）
   try {
     const blacklistStr = sheet[ManifestNumberConfigColumnKeys.BlacklistRule];
     if (blacklistStr) {
-      blacklist = JSON.parse(blacklistStr);
+      blacklists = JSON.parse(blacklistStr);
     }
   } catch (e) {
     logger.warn('[ManifestNumber V2] Failed to parse blacklist rule', {
@@ -62,12 +67,36 @@ function toManifestNumberConfig(
     });
   }
 
+  // 解析當前進度（JSON 物件）
+  try {
+    const progressStr = sheet[ManifestNumberConfigColumnKeys.CurrentNumber];
+    if (progressStr) {
+      currentProgress = JSON.parse(progressStr);
+    }
+  } catch (e) {
+    logger.warn('[ManifestNumber V2] Failed to parse current progress', {
+      settingName: sheet[ManifestNumberConfigColumnKeys.SettingName],
+    });
+  }
+
+  // 組合 formatGroups
+  const formatGroups: FormatGroup[] = formats.map((format, i) => ({
+    format,
+    blacklist: blacklists[i] || { ranges: [], singles: [] },
+  }));
+
+  // 至少要有一組預設
+  if (formatGroups.length === 0) {
+    formatGroups.push({
+      format: { segments: [] },
+      blacklist: { ranges: [], singles: [] },
+    });
+  }
+
   return {
     settingName: sheet[ManifestNumberConfigColumnKeys.SettingName] || '',
-    format,
-    blacklist,
-    currentNumber:
-      sheet[ManifestNumberConfigColumnKeys.CurrentNumber] || undefined,
+    formatGroups,
+    currentProgress,
     createdAt: sheet[ManifestNumberConfigColumnKeys.CreatedAt] || undefined,
     updatedAt: sheet[ManifestNumberConfigColumnKeys.UpdatedAt] || undefined,
   };
@@ -84,12 +113,14 @@ function toSheetFormat(
   return {
     [ManifestNumberConfigColumnKeys.SettingName]: config.settingName,
     [ManifestNumberConfigColumnKeys.FormatDefinition]: JSON.stringify(
-      config.format,
+      config.formatGroups.map((g) => g.format),
     ),
     [ManifestNumberConfigColumnKeys.BlacklistRule]: JSON.stringify(
-      config.blacklist,
+      config.formatGroups.map((g) => g.blacklist),
     ),
-    [ManifestNumberConfigColumnKeys.CurrentNumber]: config.currentNumber || '',
+    [ManifestNumberConfigColumnKeys.CurrentNumber]: config.currentProgress
+      ? JSON.stringify(config.currentProgress)
+      : '',
     [ManifestNumberConfigColumnKeys.CreatedAt]: config.createdAt || now,
     [ManifestNumberConfigColumnKeys.UpdatedAt]: now,
   };
@@ -225,7 +256,10 @@ export function shouldSkipNumber(
 }
 
 /**
- * 產生下一個有效編號（跳過黑名單及尾數 0）
+ * 產生下一個有效編號（跳過黑名單及數值 0）
+ *
+ * 當編號落在黑名單範圍內時，直接跳到範圍結尾的下一個編號，
+ * 避免逐一遞增導致大範圍黑名單（如 44,000+ 筆）超過迭代上限。
  */
 export function getNextValidNumber(
   current: string,
@@ -233,27 +267,164 @@ export function getNextValidNumber(
   blacklist: BlacklistRule,
   skipZeroNumbers: boolean = false,
 ): { number: string; skipped: string[] } | null {
-  let next: string | null = current;
+  let next: string | null = incrementNumber(current, format);
+  if (!next) return null;
+
   const skipped: string[] = [];
 
-  // 最多嘗試 10000 次避免無限迴圈
-  // eslint-disable-next-line no-plusplus
-  for (let i = 0; i < 10000; i++) {
-    next = incrementNumber(next, format);
+  // 安全上限：基於黑名單結構的合理上限，防止無限迴圈
+  const maxAttempts =
+    blacklist.ranges.length + blacklist.singles.length + 1000;
+  let attempts = 0;
 
-    if (!next) {
-      // 已達最大值
-      return null;
+  while (attempts < maxAttempts) {
+    // 檢查是否落在黑名單範圍內 → 直接跳到範圍結尾的下一個編號
+    const matchedRange = blacklist.ranges.find(
+      (r) => next! >= r.start && next! <= r.end,
+    );
+
+    if (matchedRange) {
+      // 直接跳過整個範圍，不逐一遞增
+      next = incrementNumber(matchedRange.end, format);
+      if (!next) return null;
+      // eslint-disable-next-line no-plusplus
+      attempts++;
+      // eslint-disable-next-line no-continue
+      continue;
     }
 
+    // 不在範圍黑名單內，檢查單一排除和零值
     if (!shouldSkipNumber(next, blacklist, skipZeroNumbers, format)) {
       return { number: next, skipped };
     }
 
+    // 在單一排除或零值編號中，正常遞增
     skipped.push(next);
+    next = incrementNumber(next, format);
+    if (!next) return null;
+    // eslint-disable-next-line no-plusplus
+    attempts++;
   }
 
-  // 嘗試次數過多
+  // 所有嘗試都已用盡
+  return null;
+}
+
+/**
+ * 跨組取得下一個有效編號
+ * 當前組用完時自動跳到下一組，循環回起始組時停止
+ */
+function getNextValidNumberAcrossGroups(
+  current: string,
+  currentGroupIndex: number,
+  formatGroups: FormatGroup[],
+  skipZeroNumbers: boolean,
+  startGroupIndex: number,
+): { number: string; groupIndex: number; skipped: string[] } | null {
+  const allSkipped: string[] = [];
+
+  // 先嘗試在當前組取得下一個
+  const group = formatGroups[currentGroupIndex];
+  const nextInGroup = getNextValidNumber(
+    current,
+    group.format,
+    group.blacklist,
+    skipZeroNumbers,
+  );
+
+  if (nextInGroup) {
+    return {
+      number: nextInGroup.number,
+      groupIndex: currentGroupIndex,
+      skipped: nextInGroup.skipped,
+    };
+  }
+
+  // 當前組已用完，嘗試下一組
+  let nextGroupIndex = (currentGroupIndex + 1) % formatGroups.length;
+
+  // 最多嘗試所有組（回到起始組就停止）
+  while (nextGroupIndex !== startGroupIndex) {
+    const nextGroup = formatGroups[nextGroupIndex];
+    const firstNumber = generateFirstNumber(nextGroup.format);
+
+    // 檢查第一個編號是否可用
+    if (
+      !shouldSkipNumber(
+        firstNumber,
+        nextGroup.blacklist,
+        skipZeroNumbers,
+        nextGroup.format,
+      )
+    ) {
+      return {
+        number: firstNumber,
+        groupIndex: nextGroupIndex,
+        skipped: allSkipped,
+      };
+    }
+
+    allSkipped.push(firstNumber);
+
+    // 嘗試從第一個編號往下找
+    const nextValid = getNextValidNumber(
+      firstNumber,
+      nextGroup.format,
+      nextGroup.blacklist,
+      skipZeroNumbers,
+    );
+
+    if (nextValid) {
+      allSkipped.push(...nextValid.skipped);
+      return {
+        number: nextValid.number,
+        groupIndex: nextGroupIndex,
+        skipped: allSkipped,
+      };
+    }
+
+    // 這組也用完了，繼續下一組
+    nextGroupIndex = (nextGroupIndex + 1) % formatGroups.length;
+  }
+
+  // 繞回起始組，嘗試從頭開始（循環）
+  const startGroup = formatGroups[startGroupIndex];
+  const firstNumber = generateFirstNumber(startGroup.format);
+
+  if (
+    !shouldSkipNumber(
+      firstNumber,
+      startGroup.blacklist,
+      skipZeroNumbers,
+      startGroup.format,
+    )
+  ) {
+    return {
+      number: firstNumber,
+      groupIndex: startGroupIndex,
+      skipped: allSkipped,
+    };
+  }
+
+  allSkipped.push(firstNumber);
+
+  const nextValid = getNextValidNumber(
+    firstNumber,
+    startGroup.format,
+    startGroup.blacklist,
+    skipZeroNumbers,
+  );
+
+  if (nextValid) {
+    allSkipped.push(...nextValid.skipped);
+    return {
+      number: nextValid.number,
+      groupIndex: startGroupIndex,
+      skipped: allSkipped,
+    };
+  }
+
+  // 所有格式群組都已用盡
   return null;
 }
 
@@ -405,13 +576,14 @@ export function setupManifestNumberHandlersV2() {
   });
 
   // ==========================================
-  // 產生艙單編號
+  // 產生艙單編號（支援多組格式循環）
   // ==========================================
   createHandler(ipcContracts.manifestNumber.generate, async (input) => {
     logger.debug('[ManifestNumber V2] Generating manifest numbers', {
       configName: input.configName,
       count: input.count,
       startFrom: input.startFrom,
+      startGroupIndex: input.startGroupIndex,
     });
 
     if (!input.configName || input.count <= 0) {
@@ -433,10 +605,29 @@ export function setupManifestNumberHandlersV2() {
 
     const config = toManifestNumberConfig(configSheet);
     const skipZero = input.skipZeroNumbers ?? false;
+    const { formatGroups } = config;
 
-    // 驗證 startFrom 格式（如有提供）
+    if (formatGroups.length === 0) {
+      throw new IpcError('No format groups defined', 'INVALID_CONFIG');
+    }
+
+    // 決定起始群組與編號
+    let currentGroupIndex: number;
+    let current: string;
+
     if (input.startFrom) {
-      const expectedLength = config.format.segments.reduce(
+      // 使用自訂起始編號
+      currentGroupIndex = input.startGroupIndex ?? 0;
+      if (currentGroupIndex < 0 || currentGroupIndex >= formatGroups.length) {
+        throw new IpcError(
+          `群組索引超出範圍：${currentGroupIndex}`,
+          'INVALID_GROUP_INDEX',
+        );
+      }
+
+      // 驗證 startFrom 格式
+      const group = formatGroups[currentGroupIndex];
+      const expectedLength = group.format.segments.reduce(
         (sum, seg) => sum + seg.length,
         0,
       );
@@ -448,7 +639,7 @@ export function setupManifestNumberHandlersV2() {
       }
       let pos = 0;
       // eslint-disable-next-line no-restricted-syntax
-      for (const seg of config.format.segments) {
+      for (const seg of group.format.segments) {
         const part = input.startFrom.substring(pos, pos + seg.length);
         pos += seg.length;
         const segStart = pos - seg.length + 1;
@@ -465,59 +656,70 @@ export function setupManifestNumberHandlersV2() {
           );
         }
       }
+
+      current = input.startFrom;
+    } else if (config.currentProgress) {
+      // 使用上次進度
+      currentGroupIndex = config.currentProgress.groupIndex;
+      if (currentGroupIndex >= formatGroups.length) {
+        currentGroupIndex = 0;
+      }
+      current = config.currentProgress.number;
+    } else {
+      // 首次產生：使用第一組的初始編號
+      currentGroupIndex = 0;
+      current = generateFirstNumber(formatGroups[0].format);
     }
 
     const numbers: string[] = [];
     const allSkipped: string[] = [];
-    let current: string;
+    const startGroupIndex = currentGroupIndex;
 
-    // 決定起始編號
-    const lastUsedNumber = input.startFrom || config.currentNumber;
+    // 產生編號（支援跨組循環）
+    const hasLastUsed = !!input.startFrom || !!config.currentProgress;
 
-    if (lastUsedNumber) {
-      // 有上次使用的編號：從下一個有效編號開始（避免重複）
-      const first = getNextValidNumber(
-        lastUsedNumber,
-        config.format,
-        config.blacklist,
+    if (hasLastUsed) {
+      // 從上次編號的下一個開始
+      const result = getNextValidNumberAcrossGroups(
+        current,
+        currentGroupIndex,
+        formatGroups,
         skipZero,
+        startGroupIndex,
       );
-      if (!first) {
+      if (!result) {
         throw new IpcError(
-          'Cannot generate numbers: reached maximum',
+          '無法產生編號：所有格式群組已用盡',
           'GENERATION_FAILED',
         );
       }
-      current = first.number;
-      allSkipped.push(...first.skipped);
+      current = result.number;
+      currentGroupIndex = result.groupIndex;
+      allSkipped.push(...result.skipped);
       numbers.push(current);
     } else {
-      // 首次產生：使用初始編號
-      current = generateFirstNumber(config.format);
-      const skipFirst = shouldSkipNumber(
-        current,
-        config.blacklist,
-        skipZero,
-        config.format,
-      );
-      if (!skipFirst) {
+      // 首次產生：檢查初始編號是否需要跳過
+      const group = formatGroups[currentGroupIndex];
+      if (!shouldSkipNumber(current, group.blacklist, skipZero, group.format)) {
         numbers.push(current);
       } else {
         allSkipped.push(current);
-        const next = getNextValidNumber(
+        const result = getNextValidNumberAcrossGroups(
           current,
-          config.format,
-          config.blacklist,
+          currentGroupIndex,
+          formatGroups,
           skipZero,
+          startGroupIndex,
         );
-        if (!next) {
+        if (!result) {
           throw new IpcError(
-            'Cannot generate numbers: reached maximum',
+            '無法產生編號：所有格式群組已用盡',
             'GENERATION_FAILED',
           );
         }
-        current = next.number;
-        allSkipped.push(...next.skipped);
+        current = result.number;
+        currentGroupIndex = result.groupIndex;
+        allSkipped.push(...result.skipped);
         numbers.push(current);
       }
     }
@@ -525,26 +727,29 @@ export function setupManifestNumberHandlersV2() {
     // 產生剩餘編號
     // eslint-disable-next-line no-plusplus
     for (let i = 1; i < input.count; i++) {
-      const next = getNextValidNumber(
+      const result = getNextValidNumberAcrossGroups(
         current,
-        config.format,
-        config.blacklist,
+        currentGroupIndex,
+        formatGroups,
         skipZero,
+        startGroupIndex,
       );
-      if (!next) {
+      if (!result) {
         throw new IpcError(
-          `Cannot generate ${input.count} numbers: reached maximum at ${i}`,
+          `無法產生 ${input.count} 個編號：在第 ${i} 個時已用盡`,
           'GENERATION_FAILED',
         );
       }
-      current = next.number;
-      allSkipped.push(...next.skipped);
+      current = result.number;
+      currentGroupIndex = result.groupIndex;
+      allSkipped.push(...result.skipped);
       numbers.push(current);
     }
 
-    const result: ApplyManifestNumberOutput = {
+    const output: ApplyManifestNumberOutput = {
       numbers,
       endAt: current,
+      endGroupIndex: currentGroupIndex,
       skipped: allSkipped,
     };
 
@@ -552,10 +757,11 @@ export function setupManifestNumberHandlersV2() {
       configName: input.configName,
       count: numbers.length,
       endAt: current,
+      endGroupIndex: currentGroupIndex,
       skippedCount: allSkipped.length,
     });
 
-    return result;
+    return output;
   });
 
   // ==========================================
@@ -582,66 +788,71 @@ export function setupManifestNumberHandlersV2() {
 
     const config = toManifestNumberConfig(configSheet);
 
-    // 計算預期長度
-    const expectedLength = config.format.segments.reduce(
-      (sum, seg) => sum + seg.length,
-      0,
-    );
-
-    if (input.number.length !== expectedLength) {
-      return {
-        isValid: false,
-        error: `編號長度不正確，預期 ${expectedLength} 位，實際 ${input.number.length} 位`,
-      } as ManifestNumberValidation;
-    }
-
-    // 驗證每個區段
-    let charIndex = 0;
+    // 逐組嘗試驗證
     // eslint-disable-next-line no-restricted-syntax
-    for (const seg of config.format.segments) {
-      const segValue = input.number.substring(
-        charIndex,
-        charIndex + seg.length,
+    for (const group of config.formatGroups) {
+      const { format, blacklist } = group;
+      const expectedLength = format.segments.reduce(
+        (sum, seg) => sum + seg.length,
+        0,
       );
 
-      if (seg.type === 'alpha') {
-        if (!/^[A-Z]+$/.test(segValue)) {
-          return {
-            isValid: false,
-            error: `區段 "${segValue}" 應為英文大寫字母`,
-          } as ManifestNumberValidation;
+      if (input.number.length !== expectedLength) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      let charIndex = 0;
+      let segmentValid = true;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const seg of format.segments) {
+        const segValue = input.number.substring(
+          charIndex,
+          charIndex + seg.length,
+        );
+        if (seg.type === 'alpha' && !/^[A-Z]+$/.test(segValue)) {
+          segmentValid = false;
+          break;
         }
-      } else if (!/^[0-9]+$/.test(segValue)) {
+        if (seg.type === 'numeric' && !/^[0-9]+$/.test(segValue)) {
+          segmentValid = false;
+          break;
+        }
+        charIndex += seg.length;
+      }
+
+      if (!segmentValid) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      // 格式匹配成功，檢查黑名單
+      if (isBlacklisted(input.number, blacklist)) {
         return {
           isValid: false,
-          error: `區段 "${segValue}" 應為數字`,
+          error: '此編號在黑名單中',
         } as ManifestNumberValidation;
       }
 
-      charIndex += seg.length;
+      return { isValid: true } as ManifestNumberValidation;
     }
 
-    // 檢查是否在黑名單中
-    if (isBlacklisted(input.number, config.blacklist)) {
-      return {
-        isValid: false,
-        error: '此編號在黑名單中',
-      } as ManifestNumberValidation;
-    }
-
+    // 沒有任何群組格式匹配
     return {
-      isValid: true,
+      isValid: false,
+      error: '編號格式與所有群組皆不相符',
     } as ManifestNumberValidation;
   });
 
   // ==========================================
-  // 更新當前編號
+  // 更新當前進度
   // ==========================================
   createHandler(
     ipcContracts.manifestNumber.updateCurrentNumber,
     async (input) => {
-      logger.debug('[ManifestNumber V2] Updating current number', {
+      logger.debug('[ManifestNumber V2] Updating current progress', {
         settingName: input.settingName,
+        groupIndex: input.groupIndex,
         currentNumber: input.currentNumber,
       });
 
@@ -660,10 +871,16 @@ export function setupManifestNumberHandlersV2() {
       }
 
       const now = new Date().toISOString();
+      const progress: CurrentProgress = {
+        groupIndex: input.groupIndex,
+        number: input.currentNumber,
+      };
+
       const newData = [...currentData];
       newData[index] = {
         ...newData[index],
-        [ManifestNumberConfigColumnKeys.CurrentNumber]: input.currentNumber,
+        [ManifestNumberConfigColumnKeys.CurrentNumber]:
+          JSON.stringify(progress),
         [ManifestNumberConfigColumnKeys.UpdatedAt]: now,
       };
 
@@ -682,8 +899,9 @@ export function setupManifestNumberHandlersV2() {
       // 更新本地快取
       manifestNumberConfigSheet.set(newData);
 
-      logger.info('[ManifestNumber V2] Current number updated successfully', {
+      logger.info('[ManifestNumber V2] Current progress updated successfully', {
         settingName: input.settingName,
+        groupIndex: input.groupIndex,
         currentNumber: input.currentNumber,
       });
 

@@ -213,9 +213,9 @@ export interface ProcessResultWithStyles {
  * 台北港格式匯出
  *
  * 基於 processExcelData()，新增：
- * 1. 收貨人資訊比對與帶入
+ * 1. 收貨人資訊比對與標記
  * 2. 問題件檢查
- * 3. 特殊條件：毛重 ≥ 40kg & 總件數 = 1 → 金額 2000-2100、黃色背景
+ * 3. 特殊條件：毛重 ≥ 40kg & 總件數 = 1 → 金額 2000-2100、黃色背景（可透過 disableWeightRule 關閉）
  */
 export async function processExcelDataTaipeiBay(
   filePath: string,
@@ -224,6 +224,8 @@ export async function processExcelDataTaipeiBay(
     disableRandomAddress?: boolean;
     calculateTotalAmountByBoxesDisableThreeOrMore?: boolean;
     usePegasusSetting?: boolean;
+    /** 關閉 40kg/2000 規則（蝦皮2轉使用） */
+    disableWeightRule?: boolean;
   },
 ): Promise<ProcessResultWithStyles> {
   // 使用現有的 processExcelData 處理基礎資料
@@ -235,8 +237,10 @@ export async function processExcelDataTaipeiBay(
   // 問題件檢查
   const problemStyles = checkProblemItems(recipientResult.data);
 
-  // 台北港特殊條件：毛重 ≥ 40 且 總件數 = 1
-  const taipeiBayStyles = applyTaipeiBaySpecialRules(recipientResult.data);
+  // 台北港特殊條件：毛重 ≥ 40 且 總件數 = 1（可透過選項關閉）
+  const taipeiBayStyles = options?.disableWeightRule
+    ? new Map()
+    : applyTaipeiBaySpecialRules(recipientResult.data);
 
   // 合併所有樣式
   const allStyles = mergeRowStyleMaps(

@@ -129,7 +129,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 
       {children}
       <Loading isVisible={isLoading} />
-      <span className="layout-version">v2.3</span>
+      <span className="layout-version">v2.5</span>
     </div>
   );
 };

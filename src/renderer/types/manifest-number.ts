@@ -35,16 +35,30 @@ export interface ManifestNumberFormat {
   segments: FormatSegment[];
 }
 
-/** 艙單編號設定 */
-export interface ManifestNumberConfig {
-  /** 設定名稱（唯一識別） */
-  settingName: string;
+/** 單一格式群組（格式 + 黑名單） */
+export interface FormatGroup {
   /** 格式定義 */
   format: ManifestNumberFormat;
   /** 黑名單規則 */
   blacklist: BlacklistRule;
-  /** 上次使用的最後編號 */
-  currentNumber?: string;
+}
+
+/** 當前編號進度 */
+export interface CurrentProgress {
+  /** 當前使用的格式群組索引 (0-based) */
+  groupIndex: number;
+  /** 當前編號 */
+  number: string;
+}
+
+/** 艙單編號設定 */
+export interface ManifestNumberConfig {
+  /** 設定名稱（唯一識別） */
+  settingName: string;
+  /** 格式群組列表（有序） */
+  formatGroups: FormatGroup[];
+  /** 當前進度 */
+  currentProgress?: CurrentProgress;
   /** 建立時間 */
   createdAt?: string;
   /** 更新時間 */
@@ -67,6 +81,8 @@ export interface ApplyPreviewResult {
   numbers: string[];
   /** 結束編號 */
   endAt: string;
+  /** 結束群組索引 */
+  endGroupIndex: number;
   /** 跳過的編號（黑名單） */
   skipped: string[];
 }
@@ -158,9 +174,9 @@ export function validateNumber(
 }
 
 /**
- * 預設設定
+ * 預設格式群組
  */
-export const DEFAULT_CONFIG: Omit<ManifestNumberConfig, 'settingName'> = {
+export const DEFAULT_FORMAT_GROUP: FormatGroup = {
   format: {
     segments: [
       { type: 'alpha', length: 3 },
@@ -171,4 +187,11 @@ export const DEFAULT_CONFIG: Omit<ManifestNumberConfig, 'settingName'> = {
     ranges: [],
     singles: [],
   },
+};
+
+/**
+ * 預設設定
+ */
+export const DEFAULT_CONFIG: Omit<ManifestNumberConfig, 'settingName'> = {
+  formatGroups: [DEFAULT_FORMAT_GROUP],
 };

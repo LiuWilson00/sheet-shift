@@ -4,6 +4,8 @@
 
 /** 收貨人資訊 */
 export interface RecipientInfo {
+  /** 艙提單號（來自原始 Excel A 欄） */
+  艙提單號: string;
   /** 收貨人統一編號（主鍵） */
   收貨人統一編號: string;
   /** 收貨人英文名稱 */
@@ -16,6 +18,8 @@ export interface RecipientInfo {
 
 /** 收貨人資訊欄位名稱 */
 export enum RecipientInfoColumnKeys {
+  /** 艙提單號 */
+  ManifestNumber = '艙提單號',
   /** 收貨人統一編號 */
   TaxNumber = '收貨人統一編號',
   /** 收貨人英文名稱 */
@@ -38,6 +42,8 @@ export interface RecipientInfoLookupResult {
 
 /** 新增收貨人資訊輸入 */
 export interface AddRecipientInfoInput {
+  /** 艙提單號 */
+  manifestNumber?: string;
   /** 收貨人統一編號 */
   taxNumber: string;
   /** 收貨人英文名稱 */

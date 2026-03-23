@@ -10,6 +10,7 @@ import { useSetting } from '../../contexts/settings-dialog-context/indext';
 import ipcApi from '../../api/ipc-api';
 import ExportCard from '../../components/export-card';
 import {
+  ManifestListDialog,
   ManifestConfigDialog,
   ManifestApplyDialog,
 } from '../../components/manifest-number-dialog';
@@ -32,9 +33,13 @@ function Home() {
   const { settingName } = useSetting();
 
   // 艙單編號相關狀態
+  const [showManifestList, setShowManifestList] = useState(false);
   const [showManifestConfig, setShowManifestConfig] = useState(false);
   const [showManifestApply, setShowManifestApply] = useState(false);
   const [selectedManifestConfig, setSelectedManifestConfig] = useState('');
+  const [editingConfig, setEditingConfig] = useState<
+    ManifestNumberConfig | undefined
+  >(undefined);
   const [manifestConfigs, setManifestConfigs] = useState<
     ManifestNumberConfig[]
   >([]);
@@ -152,7 +157,13 @@ function Home() {
 
   // 艙單編號帶入完成的回調
   const handleManifestApply = useCallback(
-    async (numbers: string[], endNumber: string, transactionCode?: string) => {
+    async (
+      numbers: string[],
+      endNumber: string,
+      transactionCode?: string,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _endGroupIndex?: number,
+    ) => {
       homeLogger.info('艙單編號帶入完成', {
         count: numbers.length,
         endNumber,
@@ -255,6 +266,8 @@ function Home() {
         await ipcApi.manifestNumber.saveConfig(config);
         // 重新載入設定
         await loadManifestConfigs();
+        // 儲存後回到列表 Dialog
+        setShowManifestList(true);
         showDialog({
           content: `設定「${config.settingName}」已儲存`,
           onConfirm: () => {
@@ -275,6 +288,66 @@ function Home() {
     [showDialog, hideDialog, loadManifestConfigs],
   );
 
+  // 從列表開啟編輯 Dialog
+  const handleEditConfig = useCallback((config: ManifestNumberConfig) => {
+    setShowManifestList(false);
+    setEditingConfig(config);
+    setShowManifestConfig(true);
+  }, []);
+
+  // 從列表新增設定
+  const handleCreateConfig = useCallback(() => {
+    setShowManifestList(false);
+    setEditingConfig(undefined);
+    setShowManifestConfig(true);
+  }, []);
+
+  // 從列表刪除設定
+  const handleDeleteConfig = useCallback(
+    (configSettingName: string) => {
+      showDialog({
+        content: `確定要刪除設定「${configSettingName}」？\n此操作無法復原。`,
+        showCancel: true,
+        onConfirm: async () => {
+          hideDialog();
+          showLoading();
+          try {
+            await ipcApi.manifestNumber.deleteConfig({
+              settingName: configSettingName,
+            });
+            await loadManifestConfigs();
+            // 如果刪除的是目前選擇的設定，重置選擇
+            if (selectedManifestConfig === configSettingName) {
+              setSelectedManifestConfig('');
+            }
+          } catch (err) {
+            showDialog({
+              content: `刪除失敗：${
+                err instanceof Error ? err.message : '未知錯誤'
+              }`,
+              onConfirm: () => {
+                hideDialog();
+              },
+            });
+          } finally {
+            hideLoading();
+          }
+        },
+        onCancel: () => {
+          hideDialog();
+        },
+      });
+    },
+    [
+      showDialog,
+      hideDialog,
+      showLoading,
+      hideLoading,
+      loadManifestConfigs,
+      selectedManifestConfig,
+    ],
+  );
+
   const hasFile =
     selectFilePath !== undefined &&
     selectFilePath !== '' &&
@@ -290,11 +363,25 @@ function Home() {
         setWrongData={setWrongData}
       />
 
-      {/* 艙單編號設定 Dialog */}
+      {/* 艙單編號設定列表 Dialog */}
+      <ManifestListDialog
+        isOpen={showManifestList}
+        onClose={() => setShowManifestList(false)}
+        configs={manifestConfigs}
+        onEdit={handleEditConfig}
+        onDelete={handleDeleteConfig}
+        onCreate={handleCreateConfig}
+      />
+
+      {/* 艙單編號設定 Dialog（新增/編輯） */}
       <ManifestConfigDialog
         isOpen={showManifestConfig}
-        onClose={() => setShowManifestConfig(false)}
+        onClose={() => {
+          setShowManifestConfig(false);
+          setEditingConfig(undefined);
+        }}
         onSave={handleSaveManifestConfig}
+        existingConfig={editingConfig}
       />
 
       {/* 艙單編號帶入 Dialog */}
@@ -420,13 +507,13 @@ function Home() {
               }
             />
             <ExportCard
-              title="蝦皮格式"
+              title="蝦皮2轉"
               description="Shopee"
               icon="🛒"
               onClick={() => handleExportClick(ipcApi.excel.exportShopee)}
             />
             <ExportCard
-              title="沛寶.速派格式"
+              title="沛寶速派蝦皮格式"
               description="ShopeeNew"
               icon="🛍️"
               badge="NEW"
@@ -453,7 +540,7 @@ function Home() {
                       content: '請先設定艙單編號',
                       onConfirm: () => {
                         hideDialog();
-                        setShowManifestConfig(true);
+                        setShowManifestList(true);
                       },
                     });
                   }
@@ -462,7 +549,7 @@ function Home() {
               <button
                 type="button"
                 className="export-card-wrapper__config-btn"
-                onClick={() => setShowManifestConfig(true)}
+                onClick={() => setShowManifestList(true)}
                 title="艙單編號設定"
               >
                 ⚙️

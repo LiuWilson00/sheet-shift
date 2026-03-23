@@ -3,9 +3,9 @@
  *
  * 功能：
  * - 根據統一編號比對收貨人資訊
- * - 自動帶入英文名稱和電話
  * - 標記有海關註記的項目（紅色背景）
- * - 收集新的收貨人資訊以新增到 Google Sheets
+ * - 收集新的收貨人資訊（含艙提單號）以新增到 Google Sheets
+ * - 不覆蓋原始 Excel 的英文名稱和電話
  */
 
 import { SheetData, ExcelColumnKeys } from '../index.interface';
@@ -32,12 +32,12 @@ export interface RecipientInfoProcessResult {
 }
 
 /**
- * 處理收貨人資訊：比對、帶入、標記
+ * 處理收貨人資訊：比對、標記、收集
  *
  * 流程：
  * 1. 用統一編號比對收貨人資訊表
- * 2. 匹配到：帶入英文名稱、電話；有海關註記則標紅
- * 3. 未匹配到：收集為新收貨人
+ * 2. 匹配到：有海關註記則標紅（不覆蓋原始資料的英文名稱和電話）
+ * 3. 未匹配到：收集為新收貨人（含艙提單號）上傳到雲端
  */
 export function processRecipientInfo(
   data: SheetData[],
@@ -66,20 +66,7 @@ export function processRecipientInfo(
     const match = recipientMap.get(taxNumber);
 
     if (match) {
-      // 找到匹配 - 帶入資訊
-      const updatedRow = { ...row };
-
-      const englishName = match[RecipientInfoColumnKeys.EnglishName];
-      if (englishName) {
-        updatedRow[ExcelColumnKeys.RecipientEnglishName] = englishName;
-      }
-
-      const phone = match[RecipientInfoColumnKeys.Phone];
-      if (phone) {
-        updatedRow[ExcelColumnKeys.RecipientPhone] = phone;
-      }
-
-      // 檢查海關註記
+      // 找到匹配 - 只檢查海關註記，不覆蓋原始資料的英文名稱和電話
       const customsNote = match[RecipientInfoColumnKeys.CustomsNote];
       if (customsNote && customsNote.trim() !== '') {
         const styles = rowStyles.get(index) || [];
@@ -91,13 +78,15 @@ export function processRecipientInfo(
         rowStyles.set(index, styles);
       }
 
-      return updatedRow;
+      return row;
     }
 
     // 未找到匹配 - 收集新收貨人
     if (!seenNewTaxNumbers.has(taxNumber)) {
       seenNewTaxNumbers.add(taxNumber);
       newRecipients.push({
+        [RecipientInfoColumnKeys.ManifestNumber]:
+          row[ExcelColumnKeys.ShippingOrderNumber] || '',
         [RecipientInfoColumnKeys.TaxNumber]: taxNumber,
         [RecipientInfoColumnKeys.EnglishName]:
           row[ExcelColumnKeys.RecipientEnglishName] || '',

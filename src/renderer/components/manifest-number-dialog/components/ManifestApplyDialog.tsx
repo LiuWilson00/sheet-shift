@@ -3,6 +3,7 @@ import {
   ManifestNumberConfig,
   generatePreview,
   validateNumber,
+  formatDescription,
 } from '../../../types/manifest-number';
 import ipcApi from '../../../api/ipc-api';
 
@@ -13,6 +14,7 @@ interface ManifestApplyDialogProps {
     numbers: string[],
     endNumber: string,
     transactionCode?: string,
+    endGroupIndex?: number,
   ) => void;
   configs: ManifestNumberConfig[];
   rowCount: number;
@@ -39,7 +41,9 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
   const [transactionCode, setTransactionCode] = useState('');
   /** 自訂起始編號（空字串表示使用設定的當前編號） */
   const [customStartNumber, setCustomStartNumber] = useState('');
-  /** 跳過數字部分尾數為 0 的編號（預設開啟） */
+  /** 自訂起始群組索引 */
+  const [customStartGroupIndex, setCustomStartGroupIndex] = useState<number>(0);
+  /** 跳過數字部分為 0 的編號（預設開啟） */
   const [skipZeroNumbers, setSkipZeroNumbers] = useState(true);
   /** 載入狀態 */
   const [isGenerating, setIsGenerating] = useState(false);
@@ -50,31 +54,44 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     return configs.find((c) => c.settingName === selectedConfigName);
   }, [configs, selectedConfigName]);
 
-  const preview = useMemo(() => {
-    if (!selectedConfig) return null;
-    return generatePreview(selectedConfig.format.segments);
+  // 取得當前群組的 preview
+  const currentGroupIndex = useMemo(() => {
+    if (!selectedConfig) return 0;
+    return selectedConfig.currentProgress?.groupIndex ?? 0;
   }, [selectedConfig]);
 
-  // 自訂起始編號格式驗證
+  const currentGroup = useMemo(() => {
+    if (!selectedConfig) return null;
+    const idx = currentGroupIndex;
+    if (idx >= 0 && idx < selectedConfig.formatGroups.length) {
+      return selectedConfig.formatGroups[idx];
+    }
+    return selectedConfig.formatGroups[0] || null;
+  }, [selectedConfig, currentGroupIndex]);
+
+  const preview = useMemo(() => {
+    if (!currentGroup) return null;
+    return generatePreview(currentGroup.format.segments);
+  }, [currentGroup]);
+
+  // 自訂起始編號格式驗證（根據選定的起始群組）
   const customStartError = useMemo(() => {
     if (!customStartNumber || !selectedConfig) return '';
     const upper = customStartNumber.toUpperCase();
-    if (!validateNumber(upper, selectedConfig.format)) {
-      const desc = selectedConfig.format.segments
-        .map((seg) => {
-          const t = seg.type === 'alpha' ? '英文' : '數字';
-          return `${t}${seg.length}位`;
-        })
-        .join(' + ');
+    const group = selectedConfig.formatGroups[customStartGroupIndex];
+    if (!group) return '群組不存在';
+    if (!validateNumber(upper, group.format)) {
+      const desc = formatDescription(group.format);
       return `格式不符，預期格式：${desc}`;
     }
     return '';
-  }, [customStartNumber, selectedConfig]);
+  }, [customStartNumber, selectedConfig, customStartGroupIndex]);
 
   // 當設定變更時重置錯誤與自訂起始編號
   useEffect(() => {
     setError('');
     setCustomStartNumber('');
+    setCustomStartGroupIndex(0);
   }, [selectedConfigName]);
 
   // 當 configs 變更且目前選擇的不在列表中時，選擇第一個
@@ -97,30 +114,41 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     const useCustomStart = customStartNumber.trim() !== '';
 
     try {
-      // 決定起始編號：自訂 > 設定的當前編號
+      // 決定起始編號
       const startFrom = useCustomStart
         ? customStartNumber.toUpperCase()
-        : selectedConfig.currentNumber || undefined;
+        : selectedConfig.currentProgress?.number || undefined;
+
+      const startGroupIndex = useCustomStart
+        ? customStartGroupIndex
+        : selectedConfig.currentProgress?.groupIndex;
 
       // 呼叫 API 產生艙單編號
       const result = await ipcApi.manifestNumber.generate({
         configName: selectedConfig.settingName,
         count,
         startFrom,
+        startGroupIndex,
         transactionCode: transactionCode || undefined,
         skipZeroNumbers,
       });
 
-      // 僅在非自訂起始時更新 Google Sheets 上的當前編號
+      // 僅在非自訂起始時更新 Google Sheets 上的當前進度
       if (!useCustomStart) {
         await ipcApi.manifestNumber.updateCurrentNumber({
           settingName: selectedConfig.settingName,
+          groupIndex: result.endGroupIndex,
           currentNumber: result.endAt,
         });
       }
 
-      // 傳遞編號和交易代碼
-      onApply(result.numbers, result.endAt, transactionCode || undefined);
+      // 傳遞編號、交易代碼和結束群組索引
+      onApply(
+        result.numbers,
+        result.endAt,
+        transactionCode || undefined,
+        result.endGroupIndex,
+      );
       onClose();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : '產生編號失敗';
@@ -133,6 +161,7 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
     count,
     transactionCode,
     customStartNumber,
+    customStartGroupIndex,
     customStartError,
     skipZeroNumbers,
     onApply,
@@ -200,42 +229,53 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                 </select>
               </div>
 
-              {selectedConfig && preview && (
+              {selectedConfig && (
                 <>
                   {/* 設定資訊 */}
                   <div className="apply-dialog__info">
                     <div className="apply-dialog__info-row">
                       <span className="apply-dialog__info-label">
+                        格式群組數:
+                      </span>
+                      <span className="apply-dialog__info-value">
+                        {selectedConfig.formatGroups.length} 組
+                      </span>
+                    </div>
+                    <div className="apply-dialog__info-row">
+                      <span className="apply-dialog__info-label">
+                        當前使用:
+                      </span>
+                      <span className="apply-dialog__info-value">
+                        群組 {currentGroupIndex + 1}
+                        {currentGroup && (
+                          <> ({formatDescription(currentGroup.format)})</>
+                        )}
+                      </span>
+                    </div>
+                    <div className="apply-dialog__info-row">
+                      <span className="apply-dialog__info-label">
                         起始編號:
                       </span>
                       <span className="apply-dialog__info-value">
-                        {selectedConfig.currentNumber || preview.first}
+                        {selectedConfig.currentProgress?.number ||
+                          (preview ? preview.first : '-')}
                       </span>
                     </div>
-                    <div className="apply-dialog__info-row">
-                      <span className="apply-dialog__info-label">
-                        格式範例:
-                      </span>
-                      <span className="apply-dialog__info-value">
-                        {preview.first} ~ {preview.last}
-                      </span>
-                    </div>
-                    <div className="apply-dialog__info-row">
-                      <span className="apply-dialog__info-label">
-                        黑名單區間:
-                      </span>
-                      <span className="apply-dialog__info-value">
-                        {selectedConfig.blacklist.ranges.length} 個
-                      </span>
-                    </div>
-                    <div className="apply-dialog__info-row">
-                      <span className="apply-dialog__info-label">
-                        黑名單單號:
-                      </span>
-                      <span className="apply-dialog__info-value">
-                        {selectedConfig.blacklist.singles.length} 個
-                      </span>
-                    </div>
+                    {selectedConfig.formatGroups.length > 1 && (
+                      <div className="apply-dialog__info-row">
+                        <span className="apply-dialog__info-label">
+                          格式範圍:
+                        </span>
+                        <span className="apply-dialog__info-value">
+                          {selectedConfig.formatGroups
+                            .map(
+                              (g, i) =>
+                                `群組${i + 1}: ${formatDescription(g.format)}`,
+                            )
+                            .join(' / ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* 自訂起始編號 */}
@@ -246,6 +286,27 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                         （選填，留空則使用設定的當前編號）
                       </span>
                     </label>
+                    {selectedConfig.formatGroups.length > 1 && (
+                      <div className="apply-dialog__group-select">
+                        <label className="manifest-dialog__label">
+                          起始群組
+                        </label>
+                        <select
+                          className="apply-dialog__select"
+                          value={customStartGroupIndex}
+                          onChange={(e) =>
+                            setCustomStartGroupIndex(Number(e.target.value))
+                          }
+                        >
+                          {selectedConfig.formatGroups.map((g, i) => (
+                            // eslint-disable-next-line react/no-array-index-key
+                            <option key={i} value={i}>
+                              群組 {i + 1} ({formatDescription(g.format)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <input
                       type="text"
                       className={[
@@ -258,7 +319,7 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                       onChange={(e) =>
                         setCustomStartNumber(e.target.value.toUpperCase())
                       }
-                      placeholder={`例如：${preview.first}`}
+                      placeholder={preview ? `例如：${preview.first}` : ''}
                       maxLength={20}
                     />
                     {customStartError && (
@@ -301,7 +362,7 @@ const ManifestApplyDialog: React.FC<ManifestApplyDialogProps> = ({
                     />
                   </div>
 
-                  {/* 忽略尾數 0 編號 */}
+                  {/* 忽略數值 0 編號 */}
                   <div className="apply-dialog__skip-zero">
                     <label className="apply-dialog__checkbox-label">
                       <input

@@ -33,6 +33,7 @@ import type {
  */
 function toRecipientInfo(sheet: RecipientInfoSheet): RecipientInfo {
   return {
+    艙提單號: sheet[RecipientInfoColumnKeys.ManifestNumber] || '',
     收貨人統一編號: sheet[RecipientInfoColumnKeys.TaxNumber] || '',
     收貨人英文名稱: sheet[RecipientInfoColumnKeys.EnglishName] || '',
     收貨人電話: sheet[RecipientInfoColumnKeys.Phone] || '',
@@ -45,6 +46,7 @@ function toRecipientInfo(sheet: RecipientInfoSheet): RecipientInfo {
  */
 function toSheetFormat(input: AddRecipientInfoInput): RecipientInfoSheet {
   return {
+    [RecipientInfoColumnKeys.ManifestNumber]: input.manifestNumber || '',
     [RecipientInfoColumnKeys.TaxNumber]: input.taxNumber,
     [RecipientInfoColumnKeys.EnglishName]: input.englishName || '',
     [RecipientInfoColumnKeys.Phone]: input.phone || '',

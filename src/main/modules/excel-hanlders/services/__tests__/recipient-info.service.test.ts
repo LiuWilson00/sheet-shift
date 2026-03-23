@@ -71,12 +71,14 @@ describe('recipient-info.service', () => {
   describe('processRecipientInfo', () => {
     const mockRecipientList: RecipientInfoSheet[] = [
       {
+        [RecipientInfoColumnKeys.ManifestNumber]: 'MN001',
         [RecipientInfoColumnKeys.TaxNumber]: 'TAX001',
         [RecipientInfoColumnKeys.EnglishName]: 'JOHN DOE',
         [RecipientInfoColumnKeys.Phone]: '0912345678',
         [RecipientInfoColumnKeys.CustomsNote]: '',
       },
       {
+        [RecipientInfoColumnKeys.ManifestNumber]: 'MN002',
         [RecipientInfoColumnKeys.TaxNumber]: 'TAX002',
         [RecipientInfoColumnKeys.EnglishName]: 'JANE SMITH',
         [RecipientInfoColumnKeys.Phone]: '0987654321',
@@ -84,18 +86,23 @@ describe('recipient-info.service', () => {
       },
     ];
 
-    it('匹配到收貨人時應帶入英文名稱和電話', () => {
+    it('匹配到收貨人時不應覆蓋原始英文名稱和電話', () => {
       const data: SheetData[] = [
-        createRow({ [ExcelColumnKeys.RecipientTaxNumber]: 'TAX001' }),
+        createRow({
+          [ExcelColumnKeys.RecipientTaxNumber]: 'TAX001',
+          [ExcelColumnKeys.RecipientEnglishName]: 'ORIGINAL NAME',
+          [ExcelColumnKeys.RecipientPhone]: '0900000000',
+        }),
       ];
 
       const result = processRecipientInfo(data, mockRecipientList);
 
+      // 應保留原始資料，不被雲端覆蓋
       expect(result.data[0][ExcelColumnKeys.RecipientEnglishName]).toBe(
-        'JOHN DOE',
+        'ORIGINAL NAME',
       );
       expect(result.data[0][ExcelColumnKeys.RecipientPhone]).toBe(
-        '0912345678',
+        '0900000000',
       );
     });
 
@@ -171,31 +178,43 @@ describe('recipient-info.service', () => {
 
     it('混合場景：有匹配、有新收貨人、有海關註記', () => {
       const data: SheetData[] = [
-        createRow({ [ExcelColumnKeys.RecipientTaxNumber]: 'TAX001' }), // 匹配，無海關註記
-        createRow({ [ExcelColumnKeys.RecipientTaxNumber]: 'TAX002' }), // 匹配，有海關註記
-        createRow({ [ExcelColumnKeys.RecipientTaxNumber]: 'TAX_NEW' }), // 新收貨人
+        createRow({
+          [ExcelColumnKeys.RecipientTaxNumber]: 'TAX001',
+          [ExcelColumnKeys.RecipientEnglishName]: 'ORIG_NAME_1',
+        }), // 匹配，無海關註記
+        createRow({
+          [ExcelColumnKeys.RecipientTaxNumber]: 'TAX002',
+          [ExcelColumnKeys.RecipientEnglishName]: 'ORIG_NAME_2',
+        }), // 匹配，有海關註記
+        createRow({
+          [ExcelColumnKeys.RecipientTaxNumber]: 'TAX_NEW',
+          [ExcelColumnKeys.ShippingOrderNumber]: 'SHIP001',
+        }), // 新收貨人
         createRow({ [ExcelColumnKeys.RecipientTaxNumber]: '' }), // 無統一編號
       ];
 
       const result = processRecipientInfo(data, mockRecipientList);
 
-      // 驗證帶入
+      // 驗證不覆蓋原始資料
       expect(result.data[0][ExcelColumnKeys.RecipientEnglishName]).toBe(
-        'JOHN DOE',
+        'ORIG_NAME_1',
       );
       expect(result.data[1][ExcelColumnKeys.RecipientEnglishName]).toBe(
-        'JANE SMITH',
+        'ORIG_NAME_2',
       );
 
       // 驗證紅色標記（只有 index 1 有海關註記）
       expect(result.rowStyles.size).toBe(1);
       expect(result.rowStyles.has(1)).toBe(true);
 
-      // 驗證新收貨人
+      // 驗證新收貨人（含艙提單號）
       expect(result.newRecipients).toHaveLength(1);
       expect(result.newRecipients[0][RecipientInfoColumnKeys.TaxNumber]).toBe(
         'TAX_NEW',
       );
+      expect(
+        result.newRecipients[0][RecipientInfoColumnKeys.ManifestNumber],
+      ).toBe('SHIP001');
     });
 
     it('空資料應返回空結果', () => {

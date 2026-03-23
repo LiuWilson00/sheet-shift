@@ -294,10 +294,48 @@ describe('艙單編號產生器', () => {
         singles: [],
       };
       const result = getNextValidNumber('AA0000', format, blacklist);
-      expect(result).toEqual({
-        number: 'AA0006',
-        skipped: ['AA0001', 'AA0002', 'AA0003', 'AA0004', 'AA0005'],
-      });
+      // 範圍直跳：直接跳到 AA0006，不逐一遞增
+      expect(result).not.toBeNull();
+      expect(result!.number).toBe('AA0006');
+    });
+
+    it('跳過大範圍黑名單（超過 10,000 筆）', () => {
+      // 模擬用戶場景：格式 [alpha:2, numeric:2]，黑名單 AA00~QZ99（44,200 筆）
+      const largeFormat: ManifestNumberFormat = {
+        segments: [
+          { type: 'alpha', length: 2 },
+          { type: 'numeric', length: 2 },
+        ],
+      };
+      const blacklist: BlacklistRule = {
+        ranges: [{ start: 'AA00', end: 'QZ99' }],
+        singles: [],
+      };
+      // 從 AA00 之前開始（用 generateFirstNumber 的前一個不存在，直接用 AA00）
+      const result = getNextValidNumber('AA00', largeFormat, blacklist);
+      expect(result).not.toBeNull();
+      // QZ99 的下一個是 RA00（Q→R 進位，Z→A 進位，99→00 進位 → RA00）
+      expect(result!.number).toBe('RA00');
+    });
+
+    it('跳過多個連續黑名單範圍', () => {
+      const smallFormat: ManifestNumberFormat = {
+        segments: [
+          { type: 'alpha', length: 1 },
+          { type: 'numeric', length: 2 },
+        ],
+      };
+      const blacklist: BlacklistRule = {
+        ranges: [
+          { start: 'A00', end: 'A50' },
+          { start: 'A51', end: 'A99' },
+          { start: 'B00', end: 'B30' },
+        ],
+        singles: [],
+      };
+      const result = getNextValidNumber('A00', smallFormat, blacklist);
+      expect(result).not.toBeNull();
+      expect(result!.number).toBe('B31');
     });
 
     it('到達最大值時返回 null', () => {

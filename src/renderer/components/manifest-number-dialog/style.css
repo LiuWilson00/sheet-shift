@@ -533,6 +533,150 @@
 }
 
 /* ============================================
+   Format Group 樣式（多組格式）
+   ============================================ */
+
+.manifest-dialog--wide {
+  max-width: 640px;
+}
+
+.format-group {
+  border: 1px solid var(--border-color, #e5e5e5);
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: var(--spacing-md, 14px);
+  overflow: hidden;
+}
+
+.format-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm, 10px) var(--spacing-md, 14px);
+  background: var(--bg-secondary, #f8f8f8);
+  border-bottom: 1px solid var(--border-color, #e5e5e5);
+}
+
+.format-group__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--text-primary, #1a1a1a);
+  box-shadow: none;
+}
+
+.format-group__toggle:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.format-group__arrow {
+  font-size: 10px;
+  color: var(--text-secondary, #666);
+  width: 14px;
+}
+
+.format-group__title {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.format-group__summary {
+  color: var(--text-secondary, #666);
+  font-size: var(--font-size-xs, 12px);
+}
+
+.format-group__remove {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 14px;
+  color: var(--text-secondary, #999);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s);
+  box-shadow: none;
+  padding: 0;
+}
+
+.format-group__remove:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: var(--color-danger, #dc3545);
+  color: var(--color-danger, #dc3545);
+  transform: none;
+  box-shadow: none;
+}
+
+.format-group__remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.format-group__body {
+  padding: var(--spacing-md, 14px);
+}
+
+.format-group__add-btn {
+  width: 100%;
+  padding: var(--spacing-sm, 10px);
+  margin-bottom: var(--spacing-lg, 20px);
+  background: transparent;
+  border: 2px dashed var(--border-color, #d0d0d0);
+  border-radius: var(--radius-md, 8px);
+  color: var(--color-primary, #7a2c9e);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s);
+  box-shadow: none;
+}
+
+.format-group__add-btn:hover {
+  background: rgba(122, 44, 158, 0.05);
+  border-color: var(--color-primary, #7a2c9e);
+  transform: none;
+  box-shadow: none;
+}
+
+/* 目前進度區塊 */
+.format-group__progress {
+  background: var(--bg-secondary, #f8f8f8);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-md, 14px);
+}
+
+.format-group__progress-row {
+  margin-bottom: var(--spacing-sm, 10px);
+}
+
+.format-group__progress-row:last-child {
+  margin-bottom: 0;
+}
+
+.format-group__progress-row select {
+  width: 100%;
+  padding: var(--spacing-sm, 10px) var(--spacing-md, 14px);
+  font-size: var(--font-size-md, 15px);
+  border: 1px solid var(--border-color, #d0d0d0);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-primary, #ffffff);
+  cursor: pointer;
+}
+
+.format-group__progress-row select:focus {
+  outline: none;
+  border-color: var(--color-primary, #7a2c9e);
+  box-shadow: 0 0 0 3px rgba(122, 44, 158, 0.15);
+}
+
+/* ============================================
    Apply Dialog 樣式
    ============================================ */
 
@@ -648,6 +792,19 @@
   color: var(--color-danger, #dc3545);
 }
 
+/* 起始群組選擇 */
+.apply-dialog__group-select {
+  margin-bottom: var(--spacing-sm, 10px);
+}
+
+.apply-dialog__group-select .manifest-dialog__label {
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+.apply-dialog__group-select select {
+  margin-top: var(--spacing-xs, 4px);
+}
+
 /* 交易代碼輸入區塊 */
 .apply-dialog__transaction-code {
   margin-bottom: var(--spacing-lg, 20px);
@@ -734,4 +891,113 @@
   border-radius: var(--radius-sm, 6px);
   color: var(--color-danger, #dc3545);
   font-size: var(--font-size-sm, 14px);
+}
+
+/* ============================================
+   List Dialog 樣式（設定檔列表管理）
+   ============================================ */
+
+.manifest-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm, 10px);
+}
+
+.manifest-list__item {
+  border: 1px solid var(--border-color, #e5e5e5);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-md, 14px);
+  transition: border-color var(--transition-fast, 0.15s);
+}
+
+.manifest-list__item:hover {
+  border-color: var(--color-primary, #7a2c9e);
+}
+
+.manifest-list__item-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-xs, 6px);
+}
+
+.manifest-list__item-name {
+  font-size: var(--font-size-md, 15px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.manifest-list__item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--spacing-sm, 10px);
+}
+
+.manifest-list__item-detail {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-secondary, #666);
+}
+
+.manifest-list__item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-xs, 6px);
+}
+
+.manifest-list__action-btn {
+  padding: var(--spacing-xs, 6px) var(--spacing-md, 14px);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s);
+  box-shadow: none;
+}
+
+.manifest-list__action-btn--edit {
+  background: transparent;
+  border: 1px solid var(--color-primary, #7a2c9e);
+  color: var(--color-primary, #7a2c9e);
+}
+
+.manifest-list__action-btn--edit:hover {
+  background: rgba(122, 44, 158, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+
+.manifest-list__action-btn--delete {
+  background: transparent;
+  border: 1px solid var(--color-danger, #dc3545);
+  color: var(--color-danger, #dc3545);
+}
+
+.manifest-list__action-btn--delete:hover {
+  background: rgba(220, 53, 69, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+
+/* 空狀態 */
+.manifest-list__empty {
+  text-align: center;
+  padding: var(--spacing-xl, 30px) 0;
+}
+
+.manifest-list__empty-icon {
+  font-size: 40px;
+  margin: 0 0 var(--spacing-sm, 10px);
+}
+
+.manifest-list__empty-text {
+  font-size: var(--font-size-md, 15px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 var(--spacing-xs, 6px);
+}
+
+.manifest-list__empty-hint {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary, #666);
+  margin: 0;
 }

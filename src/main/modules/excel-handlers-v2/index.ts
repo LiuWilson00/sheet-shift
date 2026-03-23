@@ -361,10 +361,10 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
   });
 
   // ==========================================
-  // 匯出 Shopee 格式工作表
+  // 匯出蝦皮2轉格式工作表（台北港邏輯，無 40kg 規則）
   // ==========================================
   createHandler(ipcContracts.excel.exportShopee, async (input) => {
-    logger.debug('[Excel V2] Exporting Shopee sheet', {
+    logger.debug('[Excel V2] Exporting Shopee (蝦皮2轉) sheet', {
       settingName: input.settingName,
     });
 
@@ -377,19 +377,32 @@ export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
         return { path: '', data: [], isError: true, message: '未選擇檔案' };
       }
 
-      const completedData = await processExcelDataShopee(currentPath);
+      // 使用台北港邏輯但關閉 40kg/2000 規則
+      // 蝦皮2轉：使用台北港邏輯，但關閉 40kg/2000 規則且不替換地址
+      const { data: completedData, rowStyles } =
+        await processExcelDataTaipeiBay(currentPath, {
+          disableWeightRule: true,
+          disableRandomAddress: true,
+        });
       const newFilePath = await saveProcessedData(
         completedData,
         currentPath,
-        true,
-        { templateOptions: { transactionCode: input.transactionCode } },
+        false,
+        {
+          templateOptions: {
+            rowStyles,
+            transactionCode: input.transactionCode,
+          },
+        },
       );
 
-      logger.info('[Excel V2] Shopee sheet exported', { newPath: newFilePath });
+      logger.info('[Excel V2] Shopee (蝦皮2轉) sheet exported', {
+        newPath: newFilePath,
+      });
       return { path: newFilePath, data: completedData, isError: false };
     } catch (error) {
       const err = error as Error;
-      logger.error('[Excel V2] Shopee sheet export failed', {
+      logger.error('[Excel V2] Shopee (蝦皮2轉) sheet export failed', {
         error: err.message,
       });
       return { path: '', data: [], isError: true, message: err.message };

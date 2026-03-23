@@ -36,6 +36,8 @@ export interface UsersSheet {
 
 /** 收貨人資訊欄位名稱 */
 export enum RecipientInfoColumnKeys {
+  /** 艙提單號（來自原始 Excel A 欄） */
+  ManifestNumber = '艙提單號',
   /** 收貨人統一編號 */
   TaxNumber = '收貨人統一編號',
   /** 收貨人英文名稱 */
@@ -48,6 +50,7 @@ export enum RecipientInfoColumnKeys {
 
 /** 收貨人資訊 */
 export interface RecipientInfoSheet {
+  [RecipientInfoColumnKeys.ManifestNumber]: string;
   [RecipientInfoColumnKeys.TaxNumber]: string;
   [RecipientInfoColumnKeys.EnglishName]: string;
   [RecipientInfoColumnKeys.Phone]: string;
