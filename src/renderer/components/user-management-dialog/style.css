@@ -1,0 +1,218 @@
+/* 使用者管理對話框 */
+
+.user-mgmt-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+}
+
+.user-mgmt-dialog {
+  background: #fff;
+  color: #222;
+  border-radius: 12px;
+  width: min(720px, 92vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.user-mgmt-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.user-mgmt-dialog__header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.user-mgmt-dialog__close {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #888;
+}
+
+.user-mgmt-dialog__close:hover {
+  color: #222;
+}
+
+/* 工具列 */
+.user-mgmt-toolbar {
+  padding: 12px 20px;
+}
+
+.user-mgmt-toolbar__add {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.user-mgmt-toolbar__add:hover {
+  background: #1d4ed8;
+}
+
+/* 表格 */
+.user-mgmt-table-wrap {
+  overflow: auto;
+  padding: 0 20px 20px;
+}
+
+.user-mgmt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.user-mgmt-table th,
+.user-mgmt-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.user-mgmt-table th {
+  color: #666;
+  font-weight: 600;
+}
+
+.user-mgmt-table__ops {
+  white-space: nowrap;
+}
+
+.user-mgmt-table__ops button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.user-mgmt-table__empty {
+  text-align: center;
+  color: #999;
+  padding: 24px 0;
+}
+
+/* 表單 */
+.user-mgmt-form {
+  padding: 16px 20px 20px;
+  overflow: auto;
+}
+
+.user-mgmt-form__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.user-mgmt-form__row > span {
+  width: 64px;
+  flex-shrink: 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.user-mgmt-form__row input[type='text'],
+.user-mgmt-form__row input:not([type]) {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.user-mgmt-form__row input:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.user-mgmt-form__radios {
+  display: flex;
+  gap: 20px;
+}
+
+.user-mgmt-form__radios label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.user-mgmt-form__perms {
+  margin: 8px 0 4px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.user-mgmt-form__perms-label {
+  display: block;
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.user-mgmt-form__hint {
+  margin: 0;
+  color: #888;
+  font-size: 13px;
+}
+
+.user-mgmt-form__perm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+
+.user-mgmt-form__perm-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.user-mgmt-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.user-mgmt-form__actions button {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.user-mgmt-form__save {
+  background: #2563eb !important;
+  color: #fff;
+  border-color: #2563eb !important;
+}
+
+.user-mgmt-form__save:hover {
+  background: #1d4ed8 !important;
+}

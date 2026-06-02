@@ -9,14 +9,16 @@
  * - 新：'auth-v2/login', 'auth-v2/logout'
  */
 
-import { createHandler, IpcError } from '../../utils/typed-ipc-handler';
+import { createHandler } from '../../utils/typed-ipc-handler';
 import { ipcContracts } from '../../../shared/ipc-contracts';
 import { usersSheet } from '../../utils/google-sheets.tool';
 import { logger } from '../../utils/logger.tool';
+import { toAppUser } from '../../../shared/permission.util';
 
 /**
  * 設置 Auth V2 相關的所有 IPC Handlers
  */
+// eslint-disable-next-line import/prefer-default-export
 export function setupAuthHandlersV2() {
   logger.info('[Auth V2] Setting up handlers...');
 
@@ -28,20 +30,28 @@ export function setupAuthHandlersV2() {
 
     const user = usersSheet
       .get()
-      .find((user) => user.account === input.account);
+      .find((u) => u.account === input.account);
 
     if (!user) {
-      logger.warn('[Auth V2] Login failed - user not found', { account: input.account });
+      logger.warn('[Auth V2] Login failed - user not found', {
+        account: input.account,
+      });
       return false;
     }
 
     if (user.password !== input.password) {
-      logger.warn('[Auth V2] Login failed - incorrect password', { account: input.account });
+      logger.warn('[Auth V2] Login failed - incorrect password', {
+        account: input.account,
+      });
       return false;
     }
 
-    logger.info('[Auth V2] Login successful', { account: input.account, name: user.name });
-    return user;
+    logger.info('[Auth V2] Login successful', {
+      account: input.account,
+      name: user.name,
+    });
+    // 回傳已解析的 AppUser（含 role/permissions，不含密碼）
+    return toAppUser(user);
   });
 
   // ==========================================

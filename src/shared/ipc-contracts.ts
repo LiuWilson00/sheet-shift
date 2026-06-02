@@ -14,7 +14,7 @@ import type {
   GoogleSheetConnectionSetting,
   GoogleSheetConnectionResult,
 } from '../main/utils/google-sheets.tool';
-import type { UsersSheet } from '../main/utils/google-sheets.tool/index.interface';
+import type { AppUser, UserRecord } from './permission.types';
 import type {
   SheetData,
   ProductNameMapping,
@@ -136,10 +136,12 @@ export const ipcContracts = {
   auth: {
     /**
      * 登入
+     *
+     * 成功回傳已解析的 AppUser（含 role 與 permissions，不含密碼）
      */
     login: {
       channel: 'auth-v2/login',
-    } as IpcContract<{ account: string; password: string }, UsersSheet | false>,
+    } as IpcContract<{ account: string; password: string }, AppUser | false>,
 
     /**
      * 登出
@@ -147,6 +149,34 @@ export const ipcContracts = {
     logout: {
       channel: 'auth-v2/logout',
     } as IpcContract<void, boolean>,
+  },
+
+  /**
+   * 使用者管理相關 API（Admin 專用）
+   *
+   * 所有操作皆於後端驗證 operatorAccount 的角色為 admin。
+   */
+  users: {
+    /**
+     * 取得所有使用者（含密碼，供 admin 管理）
+     */
+    list: {
+      channel: 'users-v2/list',
+    } as IpcContract<{ operatorAccount: string }, UserRecord[]>,
+
+    /**
+     * 新增或更新使用者（以 account 為主鍵判斷）
+     */
+    save: {
+      channel: 'users-v2/save',
+    } as IpcContract<{ operatorAccount: string; user: UserRecord }, boolean>,
+
+    /**
+     * 刪除使用者
+     */
+    delete: {
+      channel: 'users-v2/delete',
+    } as IpcContract<{ operatorAccount: string; account: string }, boolean>,
   },
 
   /**

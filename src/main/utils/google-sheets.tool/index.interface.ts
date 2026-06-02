@@ -32,6 +32,10 @@ export interface UsersSheet {
   name: string;
   account: string;
   password: string;
+  /** 角色：'admin' 或空字串（空字串視為一般 user） */
+  role?: string;
+  /** 逗號分隔的可見匯出按鈕 key；空字串/undefined 視為全部可見 */
+  permissions?: string;
 }
 
 /** 收貨人資訊欄位名稱 */

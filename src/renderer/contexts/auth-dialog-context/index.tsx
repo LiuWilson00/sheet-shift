@@ -10,6 +10,7 @@ import Input from '../../components/input';
 import { useLoading } from '../loading.context';
 import { useDialog } from '../dialog.context';
 import ipcApi from '../../api/ipc-api';
+import type { AppUser } from '../../../shared/permission.types';
 
 interface AuthDialogContextType {
   isAuth: boolean;
@@ -18,6 +19,10 @@ interface AuthDialogContextType {
   hideLogin: () => void;
   credentials: { account: string; password: string };
   userName: string;
+  /** 目前登入的使用者（含 role 與 permissions），未登入為 null */
+  authUser: AppUser | null;
+  /** 是否為管理員 */
+  isAdmin: boolean;
   updateCredentials: (newCredentials: {
     account: string;
     password: string;
@@ -43,6 +48,7 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
   const [credentials, setCredentials] = useState(defaultCredentials);
   const [userName, setUserName] = useState<string>('');
   const [isAuth, setIsAuth] = useState<boolean>(false);
+  const [authUser, setAuthUser] = useState<AppUser | null>(null);
 
   const showLogin = () => setIsLoginVisible(true);
   const hideLogin = () => setIsLoginVisible(false);
@@ -60,14 +66,16 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
       const loginResult = await ipcApi.auth.login(credentials);
 
       if (loginResult) {
-        // Handle successful login here
+        // 登入成功：loginResult 為已解析的 AppUser（不含密碼）
         window.localStorage.setItem('user', JSON.stringify(loginResult));
+        setAuthUser(loginResult);
         setUserName(loginResult.name);
         setIsAuth(true);
         hideLogin();
       } else {
         // Handle login error here
         setIsAuth(false);
+        setAuthUser(null);
         showDialog({
           content: '登錄失敗，請檢查您的賬號和密碼是否正確。',
           onConfirm: hideDialog,
@@ -75,6 +83,7 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
       }
     } catch (error) {
       setIsAuth(false);
+      setAuthUser(null);
       showDialog({
         content: '發生錯誤，請稍後再試。',
         onConfirm: hideDialog,
@@ -88,19 +97,26 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
 
     if (!_user) return;
 
-    const user = JSON.parse(_user);
-    const loginResult = await ipcApi.auth.login({
-      account: user.account,
-      password: user.password,
-    });
-    if (!loginResult) return;
+    try {
+      // localStorage 存的是 AppUser（含 role/permissions，不含密碼）
+      // 直接還原登入狀態，不再以密碼重新登入
+      const user = JSON.parse(_user) as Partial<AppUser>;
+      if (!user || !user.account || !user.role) return;
 
-    setCredentials({
-      account: loginResult.account,
-      password: loginResult.password,
-    });
-    setUserName(loginResult.name);
-    setIsAuth(true);
+      const restored: AppUser = {
+        name: user.name ?? '',
+        account: user.account,
+        role: user.role,
+        permissions: user.permissions ?? null,
+      };
+      setAuthUser(restored);
+      setCredentials({ account: restored.account, password: '' });
+      setUserName(restored.name);
+      setIsAuth(true);
+    } catch {
+      // 舊格式或損毀資料：清除並要求重新登入
+      window.localStorage.removeItem('user');
+    }
   };
 
   return (
@@ -111,6 +127,8 @@ export const AuthDialogProvider: React.FC<PropsWithChildren> = ({
         showLogin,
         hideLogin,
         userName,
+        authUser,
+        isAdmin: authUser?.role === 'admin',
         credentials,
         updateCredentials,
         initAuth,

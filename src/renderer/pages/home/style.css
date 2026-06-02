@@ -342,6 +342,13 @@ body {
   justify-items: center;
 }
 
+.export-section__empty {
+  text-align: center;
+  opacity: 0.75;
+  font-size: 14px;
+  margin: 24px 0;
+}
+
 /* 分艙編號卡片 + 設定按鈕 wrapper */
 .export-card-wrapper {
   position: relative;

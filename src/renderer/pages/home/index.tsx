@@ -16,6 +16,8 @@ import {
 } from '../../components/manifest-number-dialog';
 import { ManifestNumberConfig } from '../../types/manifest-number';
 import { logger } from '../../utils/logger.tool';
+import { canSeeExport } from '../../../shared/permission.util';
+import type { ExportPermissionKey } from '../../../shared/permission.types';
 
 // 建立 Home 頁面專用的 logger
 const homeLogger = logger.createChildLogger('Home');
@@ -29,7 +31,7 @@ function Home() {
   const [showDataDebugging, setShowDataDebugging] = useState<boolean>(false);
   const [wrongData, setWrongData] = useState<SheetData[]>([]);
   const [selectFilePath, setSelectFilePath] = useState<string>();
-  const { isAuth, userName, showLogin } = useAuthDialog();
+  const { isAuth, userName, showLogin, authUser } = useAuthDialog();
   const { settingName } = useSetting();
 
   // 艙單編號相關狀態
@@ -154,6 +156,83 @@ function Home() {
     },
     [handleExport],
   );
+
+  // 點擊「分艙編號」按鈕
+  const handleManifestClick = useCallback(() => {
+    if (manifestConfigs.length > 0) {
+      pendingExportRef.current = null;
+      openManifestApplyDialog();
+    } else {
+      showDialog({
+        content: '請先設定艙單編號',
+        onConfirm: () => {
+          hideDialog();
+          setShowManifestList(true);
+        },
+      });
+    }
+  }, [manifestConfigs.length, openManifestApplyDialog, showDialog, hideDialog]);
+
+  // 匯出按鈕設定（key 為單一事實來源，依登入者權限過濾）
+  const exportConfigs: {
+    key: ExportPermissionKey;
+    title: string;
+    description: string;
+    icon: string;
+    badge?: string;
+    badgeType?: 'primary' | 'danger' | 'warning' | 'success';
+    onClick: () => void;
+  }[] = [
+    {
+      key: 'exportTaipeiBay',
+      title: '台北港格式',
+      description: '標準輸出',
+      icon: '🏢',
+      onClick: () => handleExportClick(ipcApi.excel.exportTaipeiBay),
+    },
+    {
+      key: 'exportKaohsiungChaofeng',
+      title: '高雄超峰格式',
+      description: '蝦皮新版基礎',
+      icon: '🚚',
+      onClick: () => handleExportClick(ipcApi.excel.exportKaohsiungChaofeng),
+    },
+    {
+      key: 'exportShopee',
+      title: '蝦皮2轉',
+      description: 'Shopee',
+      icon: '🛒',
+      onClick: () => handleExportClick(ipcApi.excel.exportShopee),
+    },
+    {
+      key: 'exportShopeeNew',
+      title: '沛寶速派蝦皮格式',
+      description: 'ShopeeNew',
+      icon: '🛍️',
+      badge: 'NEW',
+      badgeType: 'success',
+      onClick: () => handleExportClick(ipcApi.excel.exportShopeeNew),
+    },
+    {
+      key: 'exportPegasus',
+      title: '天馬格式',
+      description: 'Pegasus',
+      icon: '🐴',
+      onClick: () => handleExportClick(ipcApi.excel.exportPegasus),
+    },
+    {
+      key: 'manifestNumber',
+      title: '分艙編號',
+      description: '僅帶入艙單號',
+      icon: '🔢',
+      onClick: handleManifestClick,
+    },
+  ];
+
+  // 依登入者權限過濾出可見的匯出按鈕
+  const visibleExports = authUser
+    ? exportConfigs.filter((config) => canSeeExport(authUser, config.key))
+    : [];
 
   // 艙單編號帶入完成的回調
   const handleManifestApply = useCallback(
@@ -491,71 +570,44 @@ function Home() {
       {hasFile && (
         <div className="export-section">
           <h2 className="export-section__title">選擇匯出格式</h2>
-          <div className="export-section__grid">
-            <ExportCard
-              title="台北港格式"
-              description="標準輸出"
-              icon="🏢"
-              onClick={() => handleExportClick(ipcApi.excel.exportTaipeiBay)}
-            />
-            <ExportCard
-              title="高雄超峰格式"
-              description="蝦皮新版基礎"
-              icon="🚚"
-              onClick={() =>
-                handleExportClick(ipcApi.excel.exportKaohsiungChaofeng)
-              }
-            />
-            <ExportCard
-              title="蝦皮2轉"
-              description="Shopee"
-              icon="🛒"
-              onClick={() => handleExportClick(ipcApi.excel.exportShopee)}
-            />
-            <ExportCard
-              title="沛寶速派蝦皮格式"
-              description="ShopeeNew"
-              icon="🛍️"
-              badge="NEW"
-              badgeType="success"
-              onClick={() => handleExportClick(ipcApi.excel.exportShopeeNew)}
-            />
-            <ExportCard
-              title="天馬格式"
-              description="Pegasus"
-              icon="🐴"
-              onClick={() => handleExportClick(ipcApi.excel.exportPegasus)}
-            />
-            <div className="export-card-wrapper">
-              <ExportCard
-                title="分艙編號"
-                description="僅帶入艙單號"
-                icon="🔢"
-                onClick={() => {
-                  if (manifestConfigs.length > 0) {
-                    pendingExportRef.current = null;
-                    openManifestApplyDialog();
-                  } else {
-                    showDialog({
-                      content: '請先設定艙單編號',
-                      onConfirm: () => {
-                        hideDialog();
-                        setShowManifestList(true);
-                      },
-                    });
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="export-card-wrapper__config-btn"
-                onClick={() => setShowManifestList(true)}
-                title="艙單編號設定"
-              >
-                ⚙️
-              </button>
+          {visibleExports.length === 0 ? (
+            <p className="export-section__empty">
+              您目前沒有可用的匯出格式，請聯絡管理員
+            </p>
+          ) : (
+            <div className="export-section__grid">
+              {visibleExports.map((config) =>
+                config.key === 'manifestNumber' ? (
+                  <div className="export-card-wrapper" key={config.key}>
+                    <ExportCard
+                      title={config.title}
+                      description={config.description}
+                      icon={config.icon}
+                      onClick={config.onClick}
+                    />
+                    <button
+                      type="button"
+                      className="export-card-wrapper__config-btn"
+                      onClick={() => setShowManifestList(true)}
+                      title="艙單編號設定"
+                    >
+                      ⚙️
+                    </button>
+                  </div>
+                ) : (
+                  <ExportCard
+                    key={config.key}
+                    title={config.title}
+                    description={config.description}
+                    icon={config.icon}
+                    badge={config.badge}
+                    badgeType={config.badgeType}
+                    onClick={config.onClick}
+                  />
+                ),
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
 

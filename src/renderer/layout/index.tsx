@@ -7,14 +7,16 @@ import { useSetting } from '../contexts/settings-dialog-context/indext';
 import './style.css';
 import { useAuthDialog } from '../contexts/auth-dialog-context';
 import ipcApi from '../api/ipc-api';
+import UserManagementDialog from '../components/user-management-dialog';
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const { isLoading, hideLoading, showLoading } = useLoading();
   const [systemSettingNames, setSystemSettingNames] = useState<string[]>([]);
   const sheetSettings = useSheetSetting();
   const systemSettings = useSetting();
-  const { initAuth } = useAuthDialog();
+  const { initAuth, isAdmin, authUser } = useAuthDialog();
   const { showDialog, hideDialog } = useDialog();
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   useEffect(() => {
     showLoading();
@@ -103,6 +105,16 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
             <span className="layout-header__btn-icon">⚙️</span>
             <span>系統設定</span>
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="layout-header__btn"
+              onClick={() => setShowUserManagement(true)}
+            >
+              <span className="layout-header__btn-icon">👥</span>
+              <span>使用者管理</span>
+            </button>
+          )}
         </div>
 
         <div className="layout-header__divider" />
@@ -128,6 +140,11 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
       </header>
 
       {children}
+      <UserManagementDialog
+        isVisible={showUserManagement}
+        onClose={() => setShowUserManagement(false)}
+        operatorAccount={authUser?.account ?? ''}
+      />
       <Loading isVisible={isLoading} />
       <span className="layout-version">v2.5</span>
     </div>

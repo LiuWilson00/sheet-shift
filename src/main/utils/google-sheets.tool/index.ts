@@ -393,6 +393,54 @@ export async function updateSheetData(
   }
 }
 
+/** 「用戶資訊」表的固定欄位順序（寫回時的標頭） */
+const USERS_SHEET_HEADER: (keyof UsersSheet)[] = [
+  'name',
+  'account',
+  'password',
+  'role',
+  'permissions',
+];
+
+/**
+ * 安全寫回「用戶資訊」表
+ *
+ * updateSheetData 使用 values.update，只覆寫傳入的列數，
+ * 不會清除原本多出來的尾列；刪除使用者時會殘留舊列。
+ * 因此先 clear 整個範圍再寫入。
+ *
+ * 若 rows 為空，仍寫入標頭列以保留欄位定義。
+ */
+export async function writeUsersSheet(rows: UsersSheet[]): Promise<boolean> {
+  try {
+    const sheetSetting = googleSheetConnectionSetting.get();
+    const gsapi = google.sheets({ version: 'v4', auth: client.get()! });
+
+    // 1) 清空整個工作表範圍（移除尾端殘列）
+    await gsapi.spreadsheets.values.clear({
+      spreadsheetId: sheetSetting.spreadsheet_id,
+      range: SheetRangeName.Users,
+    });
+
+    // 2) 全部刪除時：只寫標頭，避免欄位定義遺失
+    if (rows.length === 0) {
+      const response = await gsapi.spreadsheets.values.update({
+        spreadsheetId: sheetSetting.spreadsheet_id,
+        range: SheetRangeName.Users,
+        valueInputOption: 'RAW',
+        resource: { values: [USERS_SHEET_HEADER as string[]] },
+      });
+      return response.status === 200;
+    }
+
+    // 3) 寫入新資料（updateSheetData 會重建標頭 + 資料）
+    return await updateSheetData(SheetRangeName.Users, rows);
+  } catch (e) {
+    console.error('Error writing users sheet:', e);
+    return false;
+  }
+}
+
 export async function addSheetData(
   rangeName: string,
   jsonArray: any[],

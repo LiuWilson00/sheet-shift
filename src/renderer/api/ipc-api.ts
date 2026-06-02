@@ -40,6 +40,15 @@ export const ipcApi = {
   },
 
   /**
+   * 使用者管理 API（Admin 專用）
+   */
+  users: {
+    list: createClient(ipcContracts.users.list),
+    save: createClient(ipcContracts.users.save),
+    delete: createClient(ipcContracts.users.delete),
+  },
+
+  /**
    * Excel 處理 API
    */
   excel: {

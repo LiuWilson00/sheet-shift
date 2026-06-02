@@ -26,6 +26,7 @@ import { setupExcelHandlersV2 } from './modules/excel-handlers-v2';
 import { setupRecipientInfoHandlersV2 } from './modules/recipient-info-handlers-v2';
 import { setupProblemItemsHandlersV2 } from './modules/problem-items-handlers-v2';
 import { setupManifestNumberHandlersV2 } from './modules/manifest-number-handlers-v2';
+import { setupUserHandlersV2 } from './modules/user-handlers-v2';
 
 // This is not valid TypeScript code. Please run this command in your terminal:
 // npm install --save-dev @types/xlsx
@@ -107,6 +108,7 @@ const createWindow = async () => {
   setupRecipientInfoHandlersV2();
   setupProblemItemsHandlersV2();
   setupManifestNumberHandlersV2();
+  setupUserHandlersV2();
   logger.info('IPC handlers registered [OK]');
 
   // Remove this if your app does not use auto updates
