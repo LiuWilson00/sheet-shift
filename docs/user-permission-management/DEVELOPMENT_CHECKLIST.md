@@ -87,11 +87,21 @@
 | 狀態 | 任務 |
 |------|------|
 | ✅ | 權限工具單元測試（§8.1，16 passed） |
-| ⬜ | user handlers 邏輯測試（§8.2 案例 9–14） |
-| ⬜ | E2E：admin/一般 user 登入、管理流程（§8.3 案例 15–18） |
+| ✅ | user handlers 邏輯測試（§8.2 案例 9–14，13 passed；含 admin→空白權限防禦性正規化） |
+| ✅ | E2E spec 撰寫（§8.3，`e2e/tests/user-permission.spec.ts`） |
 | ✅ | TypeScript 型別檢查通過（僅既有 tokenizer.json 錯誤） |
 | ✅ | `npm run build:renderer` / `build:main` 通過（EXIT=0） |
 | 🔄 | `npm run lint`：新增檔案已修正可自動修復項；其餘為既有 codebase 既存樣式錯誤（如 label-has-associated-control、function-component-definition，與現有元件一致） |
+
+### E2E 執行狀態（`user-permission.spec.ts`）
+
+| 狀態 | 項目 |
+|------|------|
+| ✅ | 回歸測試：admin 登入成功 + 已連線（證明 auth.login→AppUser 變更無回歸）— **passed** |
+| 🔄 | 案例 15a/15b、管理對話框 CRUD（§8.3）— 目前 **skipped**，等 Phase 0 完成後自動執行 |
+
+> E2E 在 Phase 0（Google Sheet 設定 admin role）完成前會以 `test.skip` 略過權限相關案例，並輸出提示；完成後即完整驗證「使用者管理」入口、對話框 CRUD round-trip、admin 全部 6 按鈕。
+> 一般使用者「只看到被授權按鈕」的過濾邏輯由 `permission.util.test.ts` 的 `canSeeExport` 完整涵蓋。
 
 ---
 
@@ -101,3 +111,4 @@
 |------|------|
 | 2026-06-02 | 建立規格文件（FEATURE_SPEC / IMPLEMENTATION_PLAN / DEVELOPMENT_CHECKLIST） |
 | 2026-06-02 | 完成 Phase 1–8 實作；權限工具 TDD 16 項測試通過；main/renderer build 通過。Phase 0（Google Sheet 欄位）待手動設定；§8.2 handler 測試與 §8.3 E2E 待補。 |
+| 2026-06-02 | 補齊 §8.2 user-handlers 單元測試（13 passed，並新增後端 admin→空白權限防禦性正規化）與 §8.3 E2E spec。E2E 回歸測試通過（admin 登入無回歸），權限案例待 Phase 0 後執行。單元測試合計 29 passed。 |

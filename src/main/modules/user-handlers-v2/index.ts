@@ -62,7 +62,11 @@ export function setupUserHandlersV2() {
     const idx = current.findIndex(
       (u) => u.account.toLowerCase() === user.account.toLowerCase(),
     );
-    const row = toUsersSheet(user);
+    // admin 一律全部可見：強制清空 permissions（防禦性，不依賴前端）
+    const row = toUsersSheet({
+      ...user,
+      permissions: user.role === 'admin' ? null : user.permissions,
+    });
     const next =
       idx >= 0
         ? current.map((r, i) => (i === idx ? row : r))
