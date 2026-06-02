@@ -40,6 +40,13 @@ test.setTimeout(120000);
 
 test.beforeAll(async () => {
   ({ app, page } = await launchApp());
+  await waitForAppInit(page);
+
+  // 清除可能殘留的舊登入狀態（Electron localStorage 跨啟動保留），
+  // 確保以最新的 Google Sheet 角色資料重新登入（權限於登入時載入）。
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
+  await page.waitForLoadState('domcontentloaded');
   const connected = await waitForAppInit(page);
   if (!connected) {
     console.warn('Google Sheets 連線失敗，E2E 測試無法進行');
@@ -79,14 +86,23 @@ test('案例15a：admin 登入後顯示「使用者管理」入口', async () =>
 });
 
 test.describe('使用者管理對話框', () => {
-  test.beforeEach(() => {
+  // 每個測試自行開啟對話框於列表狀態，避免測試間順序相依
+  test.beforeEach(async () => {
     test.skip(!managementAvailable, '需先完成 Phase 0（admin 角色設定）');
+
+    // 關閉任何殘留的對話框，確保乾淨狀態
+    const close = page.locator('.user-mgmt-dialog__close');
+    if (await close.isVisible({ timeout: 500 }).catch(() => false)) {
+      await close.click();
+      await expect(page.locator('.user-mgmt-dialog')).toHaveCount(0);
+    }
+
+    // 重新開啟並等待列表工具列出現
+    await page.locator('.layout-header__btn:has-text("使用者管理")').click();
+    await page.waitForSelector('.user-mgmt-toolbar__add', { timeout: 10000 });
   });
 
   test('開啟對話框並顯示使用者列表', async () => {
-    await page.locator('.layout-header__btn:has-text("使用者管理")').click();
-    await page.waitForSelector('.user-mgmt-dialog', { timeout: 10000 });
-
     // 標題與表格
     await expect(
       page.locator('.user-mgmt-dialog__header h2'),
@@ -129,6 +145,11 @@ test.describe('使用者管理對話框', () => {
     await page.locator('.user-mgmt-form__row:has-text("姓名") input').fill('E2E測試員');
     await page.locator('.user-mgmt-form__row:has-text("帳號") input').fill(TEMP_ACCOUNT);
     await page.locator('.user-mgmt-form__row:has-text("密碼") input').fill('e2e-pw');
+
+    // 先取消「全部可見」以啟用個別權限 checkbox
+    await page
+      .locator('.user-mgmt-form__perm-item:has-text("全部可見") input')
+      .uncheck();
 
     // 只勾選「蝦皮2轉」(exportShopee) 與「天馬格式」(exportPegasus)
     await page

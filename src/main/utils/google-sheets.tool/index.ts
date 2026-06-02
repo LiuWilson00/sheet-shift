@@ -405,11 +405,11 @@ const USERS_SHEET_HEADER: (keyof UsersSheet)[] = [
 /**
  * 安全寫回「用戶資訊」表
  *
- * updateSheetData 使用 values.update，只覆寫傳入的列數，
- * 不會清除原本多出來的尾列；刪除使用者時會殘留舊列。
- * 因此先 clear 整個範圍再寫入。
- *
- * 若 rows 為空，仍寫入標頭列以保留欄位定義。
+ * - updateSheetData/values.update 只覆寫傳入的列數，不會清除尾列；
+ *   刪除使用者時會殘留舊列，因此先 clear 整個範圍再寫入。
+ * - 不依賴各列物件的 key（Google Sheets 讀取時會省略空白尾欄，
+ *   導致部分列缺少 permissions key）；改以固定的 USERS_SHEET_HEADER
+ *   逐欄取值，確保標頭與欄位永遠完整一致。
  */
 export async function writeUsersSheet(rows: UsersSheet[]): Promise<boolean> {
   try {
@@ -422,19 +422,20 @@ export async function writeUsersSheet(rows: UsersSheet[]): Promise<boolean> {
       range: SheetRangeName.Users,
     });
 
-    // 2) 全部刪除時：只寫標頭，避免欄位定義遺失
-    if (rows.length === 0) {
-      const response = await gsapi.spreadsheets.values.update({
-        spreadsheetId: sheetSetting.spreadsheet_id,
-        range: SheetRangeName.Users,
-        valueInputOption: 'RAW',
-        resource: { values: [USERS_SHEET_HEADER as string[]] },
-      });
-      return response.status === 200;
-    }
+    // 2) 以固定欄位順序建構 2D 陣列（標頭 + 每列逐欄取值）
+    const header = USERS_SHEET_HEADER as string[];
+    const values: string[][] = [
+      header,
+      ...rows.map((row) => USERS_SHEET_HEADER.map((key) => row[key] ?? '')),
+    ];
 
-    // 3) 寫入新資料（updateSheetData 會重建標頭 + 資料）
-    return await updateSheetData(SheetRangeName.Users, rows);
+    const response = await gsapi.spreadsheets.values.update({
+      spreadsheetId: sheetSetting.spreadsheet_id,
+      range: SheetRangeName.Users,
+      valueInputOption: 'RAW',
+      resource: { values },
+    });
+    return response.status === 200;
   } catch (e) {
     console.error('Error writing users sheet:', e);
     return false;

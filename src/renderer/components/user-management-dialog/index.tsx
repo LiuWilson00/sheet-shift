@@ -78,7 +78,10 @@ export const UserManagementDialog: React.FC<UserManagementDialogProps> = ({
       setEditing(null);
       loadUsers();
     }
-  }, [isVisible, loadUsers]);
+    // 僅在開啟時載入；loadUsers 識別碼每次 render 會變（context 函式未 memoize），
+    // 若納入依賴會造成無限載入迴圈，故僅依賴 isVisible。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible]);
 
   if (!isVisible) return null;
 

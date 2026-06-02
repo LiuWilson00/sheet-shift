@@ -7,15 +7,16 @@
 
 ---
 
-## Phase 0：Google Sheet 前置（手動）
+## Phase 0：Google Sheet 前置
 
 | 狀態 | 任務 |
 |------|------|
-| ⬜ | 「用戶資訊」表新增 `role` 欄 |
-| ⬜ | 「用戶資訊」表新增 `permissions` 欄 |
-| ⬜ | `Eason`、`admin` 兩列 `role` 設為 `admin` |
+| ✅ | 「用戶資訊」表新增 `role` 欄 |
+| ✅ | 「用戶資訊」表新增 `permissions` 欄 |
+| ✅ | `Eason`、`admin` 兩列 `role` 設為 `admin` |
 
-> ⚠️ 此階段需由使用者於 Google Sheet 操作後，功能才會實際生效。
+> 已透過 `scripts/setup-permission-columns.js`（使用 service account）套用；
+> `scripts/inspect-users-sheet.js` 可檢視現況（密碼遮罩）。
 
 ## Phase 1：型別與共用常數
 
@@ -93,15 +94,23 @@
 | ✅ | `npm run build:renderer` / `build:main` 通過（EXIT=0） |
 | 🔄 | `npm run lint`：新增檔案已修正可自動修復項；其餘為既有 codebase 既存樣式錯誤（如 label-has-associated-control、function-component-definition，與現有元件一致） |
 
-### E2E 執行狀態（`user-permission.spec.ts`）
+### E2E 執行狀態（`user-permission.spec.ts`）— **6 passed**
 
 | 狀態 | 項目 |
 |------|------|
-| ✅ | 回歸測試：admin 登入成功 + 已連線（證明 auth.login→AppUser 變更無回歸）— **passed** |
-| 🔄 | 案例 15a/15b、管理對話框 CRUD（§8.3）— 目前 **skipped**，等 Phase 0 完成後自動執行 |
+| ✅ | 回歸：admin 登入成功 + 已連線（auth.login→AppUser 無回歸） |
+| ✅ | 案例 15a：admin 顯示「使用者管理」入口 |
+| ✅ | 對話框列表：admin/Eason=管理員、其餘=一般使用者、全部 |
+| ✅ | 新增表單：6 權限 checkbox +「全部可見」；admin 角色顯示提示 |
+| ✅ | 案例 16/17：新增限定權限使用者 → 列表顯示正確 → 刪除（CRUD round-trip） |
+| ✅ | 案例 15b：admin 選檔後看到全部 6 個匯出按鈕 |
 
-> E2E 在 Phase 0（Google Sheet 設定 admin role）完成前會以 `test.skip` 略過權限相關案例，並輸出提示；完成後即完整驗證「使用者管理」入口、對話框 CRUD round-trip、admin 全部 6 按鈕。
 > 一般使用者「只看到被授權按鈕」的過濾邏輯由 `permission.util.test.ts` 的 `canSeeExport` 完整涵蓋。
+
+### E2E 過程中修正的真實 bug
+
+1. **對話框 Loading 無限迴圈**：`UserManagementDialog` 的 `useEffect` 依賴 `loadUsers`，而 context 的 `showLoading/hideLoading` 每次 render 變更識別碼 → 無限載入、spinner 蓋住對話框攔截點擊。改為僅依賴 `isVisible`。
+2. **`writeUsersSheet` 掉欄**：Google Sheets 讀取省略空白尾欄，使部分列缺 `permissions` key；`updateSheetData` 以首列 key 產生標頭 → 刪除/寫回後 `permissions` 欄消失。改為以固定 `USERS_SHEET_HEADER` 逐欄建構 2D 陣列，標頭永遠完整。
 
 ---
 
@@ -112,3 +121,4 @@
 | 2026-06-02 | 建立規格文件（FEATURE_SPEC / IMPLEMENTATION_PLAN / DEVELOPMENT_CHECKLIST） |
 | 2026-06-02 | 完成 Phase 1–8 實作；權限工具 TDD 16 項測試通過；main/renderer build 通過。Phase 0（Google Sheet 欄位）待手動設定；§8.2 handler 測試與 §8.3 E2E 待補。 |
 | 2026-06-02 | 補齊 §8.2 user-handlers 單元測試（13 passed，並新增後端 admin→空白權限防禦性正規化）與 §8.3 E2E spec。E2E 回歸測試通過（admin 登入無回歸），權限案例待 Phase 0 後執行。單元測試合計 29 passed。 |
+| 2026-06-02 | 透過 service account 完成 Phase 0（新增 role/permissions 欄、admin/Eason 設為 admin）。執行 E2E：**6 passed**。過程中修正兩個真實 bug（對話框 Loading 無限迴圈、writeUsersSheet 掉欄）。功能全數驗證通過。 |
