@@ -2,8 +2,11 @@
  * Logger Handlers - 处理来自 Renderer 的日志
  */
 
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
 import { logger, LogLevel } from '../../utils/logger.tool';
+import { createHandler } from '../../utils/typed-ipc-handler';
+import { ipcContracts } from '../../../shared/ipc-contracts';
+import { ensureDirExists } from './log-folder.util';
 
 /**
  * 日志消息格式
@@ -58,6 +61,29 @@ export function setupLoggerHandlers() {
       }
     } catch (error) {
       console.error('[Logger Handler] Failed to process log message:', error);
+    }
+  });
+
+  // 開啟 log 資料夾（隱藏功能，入口在系統設定最下方）
+  createHandler(ipcContracts.logs.openFolder, async () => {
+    try {
+      const dir = ensureDirExists(logger.getLogDir());
+      // shell.openPath 成功回傳空字串，失敗回傳錯誤訊息
+      const errMessage = await shell.openPath(dir);
+      if (errMessage) {
+        logger.error('[Logger Handlers] Failed to open log folder', undefined, {
+          dir,
+          errMessage,
+        });
+        return { success: false, path: dir, message: errMessage };
+      }
+      return { success: true, path: dir };
+    } catch (error) {
+      logger.error('[Logger Handlers] open-folder handler error', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : String(error),
+      };
     }
   });
 

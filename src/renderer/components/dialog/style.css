@@ -258,6 +258,28 @@
   color: #888;
 }
 
+/* 隱藏功能：開啟 log 資料夾（低調置中、淡色，不干擾設定） */
+.settings-logfolder {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  text-align: center;
+}
+
+.settings-logfolder__btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+}
+
+.settings-logfolder__btn:hover {
+  color: #666;
+}
+
 /* ============================================
    響應式設計
    ============================================ */

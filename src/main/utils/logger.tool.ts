@@ -371,6 +371,13 @@ class Logger {
   }
 
   /**
+   * 取得日誌資料夾路徑
+   */
+  getLogDir(): string {
+    return this.config.logDir;
+  }
+
+  /**
    * 取得所有日誌檔案
    */
   getAllLogFiles(): string[] {

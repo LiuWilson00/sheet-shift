@@ -67,30 +67,41 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
       return;
     }
     console.log('settings', settings);
-    ipcApi.settingsV2
-      .save({ data: settings, settingName })
-      .then((result) => {
-        if (result) {
-          showDialog({
-            content: '儲存成功',
-            onConfirm: () => {
-              hideDialog();
-            },
-          });
-          hideSettings();
-        } else {
-          showDialog({
-            content: '儲存失敗',
-            onConfirm: () => {
-              hideDialog();
-            },
-          });
-        }
-      });
+    ipcApi.settingsV2.save({ data: settings, settingName }).then((result) => {
+      if (result) {
+        showDialog({
+          content: '儲存成功',
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
+        hideSettings();
+      } else {
+        showDialog({
+          content: '儲存失敗',
+          onConfirm: () => {
+            hideDialog();
+          },
+        });
+      }
+    });
   };
 
   const handleCancel = () => {
     hideSettings();
+  };
+
+  // 隱藏功能：開啟 log 資料夾（入口在系統設定最下方，需先通過驗證碼）
+  const handleOpenLogFolder = async () => {
+    const result = await ipcApi.logs.openFolder();
+    if (!result?.success) {
+      showDialog({
+        content: `開啟 log 資料夾失敗${
+          result?.message ? `：${result.message}` : ''
+        }`,
+        onConfirm: hideDialog,
+      });
+    }
   };
 
   const validateNumber = (value: string) => {
@@ -123,9 +134,9 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
       {isSettingsVisible ? (
         <Dialog
           title="系統設定"
-          showMask={true}
+          showMask
           variant="settings"
-          showCancel={true}
+          showCancel
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           contentRender={() => {
@@ -235,7 +246,9 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                     />
                     <NumberRange
                       label="三件以上"
-                      value={settings.DEFAULT_PRICE_SETTING.THREE_OR_MORE_PIECES}
+                      value={
+                        settings.DEFAULT_PRICE_SETTING.THREE_OR_MORE_PIECES
+                      }
                       onChange={(value) => {
                         updateSettings({
                           ...settings,
@@ -258,7 +271,7 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                           },
                         });
                       }}
-                      needParseFloat={true}
+                      needParseFloat
                     />
                     <p className="settings-hint">
                       調整倍率會確保每個物品總金額欄位有一點偏差，乘上一個隨機的倍率
@@ -300,6 +313,17 @@ export const SettingsProvider: React.FC<PropsWithChildren> = ({ children }) => {
                       }}
                     />
                   </div>
+                </div>
+
+                {/* 隱藏功能：開啟 log 資料夾（低調置於最下方） */}
+                <div className="settings-logfolder">
+                  <button
+                    type="button"
+                    className="settings-logfolder__btn"
+                    onClick={handleOpenLogFolder}
+                  >
+                    開啟 log 資料夾
+                  </button>
                 </div>
               </div>
             );

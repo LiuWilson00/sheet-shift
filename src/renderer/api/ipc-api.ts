@@ -40,6 +40,13 @@ export const ipcApi = {
   },
 
   /**
+   * 日誌 API
+   */
+  logs: {
+    openFolder: createVoidClient(ipcContracts.logs.openFolder),
+  },
+
+  /**
    * 使用者管理 API（Admin 專用）
    */
   users: {

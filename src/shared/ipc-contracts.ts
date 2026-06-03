@@ -152,6 +152,21 @@ export const ipcContracts = {
   },
 
   /**
+   * 日誌相關 API
+   */
+  logs: {
+    /**
+     * 開啟 log 資料夾（檔案總管）
+     */
+    openFolder: {
+      channel: 'logs-v2/open-folder',
+    } as IpcContract<
+      void,
+      { success: boolean; path?: string; message?: string }
+    >,
+  },
+
+  /**
    * 使用者管理相關 API（Admin 專用）
    *
    * 所有操作皆於後端驗證 operatorAccount 的角色為 admin。
