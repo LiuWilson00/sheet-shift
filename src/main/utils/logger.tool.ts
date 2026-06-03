@@ -91,7 +91,8 @@ class Logger {
 
     // 預設配置
     this.config = {
-      level: isDev ? LogLevel.DEBUG : LogLevel.ERROR,
+      // 正式版記到 INFO，讓客戶端 log 留有操作軌跡可追蹤（開發版記全部 DEBUG）
+      level: isDev ? LogLevel.DEBUG : LogLevel.INFO,
       console: isDev,
       file: true,
       logDir: path.join(app.getPath('userData'), 'logs'),

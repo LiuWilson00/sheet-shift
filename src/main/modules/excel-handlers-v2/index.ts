@@ -15,6 +15,7 @@ import { Workbook, Worksheet } from 'exceljs';
 import { createHandler } from '../../utils/typed-ipc-handler';
 import { ipcContracts } from '../../../shared/ipc-contracts';
 import { logger } from '../../utils/logger.tool';
+import { initProgress } from '../../utils/progress.tool';
 import { DataStore } from '../../utils/data-store.tool';
 import {
   saveProcessedData,
@@ -255,6 +256,9 @@ async function applyManifestNumberToExcel(
  */
 export function setupExcelHandlersV2(mainWindow: BrowserWindow) {
   logger.info('[Excel V2] Setting up handlers...');
+
+  // 注入目前視窗，讓長時間操作（資料前處理 / 批量智能辨識）可推送進度到 renderer
+  initProgress(mainWindow);
 
   // ==========================================
   // 選擇 Excel 檔案

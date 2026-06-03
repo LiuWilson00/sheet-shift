@@ -3,6 +3,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { IPC_CHANNELS } from '../constants/ipc-channels';
 import debugBridge from './context-bridge/debug.bridge';
+import progressBridge from './context-bridge/progress.bridge';
 
 export type Channels = keyof typeof IPC_CHANNELS;
 
@@ -28,6 +29,7 @@ const electronHandler = {
     },
   },
   debugBridge,
+  progressBridge,
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

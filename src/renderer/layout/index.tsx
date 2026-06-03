@@ -10,7 +10,7 @@ import ipcApi from '../api/ipc-api';
 import UserManagementDialog from '../components/user-management-dialog';
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
-  const { isLoading, hideLoading, showLoading } = useLoading();
+  const { isLoading, hideLoading, showLoading, message } = useLoading();
   const [systemSettingNames, setSystemSettingNames] = useState<string[]>([]);
   const sheetSettings = useSheetSetting();
   const systemSettings = useSetting();
@@ -145,7 +145,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
         onClose={() => setShowUserManagement(false)}
         operatorAccount={authUser?.account ?? ''}
       />
-      <Loading isVisible={isLoading} />
+      <Loading isVisible={isLoading} message={message} />
       <span className="layout-version">v2.5</span>
     </div>
   );

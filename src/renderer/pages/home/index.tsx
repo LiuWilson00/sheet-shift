@@ -24,7 +24,7 @@ const homeLogger = logger.createChildLogger('Home');
 
 function Home() {
   const { showDialog, hideDialog } = useDialog();
-  const { showLoading, hideLoading } = useLoading();
+  const { showLoading, hideLoading, setLoadingMessage } = useLoading();
   const [isNeedAI, setIsNeedAI] = useState<boolean>(false);
   const [isNeedBatchAIClassify, setIsNeedBatchAIClassify] =
     useState<boolean>(false);
@@ -299,31 +299,60 @@ function Home() {
 
   const originalDataDebugging = useCallback(async () => {
     homeLogger.info('開始資料前處理', { isNeedBatchAIClassify });
-    showLoading();
-    const wrongDataResult = await ipcApi.excel.getWrongData({
-      aiClassify: isNeedBatchAIClassify,
-    });
-    hideLoading();
+    showLoading('資料前處理中…');
 
-    homeLogger.debug('getWrongData 回傳結果', {
-      isError: wrongDataResult.isError,
-      dataKeys: wrongDataResult.data ? Object.keys(wrongDataResult.data) : null,
-      unMappingDataLength: wrongDataResult.data?.unMappingData?.length ?? 0,
+    // 訂閱後端進度，即時更新 loading 文字，讓使用者知道目前進度
+    const unsubscribe = window.electron.progressBridge.onExcelProgress((p) => {
+      setLoadingMessage(p.message);
     });
 
-    if (wrongDataResult.isError) {
-      homeLogger.warn('getWrongData 回傳錯誤');
-      return;
+    try {
+      const wrongDataResult = await ipcApi.excel.getWrongData({
+        aiClassify: isNeedBatchAIClassify,
+      });
+
+      homeLogger.debug('getWrongData 回傳結果', {
+        isError: wrongDataResult.isError,
+        dataKeys: wrongDataResult.data
+          ? Object.keys(wrongDataResult.data)
+          : null,
+        unMappingDataLength: wrongDataResult.data?.unMappingData?.length ?? 0,
+      });
+
+      if (wrongDataResult.isError) {
+        homeLogger.warn('getWrongData 回傳錯誤');
+        showDialog({
+          content: '資料前處理失敗，請確認已選擇檔案後再試一次。',
+          onConfirm: hideDialog,
+        });
+        return;
+      }
+
+      homeLogger.info('設定 wrongData', {
+        count: wrongDataResult.data.unMappingData?.length ?? 0,
+        firstItem: wrongDataResult.data.unMappingData?.[0],
+      });
+
+      setWrongData(wrongDataResult.data.unMappingData);
+      setShowDataDebugging(true);
+    } catch (error) {
+      homeLogger.error('資料前處理發生例外', error as Error);
+      showDialog({
+        content: '資料前處理發生錯誤，請稍後再試或聯絡管理員。',
+        onConfirm: hideDialog,
+      });
+    } finally {
+      unsubscribe();
+      hideLoading();
     }
-
-    homeLogger.info('設定 wrongData', {
-      count: wrongDataResult.data.unMappingData?.length ?? 0,
-      firstItem: wrongDataResult.data.unMappingData?.[0],
-    });
-
-    setWrongData(wrongDataResult.data.unMappingData);
-    setShowDataDebugging(true);
-  }, [isNeedBatchAIClassify, showLoading, hideLoading]);
+  }, [
+    isNeedBatchAIClassify,
+    showLoading,
+    hideLoading,
+    setLoadingMessage,
+    showDialog,
+    hideDialog,
+  ]);
 
   const toggleOption = useCallback(
     (key: 'isNeedAI' | 'batchAIClassify', currentValue: boolean) => {

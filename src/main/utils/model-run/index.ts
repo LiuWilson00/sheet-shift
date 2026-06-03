@@ -2,6 +2,7 @@ import path from 'path';
 import { app } from 'electron';
 import tokenizer from './tokenizer.json';
 import idToCategory from './id_to_category.json';
+import { logger } from '../logger.tool';
 
 const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
@@ -126,8 +127,12 @@ export async function runClassifier(inputText: string): Promise<string> {
     const result = _idToCategory[predictedClass.toString()];
     return result ?? '';
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[ModelRun] 產品分類失敗:', (error as Error).message);
+    // 不中斷批量流程，但記到 log 以便追蹤（含產品名稱與是否為模型載入錯誤）
+    logger.warn('[ModelRun] 產品分類失敗', {
+      inputText,
+      loadError: _loadError ? _loadError.message : undefined,
+      message: (error as Error).message,
+    });
     return '';
   }
 }
