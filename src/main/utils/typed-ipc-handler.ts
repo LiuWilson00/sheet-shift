@@ -32,7 +32,7 @@ export class IpcError extends Error {
   constructor(
     message: string,
     public code?: string,
-    public data?: any
+    public data?: any,
   ) {
     super(message);
     this.name = 'IpcError';
@@ -52,7 +52,7 @@ export function createHandler<TInput, TOutput>(
   options?: {
     disableLog?: boolean;
     onError?: (error: Error, input: TInput) => void;
-  }
+  },
 ) {
   const shouldLog = !options?.disableLog;
 
@@ -78,7 +78,8 @@ export function createHandler<TInput, TOutput>(
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
 
       logger.error(`[IPC Handler] ${contract.channel} [FAIL]`, errorObj, {
         duration: `${duration}ms`,
@@ -105,14 +106,14 @@ export function createVoidHandler<TOutput>(
   options?: {
     disableLog?: boolean;
     onError?: (error: Error) => void;
-  }
+  },
 ) {
   return createHandler(
     contract,
     async (_input, context) => {
       return await handler(context);
     },
-    options
+    options,
   );
 }
 

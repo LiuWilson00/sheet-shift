@@ -7,6 +7,7 @@ import { DialogProvider } from './contexts/dialog.context';
 import { SettingsProvider } from './contexts/settings-dialog-context/indext';
 import { SheetSettingsProvider } from './contexts/sheet-settings-dialog-context';
 import { AuthDialogProvider } from './contexts/auth-dialog-context';
+
 const wrapWithProviders = (
   child: React.ReactNode,
   providers: React.ComponentType<any>[],

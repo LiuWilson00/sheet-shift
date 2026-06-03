@@ -101,7 +101,13 @@ describe('assertAdmin 權限驗證（案例 9）', () => {
     await expect(
       save({
         operatorAccount: 'john',
-        user: { name: 'X', account: 'x', password: '', role: 'user', permissions: null },
+        user: {
+          name: 'X',
+          account: 'x',
+          password: '',
+          role: 'user',
+          permissions: null,
+        },
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
@@ -204,14 +210,26 @@ describe('save（案例 10、11、14）', () => {
     await expect(
       save({
         operatorAccount: 'admin',
-        user: { name: '', account: 'x', password: '', role: 'user', permissions: null },
+        user: {
+          name: '',
+          account: 'x',
+          password: '',
+          role: 'user',
+          permissions: null,
+        },
       }),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
 
     await expect(
       save({
         operatorAccount: 'admin',
-        user: { name: 'X', account: '  ', password: '', role: 'user', permissions: null },
+        user: {
+          name: 'X',
+          account: '  ',
+          password: '',
+          role: 'user',
+          permissions: null,
+        },
       }),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
 
@@ -223,7 +241,13 @@ describe('save（案例 10、11、14）', () => {
     await expect(
       save({
         operatorAccount: 'admin',
-        user: { name: 'Mary', account: 'mary', password: '', role: 'user', permissions: null },
+        user: {
+          name: 'Mary',
+          account: 'mary',
+          password: '',
+          role: 'user',
+          permissions: null,
+        },
       }),
     ).rejects.toMatchObject({ code: 'SAVE_FAILED' });
   });

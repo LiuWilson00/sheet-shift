@@ -20,7 +20,14 @@ node_modules
 
 release/app/dist
 release/build
+release
 .erb/dll
+
+# 文件範例（僅供參考，未維護到 lint 標準）
+docs
+
+# 一次性維運/工具腳本
+scripts
 
 .idea
 npm-debug.log.*

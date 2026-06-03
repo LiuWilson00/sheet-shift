@@ -82,8 +82,7 @@ export async function classifyData(data: SheetData[]): Promise<SheetData[]> {
       [ExcelColumnKeys.ProductClassNumber]:
         map.find(
           (i) =>
-            i[ProductNameMappingColumnKeys.CorrectProductName] ===
-            tryClassify,
+            i[ProductNameMappingColumnKeys.CorrectProductName] === tryClassify,
         )?.[ProductNameMappingColumnKeys.TariffCode] ?? '',
     };
 

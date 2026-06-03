@@ -48,7 +48,9 @@ export function setupAppStatusHandlersV2() {
     const connectionState = GoogleSheetConnectionStore.get();
     const isConnected = connectionState?.isConnected ?? false;
 
-    logger.debug('[App Status V2] Checking initialization status', { isConnected });
+    logger.debug('[App Status V2] Checking initialization status', {
+      isConnected,
+    });
 
     return isConnected;
   });

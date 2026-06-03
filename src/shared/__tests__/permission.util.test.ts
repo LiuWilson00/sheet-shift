@@ -55,9 +55,9 @@ describe('serializePermissions', () => {
   });
 
   it('陣列 → 逗號分隔字串', () => {
-    expect(
-      serializePermissions(['exportShopee', 'exportPegasus']),
-    ).toBe('exportShopee,exportPegasus');
+    expect(serializePermissions(['exportShopee', 'exportPegasus'])).toBe(
+      'exportShopee,exportPegasus',
+    );
   });
 });
 

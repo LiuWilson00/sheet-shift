@@ -273,8 +273,7 @@ export function getNextValidNumber(
   const skipped: string[] = [];
 
   // 安全上限：基於黑名單結構的合理上限，防止無限迴圈
-  const maxAttempts =
-    blacklist.ranges.length + blacklist.singles.length + 1000;
+  const maxAttempts = blacklist.ranges.length + blacklist.singles.length + 1000;
   let attempts = 0;
 
   while (attempts < maxAttempts) {

@@ -81,7 +81,9 @@ interface LogEntry {
  */
 class Logger {
   private config: LoggerConfig;
+
   private currentLogFile: string;
+
   private currentFileSize: number = 0;
 
   constructor(config?: Partial<LoggerConfig>) {
@@ -149,7 +151,12 @@ class Logger {
   /**
    * 核心日誌方法
    */
-  private log(level: LogLevel, message: string, data?: any, error?: Error | any): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    data?: any,
+    error?: Error | any,
+  ): void {
     // 檢查日誌級別
     if (level < this.config.level) {
       return;
@@ -221,10 +228,10 @@ class Logger {
       const logLine = this.formatLogEntry(entry);
 
       // 寫入檔案（追加模式）
-      fs.appendFileSync(this.currentLogFile, logLine + '\n', 'utf8');
+      fs.appendFileSync(this.currentLogFile, `${logLine}\n`, 'utf8');
 
       // 更新檔案大小
-      this.currentFileSize += Buffer.byteLength(logLine + '\n', 'utf8');
+      this.currentFileSize += Buffer.byteLength(`${logLine}\n`, 'utf8');
     } catch (error) {
       // 寫入失敗，只輸出到控制台（避免無限迴圈）
       console.error('[Logger] Failed to write to log file:', error);
@@ -274,10 +281,7 @@ class Logger {
   private rotateLogFile(): void {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const oldFile = this.currentLogFile;
-    const archiveFile = path.join(
-      this.config.logDir,
-      `app-${timestamp}.log`
-    );
+    const archiveFile = path.join(this.config.logDir, `app-${timestamp}.log`);
 
     try {
       // 重新命名當前檔案
@@ -324,7 +328,10 @@ class Logger {
           fs.unlinkSync(file.path);
           console.log(`[Logger] Deleted old log file: ${file.name}`);
         } catch (error) {
-          console.error(`[Logger] Failed to delete log file ${file.name}:`, error);
+          console.error(
+            `[Logger] Failed to delete log file ${file.name}:`,
+            error,
+          );
         }
       });
     } catch (error) {

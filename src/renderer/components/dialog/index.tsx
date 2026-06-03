@@ -39,14 +39,13 @@ const Dialog: React.FC<DialogProps> = ({
 
   // 根據 variant 決定 CSS class
   const variantClass =
-    variant === 'settings' ? 'dialog-content--settings' : 'dialog-content--message';
+    variant === 'settings'
+      ? 'dialog-content--settings'
+      : 'dialog-content--message';
 
   return (
     <div className={`dialog-container ${showMask ? 'mask' : ''}`}>
-      <div
-        className={`dialog-content ${variantClass}`}
-        style={dialogStyle}
-      >
+      <div className={`dialog-content ${variantClass}`} style={dialogStyle}>
         <h2>{title}</h2>
         <div className="dialog-content-main">
           {contentRender ? contentRender() : <p>{content}</p>}

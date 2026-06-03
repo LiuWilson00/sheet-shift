@@ -28,9 +28,7 @@ export function setupAuthHandlersV2() {
   createHandler(ipcContracts.auth.login, async (input) => {
     logger.debug('[Auth V2] Login attempt', { account: input.account });
 
-    const user = usersSheet
-      .get()
-      .find((u) => u.account === input.account);
+    const user = usersSheet.get().find((u) => u.account === input.account);
 
     if (!user) {
       logger.warn('[Auth V2] Login failed - user not found', {

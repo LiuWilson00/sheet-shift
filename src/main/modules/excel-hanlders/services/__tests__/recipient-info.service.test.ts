@@ -101,9 +101,7 @@ describe('recipient-info.service', () => {
       expect(result.data[0][ExcelColumnKeys.RecipientEnglishName]).toBe(
         'ORIGINAL NAME',
       );
-      expect(result.data[0][ExcelColumnKeys.RecipientPhone]).toBe(
-        '0900000000',
-      );
+      expect(result.data[0][ExcelColumnKeys.RecipientPhone]).toBe('0900000000');
     });
 
     it('有海關註記時應標記紅色背景', () => {
@@ -145,9 +143,9 @@ describe('recipient-info.service', () => {
       expect(result.newRecipients[0][RecipientInfoColumnKeys.TaxNumber]).toBe(
         'TAX_NEW',
       );
-      expect(
-        result.newRecipients[0][RecipientInfoColumnKeys.EnglishName],
-      ).toBe('NEW PERSON');
+      expect(result.newRecipients[0][RecipientInfoColumnKeys.EnglishName]).toBe(
+        'NEW PERSON',
+      );
       expect(result.newRecipients[0][RecipientInfoColumnKeys.Phone]).toBe(
         '0911111111',
       );

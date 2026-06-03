@@ -35,7 +35,8 @@ export function TestNewIPC() {
       setResult(resultText);
       logger.info('New API test successful', { settings, duration });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setResult(`❌ API 測試失敗: ${errorMessage}`);
       logger.error('New API test failed', error as Error);
     } finally {
@@ -47,7 +48,9 @@ export function TestNewIPC() {
     logger.debug('This is a DEBUG message', { testData: 'debug' });
     logger.info('This is an INFO message', { testData: 'info' });
     logger.warn('This is a WARN message', { testData: 'warn' });
-    logger.error('This is an ERROR message', new Error('Test error'), { testData: 'error' });
+    logger.error('This is an ERROR message', new Error('Test error'), {
+      testData: 'error',
+    });
 
     setResult(`✅ Logger 測試完成！
 
@@ -68,18 +71,27 @@ export function TestNewIPC() {
         backgroundColor: '#f9f9f9',
       }}
     >
-      <h2 style={{ color: '#4caf50', marginTop: 0 }}>
-        IPC 系統測試面板
-      </h2>
+      <h2 style={{ color: '#4caf50', marginTop: 0 }}>IPC 系統測試面板</h2>
 
       <div style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
-        <p><strong>說明：</strong>此測試面板用於驗證新 IPC 系統正常工作。</p>
+        <p>
+          <strong>說明：</strong>此測試面板用於驗證新 IPC 系統正常工作。
+        </p>
         <ul>
-          <li>使用類型安全的 <code>ipcApi.settingsV2.get()</code></li>
+          <li>
+            使用類型安全的 <code>ipcApi.settingsV2.get()</code>
+          </li>
         </ul>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '20px',
+          flexWrap: 'wrap',
+        }}
+      >
         <button
           onClick={testNewAPI}
           disabled={loading}
@@ -129,7 +141,14 @@ export function TestNewIPC() {
         {result || '點擊按鈕開始測試...'}
       </div>
 
-      <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#fff3cd', borderRadius: '4px' }}>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '10px',
+          backgroundColor: '#fff3cd',
+          borderRadius: '4px',
+        }}
+      >
         <strong>提示：</strong>
         <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
           <li>打開瀏覽器開發者工具 (F12) 查看詳細日誌</li>

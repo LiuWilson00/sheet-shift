@@ -17,7 +17,7 @@ export class IpcClientError extends Error {
   constructor(
     message: string,
     public code?: string,
-    public channel?: string
+    public channel?: string,
   ) {
     super(message);
     this.name = 'IpcClientError';
@@ -45,7 +45,7 @@ const defaultRequestOptions: RequestOptions = {
  */
 export function createClient<TInput, TOutput>(
   contract: IpcContract<TInput, TOutput>,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ) {
   const mergedOptions = { ...defaultRequestOptions, ...options };
 
@@ -65,14 +65,17 @@ export function createClient<TInput, TOutput>(
                 new IpcClientError(
                   `Request timeout after ${mergedOptions.timeout}ms`,
                   'TIMEOUT',
-                  contract.channel
-                )
+                  contract.channel,
+                ),
               );
             }, mergedOptions.timeout);
           })
         : null;
 
-      const requestPromise = ipcRenderer.invoke(contract.channel, input) as Promise<TOutput>;
+      const requestPromise = ipcRenderer.invoke(
+        contract.channel,
+        input,
+      ) as Promise<TOutput>;
 
       const result = timeoutPromise
         ? await Promise.race([requestPromise, timeoutPromise])
@@ -89,7 +92,8 @@ export function createClient<TInput, TOutput>(
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
 
       logger.error(`[IPC Client] ${contract.channel} [FAIL]`, errorObj, {
         duration: `${duration}ms`,
@@ -98,7 +102,7 @@ export function createClient<TInput, TOutput>(
       throw new IpcClientError(
         errorObj.message,
         'REQUEST_FAILED',
-        contract.channel
+        contract.channel,
       );
     }
   };
@@ -109,7 +113,7 @@ export function createClient<TInput, TOutput>(
  */
 export function createVoidClient<TOutput>(
   contract: IpcContract<void, TOutput>,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ) {
   const client = createClient(contract, options);
   return async (): Promise<TOutput> => {

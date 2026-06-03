@@ -118,7 +118,7 @@ export const SheetSettingsProvider: React.FC<PropsWithChildren> = ({
       {isSettingsVisible ? (
         <Dialog
           title="Google Sheet 連線設定"
-          showMask={true}
+          showMask
           variant="settings"
           showCancel={isCancelEnable}
           onConfirm={handleConfirm}

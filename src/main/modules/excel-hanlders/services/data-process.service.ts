@@ -6,9 +6,9 @@ import {
   getRandomIntBetween,
   addressSheet,
   AddressSheet,
+  getSystemSetting,
 } from '../../../utils';
 import { AddressSheetColumnKeys } from '../../../utils/google-sheets.tool/index.interface';
-import { getSystemSetting } from '../../../utils';
 import {
   SheetData,
   ExcelColumnKeys,
@@ -288,7 +288,7 @@ function calculateTotalAmountByBoxes(
 
   const [min, max] = range;
 
-  return [min * boxes, max * boxes]; //getRandomIntBetween(min, max) * boxes;
+  return [min * boxes, max * boxes]; // getRandomIntBetween(min, max) * boxes;
 }
 
 function calculateOriginalAmountAndUnitPrice(
@@ -359,7 +359,8 @@ function generateRandomProportions(n: number): number[] {
 
   // Generate random proportions
   for (let i = 0; i < n; i++) {
-    let prop = Math.random() * (maxProportion - minProportion) + minProportion;
+    const prop =
+      Math.random() * (maxProportion - minProportion) + minProportion;
 
     proportions.push(prop);
     sum += prop;
@@ -663,7 +664,7 @@ export function formatRecipientPhone(phone: string): string {
   const cleanedPhone = String(phone).replace(/[()\-]/g, '');
   let formattedPhone = cleanedPhone;
   while (formattedPhone.length < 10) {
-    formattedPhone = '0' + formattedPhone;
+    formattedPhone = `0${formattedPhone}`;
   }
   return formattedPhone;
 }
@@ -694,7 +695,6 @@ export function sheetDataProcess(
 
     numbarKeys.forEach((key) => {
       if (typeof originalData[key] === 'number') {
-        return;
       } else if (typeof originalData[key] === 'string') {
         if (originalData[key] === '') newSheetData[key] = 0;
         else {
@@ -707,7 +707,6 @@ export function sheetDataProcess(
         newSheetData[key] === undefined ||
         newSheetData[key] === null
       ) {
-        return;
       }
     });
 

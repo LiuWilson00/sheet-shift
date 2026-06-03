@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const DebugConsole = () => {
+function DebugConsole() {
   const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -9,8 +9,6 @@ const DebugConsole = () => {
         setMessages((prevMessages: string[]) => [...prevMessages, message]);
       },
     );
-
-    return;
   }, []);
 
   if (!messages.length) return null;
@@ -29,6 +27,6 @@ const DebugConsole = () => {
       ))}
     </div>
   );
-};
+}
 
 export default DebugConsole;

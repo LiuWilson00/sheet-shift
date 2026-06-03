@@ -101,7 +101,12 @@ class RendererLogger {
   /**
    * 核心日志方法
    */
-  private log(level: LogLevel, message: string, data?: any, error?: Error | any): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    data?: any,
+    error?: Error | any,
+  ): void {
     // 检查日志级别
     if (level < this.config.level) {
       return;
@@ -149,12 +154,13 @@ class RendererLogger {
     message: string,
     data?: any,
     error?: Error | any,
-    timestamp?: string
+    timestamp?: string,
   ): void {
     const levelName = LogLevelName[level];
-    const timestampStr = this.config.timestamp && timestamp
-      ? `[${new Date(timestamp).toLocaleTimeString()}]`
-      : '';
+    const timestampStr =
+      this.config.timestamp && timestamp
+        ? `[${new Date(timestamp).toLocaleTimeString()}]`
+        : '';
 
     const prefix = `${timestampStr} [${levelName}]`;
 
@@ -210,7 +216,7 @@ class RendererLogger {
 class ContextLogger {
   constructor(
     private parent: RendererLogger,
-    private context: string
+    private context: string,
   ) {}
 
   debug(message: string, data?: any): void {

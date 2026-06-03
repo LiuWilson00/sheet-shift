@@ -25,7 +25,7 @@ export function excelToJSON<I, O = I>(
         err: {},
         message: 'File not found',
         appPath: app.getAppPath(),
-        filePath: filePath,
+        filePath,
       };
     }
     // 讀取檔案到 buffer
@@ -53,7 +53,7 @@ export function excelToJSON<I, O = I>(
       },
       message: 'Error reading the Excel file',
       appPath: app.getAppPath(),
-      filePath: filePath,
+      filePath,
     };
   }
 }

@@ -31,7 +31,7 @@ const systemSettingTypeMap = {
 };
 
 function transformSettingsArray(arr: Array<SystemSettingSheets>): Settings {
-  let result: Settings = {
+  const result: Settings = {
     SYSTEM_SETTING: {
       UNIT_TRANSLATE_LIMIT: 0,
       NET_WEIGHT_INTERVAL: 0,

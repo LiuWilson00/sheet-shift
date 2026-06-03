@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CommonProps } from '../base-input-component/common-props';
 import BaseInputComponent from '../base-input-component';
 import './style.css';
+
 interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement>,
     CommonProps {
@@ -77,7 +78,7 @@ const Input: React.FC<InputProps> = ({
 
   return (
     <BaseInputComponent label={label} validationFn={validationFn}>
-      <div className='input-container'>
+      <div className="input-container">
         <input value={value} {...restProps} onChange={handleInputChange} />
         {searchResults.length > 0 && (
           <div className="search-results">

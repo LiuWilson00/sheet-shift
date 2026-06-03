@@ -1,6 +1,6 @@
 import { BrowserWindow, app, shell } from 'electron';
-import MenuBuilder from '../menu';
 import path from 'path';
+import MenuBuilder from '../menu';
 import { initGoogleSheetData, resolveHtmlPath } from '../utils';
 import { client, initGoogleConnection } from '../utils/google-sheets.tool';
 import { IPC_CHANNELS } from '../../constants/ipc-channels';

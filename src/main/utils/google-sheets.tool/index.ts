@@ -1,6 +1,7 @@
 import { google, sheets_v4 } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import fs from 'fs';
+import { GaxiosResponse } from 'gaxios';
 import {
   SHEET_SETTING_PATH,
   SHEET_RANGES,
@@ -15,7 +16,6 @@ import {
   ManifestNumberConfigSheet,
 } from './index.interface';
 import { DataStore } from '../data-store.tool';
-import { GaxiosResponse } from 'gaxios';
 import { GoogleSheetConnectionStore } from '../../status-store';
 import { ProductNameMapping } from '../../../renderer/utils/excel.interface';
 
@@ -77,9 +77,8 @@ export function getGoogleSheetAPISetting():
     const settingFile = fs.readFileSync(SHEET_SETTING_PATH, 'utf8');
 
     return JSON.parse(settingFile) as GoogleSheetConnectionSetting;
-  } else {
-    return false;
   }
+  return false;
 }
 
 export const client = new DataStore<JWT | null>(null);
@@ -105,7 +104,6 @@ export function initGoogleConnection() {
             error: 'authorize error',
             code: 'AUTHORIZE_ERROR',
           });
-          return;
         } else {
           console.log('Connected!');
           GoogleSheetConnectionStore.set({
@@ -160,7 +158,6 @@ export function reconnectGoogleSheet(
     client.get()!.authorize((err, tokens) => {
       if (err) {
         resolve(false);
-        return;
       } else {
         console.log('Connected!');
         GoogleSheetConnectionStore.set({
@@ -206,11 +203,11 @@ function getDataByRangeName<T>(
 }
 
 function originalSheetArrayToJson<T>(dataArray: any[][]): T[] {
-  let keys = dataArray[0];
-  let jsonData: T[] = [];
+  const keys = dataArray[0];
+  const jsonData: T[] = [];
 
   for (let i = 1; i < dataArray.length; i++) {
-    let obj: any = {};
+    const obj: any = {};
     for (let j = 0; j < dataArray[i].length; j++) {
       obj[keys[j]] = dataArray[i][j];
     }
@@ -285,7 +282,9 @@ export async function initGoogleSheetData(cl: JWT) {
       safeGetData<ProblemItemSheet>(SheetRangeName.ProblemItems),
     );
     manifestNumberConfigSheet.set(
-      safeGetData<ManifestNumberConfigSheet>(SheetRangeName.ManifestNumberConfig),
+      safeGetData<ManifestNumberConfigSheet>(
+        SheetRangeName.ManifestNumberConfig,
+      ),
     );
 
     _systemSettingSheetNames?.forEach(async (name) => {
@@ -340,14 +339,13 @@ function jsonToSheetArray(
 
           if (indexA > indexB) {
             return 1;
-          } else if (indexA < indexB) {
-            return -1;
-          } else {
-            return 0;
           }
-        } else {
+          if (indexA < indexB) {
+            return -1;
+          }
           return 0;
         }
+        return 0;
       })
       .map((key) => obj[key]);
     result.push(row);
@@ -374,7 +372,7 @@ export async function updateSheetData(
       range: rangeName, // 確保傳入的 rangeName 有指定具體的範圍，例如 'Sheet1!A1:D10'
       valueInputOption: 'RAW', // 這表示我們直接將值放入，不進行任何其他處理
       resource: {
-        values: values,
+        values,
       },
     };
 
@@ -383,10 +381,9 @@ export async function updateSheetData(
     if (response.status === 200) {
       console.log('Sheet updated successfully!');
       return true;
-    } else {
-      console.error('Error updating sheet:', response.statusText);
-      return false;
     }
+    console.error('Error updating sheet:', response.statusText);
+    return false;
   } catch (e) {
     console.error('Error updating sheet:', e);
     return false;
@@ -463,7 +460,7 @@ export async function addSheetData(
       range: rangeName, // 確保傳入的 rangeName 有指定具體的範圍，例如 'Sheet1!A1:D10'
       valueInputOption: 'RAW', // 這表示我們直接將值放入，不進行任何其他處理
       resource: {
-        values: values,
+        values,
       },
     };
     const response = await gsapi.spreadsheets.values.append(opt);
@@ -471,10 +468,9 @@ export async function addSheetData(
     if (response.status === 200) {
       console.log('Sheet updated successfully!');
       return true;
-    } else {
-      console.error('Error updating sheet:', response.statusText);
-      return false;
     }
+    console.error('Error updating sheet:', response.statusText);
+    return false;
   } catch (e) {
     console.error('Error updating sheet:', e);
     return false;
@@ -537,7 +533,7 @@ export async function deleteSheet(sheetId: number, cl: JWT = client.get()!) {
 
     const deleteSheetRequest = {
       deleteSheet: {
-        sheetId: sheetId,
+        sheetId,
       },
     };
 

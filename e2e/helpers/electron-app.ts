@@ -141,15 +141,12 @@ export async function mockFileDialog(
   app: ElectronApplication,
   filePath: string,
 ): Promise<void> {
-  await app.evaluate(
-    async ({ dialog }, mockPath) => {
-      dialog.showOpenDialog = async () => ({
-        canceled: false,
-        filePaths: [mockPath],
-      });
-    },
-    filePath,
-  );
+  await app.evaluate(async ({ dialog }, mockPath) => {
+    dialog.showOpenDialog = async () => ({
+      canceled: false,
+      filePaths: [mockPath],
+    });
+  }, filePath);
 }
 
 /**

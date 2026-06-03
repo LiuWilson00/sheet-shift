@@ -11,7 +11,7 @@ export class BridgeHelper {
       this.bridgeFunctions[channel] = (...args: any[]) => {
         ipcRenderer.send(channel, ...args);
         return new Promise((resolve) => {
-          ipcRenderer.once(channel + '-reply', (_event, data) => {
+          ipcRenderer.once(`${channel}-reply`, (_event, data) => {
             resolve(data);
           });
         });
@@ -20,7 +20,7 @@ export class BridgeHelper {
       // 在主進程
       ipcMain.on(channel, async (event, ...args) => {
         const result = await handler(...args);
-        event.reply(channel + '-reply', result);
+        event.reply(`${channel}-reply`, result);
       });
     }
   }

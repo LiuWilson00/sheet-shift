@@ -1,5 +1,6 @@
 export class DataStore<T> {
   private data: T;
+
   private listeners: Array<(data: T) => void> = [];
 
   constructor(initialData: T) {

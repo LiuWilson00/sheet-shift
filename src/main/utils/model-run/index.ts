@@ -1,8 +1,7 @@
-import tokenizer from './tokenizer.json';
 import path from 'path';
-import idToCategory from './id_to_category.json';
-
 import { app } from 'electron';
+import tokenizer from './tokenizer.json';
+import idToCategory from './id_to_category.json';
 
 const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
@@ -128,10 +127,7 @@ export async function runClassifier(inputText: string): Promise<string> {
     return result ?? '';
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error(
-      '[ModelRun] 產品分類失敗:',
-      (error as Error).message,
-    );
+    console.error('[ModelRun] 產品分類失敗:', (error as Error).message);
     return '';
   }
 }

@@ -110,7 +110,9 @@ describe('data-process.service', () => {
     it('應該處理 undefined 值', () => {
       const input: SheetData[] = [
         { [ExcelColumnKeys.ShippingOrderNumber]: 'ORDER001' } as SheetData,
-        { [ExcelColumnKeys.ShippingOrderNumber]: undefined } as unknown as SheetData,
+        {
+          [ExcelColumnKeys.ShippingOrderNumber]: undefined,
+        } as unknown as SheetData,
         { [ExcelColumnKeys.ShippingOrderNumber]: 'ORDER002' } as SheetData,
       ];
 

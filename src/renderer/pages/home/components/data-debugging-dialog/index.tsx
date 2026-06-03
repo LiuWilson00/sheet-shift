@@ -117,7 +117,7 @@ function DebugItem({
               setTariffCode(tariffCode);
             }}
             value={correctProductName}
-          ></Input>
+          />
         </div>
         <div className="data-debugging-item__input">
           <Input
@@ -127,7 +127,7 @@ function DebugItem({
             defaultValue={data[ExcelColumnKeys.ProductClassNumber] as string}
             value={tariffCode}
             name={ProductNameMappingColumnKeys.TariffCode}
-          ></Input>
+          />
         </div>
       </div>
     </div>
@@ -151,7 +151,10 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
   );
 
   useEffect(() => {
-    dialogLogger.info('Dialog show 狀態變更', { show, wrongDataLength: wrongData.length });
+    dialogLogger.info('Dialog show 狀態變更', {
+      show,
+      wrongDataLength: wrongData.length,
+    });
 
     if (!show) return;
 
@@ -214,7 +217,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
             data={data}
             key={data[ExcelColumnKeys.ProductName] || index}
             isNeedAI={isNeedAI}
-          ></DebugItem>
+          />
         ))}
       </div>
     );
@@ -227,8 +230,8 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
     <>
       {show && (
         <Dialog
-          showMask={true}
-          showCancel={true}
+          showMask
+          showCancel
           contentRender={debuggingContentRender}
           onConfirm={async () => {
             showLoading();
@@ -248,7 +251,7 @@ export const DataDebuggingDialog: FC<DataDebuggingDialogProps> = ({
             setShow(false);
           }}
           onCancel={() => setShow(false)}
-        ></Dialog>
+        />
       )}
     </>
   );

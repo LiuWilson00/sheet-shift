@@ -40,9 +40,9 @@ const mockSettings = {
 jest.mock('../../../../utils/google-sheets.tool', () => ({
   getProductNameMap: jest.fn(() => [
     {
-      '原始品名': '測試產品',
-      '正確品名': '正確產品名稱',
-      '稅則': 'TEST001',
+      原始品名: '測試產品',
+      正確品名: '正確產品名稱',
+      稅則: 'TEST001',
     },
   ]),
 }));
@@ -70,8 +70,8 @@ jest.mock('../../../../utils', () => {
     })),
     addressSheet: {
       getData: jest.fn(() => [
-        { '地址': 'Test Address 1' },
-        { '地址': 'Test Address 2' },
+        { 地址: 'Test Address 1' },
+        { 地址: 'Test Address 2' },
       ]),
     },
   };
@@ -202,11 +202,15 @@ describe('Excel 處理整合測試', () => {
         const quantity = row[ExcelColumnKeys.Quantity];
 
         if (netWeight !== undefined && netWeight !== null) {
-          expect(typeof netWeight === 'number' || !isNaN(Number(netWeight))).toBe(true);
+          expect(
+            typeof netWeight === 'number' || !isNaN(Number(netWeight)),
+          ).toBe(true);
         }
 
         if (quantity !== undefined && quantity !== null) {
-          expect(typeof quantity === 'number' || !isNaN(Number(quantity))).toBe(true);
+          expect(typeof quantity === 'number' || !isNaN(Number(quantity))).toBe(
+            true,
+          );
         }
       });
     });
@@ -216,9 +220,9 @@ describe('Excel 處理整合測試', () => {
     it('mappingRealProductName 應該正確對應已知產品', () => {
       const mockProductMap = [
         {
-          '原始品名': '已知產品',
-          '正確品名': '正確名稱',
-          '稅則': 'CODE123',
+          原始品名: '已知產品',
+          正確品名: '正確名稱',
+          稅則: 'CODE123',
         },
       ];
 

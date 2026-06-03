@@ -104,9 +104,9 @@ test.describe('使用者管理對話框', () => {
 
   test('開啟對話框並顯示使用者列表', async () => {
     // 標題與表格
-    await expect(
-      page.locator('.user-mgmt-dialog__header h2'),
-    ).toHaveText('使用者管理');
+    await expect(page.locator('.user-mgmt-dialog__header h2')).toHaveText(
+      '使用者管理',
+    );
     await expect(page.locator('.user-mgmt-table')).toBeVisible();
 
     // 至少一列使用者（admin 自己）
@@ -133,7 +133,9 @@ test.describe('使用者管理對話框', () => {
     await takeScreenshot(page, '23-user-management-admin-role');
 
     // 取消，回到列表
-    await page.locator('.user-mgmt-form__actions button:has-text("取消")').click();
+    await page
+      .locator('.user-mgmt-form__actions button:has-text("取消")')
+      .click();
     await expect(page.locator('.user-mgmt-table')).toBeVisible();
   });
 
@@ -142,9 +144,15 @@ test.describe('使用者管理對話框', () => {
     await page.locator('.user-mgmt-toolbar__add').click();
     await page.waitForSelector('.user-mgmt-form');
 
-    await page.locator('.user-mgmt-form__row:has-text("姓名") input').fill('E2E測試員');
-    await page.locator('.user-mgmt-form__row:has-text("帳號") input').fill(TEMP_ACCOUNT);
-    await page.locator('.user-mgmt-form__row:has-text("密碼") input').fill('e2e-pw');
+    await page
+      .locator('.user-mgmt-form__row:has-text("姓名") input')
+      .fill('E2E測試員');
+    await page
+      .locator('.user-mgmt-form__row:has-text("帳號") input')
+      .fill(TEMP_ACCOUNT);
+    await page
+      .locator('.user-mgmt-form__row:has-text("密碼") input')
+      .fill('e2e-pw');
 
     // 先取消「全部可見」以啟用個別權限 checkbox
     await page

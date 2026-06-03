@@ -79,9 +79,11 @@ test('台北港格式匯出 - 問題件應標紅', async () => {
   // 4. 找到匯出的檔案並用 ExcelJS 檢查
   const dir = path.dirname(TEST_DATA_FILE);
   const baseName = path.basename(TEST_DATA_FILE, '.xlsx');
-  const files = fs.readdirSync(dir).filter(
-    (f) => f.startsWith(`${baseName}-completed`) && f.endsWith('.xlsx'),
-  );
+  const files = fs
+    .readdirSync(dir)
+    .filter(
+      (f) => f.startsWith(`${baseName}-completed`) && f.endsWith('.xlsx'),
+    );
   console.log('匯出檔案:', files);
   expect(files.length).toBeGreaterThan(0);
 
@@ -111,7 +113,7 @@ test('台北港格式匯出 - 問題件應標紅', async () => {
       console.log(`Row ${rowNumber}: 貨物名稱="${cellValue}"`);
 
       // 檢查此 cell 的背景色
-      const fill = productNameCell.fill;
+      const { fill } = productNameCell;
       console.log(`Row ${rowNumber} fill:`, JSON.stringify(fill));
 
       // 應為紅色背景 (FFFF0000 或類似)
