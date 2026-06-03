@@ -241,7 +241,8 @@
     "publish": {
       "provider": "github",
       "owner": "LiuWilson00",
-      "repo": "sheet-shift"
+      "repo": "sheet-shift",
+      "releaseType": "release"
     }
   },
   "collective": {
