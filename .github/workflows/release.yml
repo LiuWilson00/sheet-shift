@@ -1,0 +1,41 @@
+name: Release
+
+# 推送 v* 的 tag（例如 v4.8.2）時觸發：
+# 自動打包 Windows 安裝檔，並上傳到 GitHub Releases（草稿 draft）。
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 讓內建的 GITHUB_TOKEN 有權限建立 / 更新 Release
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js and NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: npm install
+        run: npm install
+
+      # 以 tag 名稱（去掉前綴 v）作為打包版本，寫入 release/app/package.json
+      - name: Set version from tag
+        run: node .erb/scripts/set-release-version.js
+
+      # clean + build + electron-builder --win --publish always
+      # electron-builder 預設建立「草稿（draft）」Release，附上 Setup.exe 與 latest.yml，
+      # 需到 GitHub Releases 頁面檢查後手動按 Publish 才正式發佈。
+      - name: Build & publish Windows installer (draft release)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release
