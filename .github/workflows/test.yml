@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
+        # 注意：此處刻意「不」開 lfs: true。本工作流只驗證打包流程能否跑通，
+        # 不產出要出貨的安裝檔；而它每次 push 都會在 3 個 OS 上執行，若拉 LFS
+        # 模型（約 411MB × 3）會迅速耗盡 GitHub LFS 免費頻寬（每月 1GB）。
+        # 真正出貨用的 release.yml 才會拉 LFS 並驗證模型完整性。
 
       - name: Install Node.js and NPM
         uses: actions/setup-node@v3

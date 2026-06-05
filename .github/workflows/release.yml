@@ -18,6 +18,23 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
+        # 模型檔 assets/model.onnx 由 Git LFS 管理，必須拉下真正的檔案內容；
+        # 預設的 checkout 只會抓到 130 bytes 的 LFS 指標檔，導致打包出來的安裝檔
+        # 內含假模型，安裝後智能辨識會報「Protobuf parsing failed」。
+        with:
+          lfs: true
+
+      # 防呆：確認 model.onnx 是真正的模型（約 411MB），而非 LFS 指標檔。
+      # 若 LFS 沒拉成功（例如頻寬用罄），直接讓 release 失敗，避免再次出貨壞檔。
+      - name: Verify model.onnx is a real model (not an LFS pointer)
+        shell: bash
+        run: |
+          SIZE=$(stat -c%s assets/model.onnx 2>/dev/null || stat -f%z assets/model.onnx)
+          echo "assets/model.onnx size: ${SIZE} bytes"
+          if [ "${SIZE}" -lt 104857600 ]; then
+            echo "::error::model.onnx 只有 ${SIZE} bytes，Git LFS 內容未正確拉取，中止發布。"
+            exit 1
+          fi
 
       - name: Install Node.js and NPM
         uses: actions/setup-node@v3
