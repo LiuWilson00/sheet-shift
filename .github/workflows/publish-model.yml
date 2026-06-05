@@ -1,0 +1,61 @@
+name: Publish Model Asset
+
+# 手動觸發：把 Git LFS 裡的 assets/model.onnx 發佈成固定 tag 的 Release 資產（預設 model-v1），
+# 供 release.yml 打包時下載，取代「每次打包都拉 LFS」的做法。
+#
+# 使用時機：
+#   1. 第一次導入「模型外部 artifact」機制時跑一次（建立 model-v1）。
+#   2. 之後模型有更新 → 把新模型 commit 進 LFS、用 model_tag=model-v2 重跑、
+#      並同步更新 release.yml 的 MODEL_TAG 與 assets/model.onnx.sha256。
+on:
+  workflow_dispatch:
+    inputs:
+      model_tag:
+        description: '模型 release tag（預設 model-v1）'
+        required: false
+        default: 'model-v1'
+
+# 讓內建 GITHUB_TOKEN 有權限建立 / 更新 Release
+permissions:
+  contents: write
+
+jobs:
+  publish-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository (with LFS)
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      # 確認 LFS 真的把模型拉下來了（而非 130 bytes 指標檔）
+      - name: Verify model.onnx is a real model
+        shell: bash
+        run: |
+          SIZE=$(stat -c%s assets/model.onnx)
+          echo "assets/model.onnx size: ${SIZE} bytes"
+          if [ "${SIZE}" -lt 104857600 ]; then
+            echo "::error::model.onnx 只有 ${SIZE} bytes，Git LFS 內容未正確拉取。"
+            exit 1
+          fi
+          echo "sha256: $(sha256sum assets/model.onnx | cut -d' ' -f1)"
+
+      # 建立（或更新）模型 Release 資產。標為 prerelease，避免變成 App 自動更新的「Latest」。
+      - name: Create or update model release asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODEL_TAG: ${{ github.event.inputs.model_tag }}
+        run: |
+          if gh release view "$MODEL_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $MODEL_TAG 已存在，覆蓋上傳模型資產…"
+            gh release upload "$MODEL_TAG" assets/model.onnx --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "建立 Release $MODEL_TAG…"
+            gh release create "$MODEL_TAG" assets/model.onnx \
+              --repo "$GITHUB_REPOSITORY" \
+              --prerelease \
+              --title "ONNX Model ($MODEL_TAG)" \
+              --notes "產品分類 ONNX 模型資產，供打包流程（release.yml）下載。此 Release 非應用程式版本，請勿刪除。"
+          fi
+          echo "完成。可在 Releases 頁面看到 $MODEL_TAG。"
